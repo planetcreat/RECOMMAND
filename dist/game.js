@@ -4,6 +4,8 @@ import {snapshot,decode} from './save.js';
 import {PLANETS,BOSS,SCOUT,OLD_SURVEY,ECHO_SITES,canOfferSurvey,beginPulseSequence,advancePulseSequence} from './content.js';
 import {clamp,distance,normalize,inSector,resolveMove,seeded} from './math.js';
 import {canRewrite,discoveredTriggers} from './story.js';
+import {CombatVFX} from './vfx.js';
+import {decorateGarden} from './environment.js';
 const $=id=>document.getElementById(id),TAU=Math.PI*2,SAVE='recommand-save-v1';
 let R;let hardwareWarning='';
 try{R=new Renderer($('world'));R.backend='webgl';}catch(e){hardwareWarning=e.message;const canvas=document.createElement('canvas');canvas.id='world';canvas.tabIndex=0;canvas.setAttribute('aria-label','행성 탐험 게임');$('world').replaceWith(canvas);R=new SoftwareRenderer(canvas);}
@@ -71,6 +73,7 @@ function finishEnding(rewrite){
  ],()=>toast('첫 행성 구간 완료 · 관문에서 다음 별의 신호를 확인하세요.'));
 }
 const groundY=(x,z)=>Math.sin(x*.13)*Math.cos(z*.11)*.18;
+const combatVFX=new CombatVFX(R,groundY);
 const roads=[[[0,11],[0,-10]],[[0,-10],[-19,-20]],[[-19,-20],[22,-33]],[[22,-33],[-14,-55]],[[-14,-55],[13,-69]]];
 function segmentDistance(x,z,a,b){const dx=b[0]-a[0],dz=b[1]-a[1],t=clamp(((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz),0,1);return Math.hypot(x-a[0]-dx*t,z-a[1]-dz*t);}
 const pathDist=(x,z)=>Math.min(...roads.map(([a,b])=>segmentDistance(x,z,a,b)));
@@ -99,6 +102,7 @@ props.disc(0,.08,11,3,[.35,.43,.36]);props.ring(0,.1,11,2.7,[.74,.73,.48],64,.12
 for(const x of[-2.6,2.6]){props.cone(x,.15,11,.5,3.5,[.38,.47,.4],6,.35);props.cone(x,3.65,11,.48,.8,[.66,.75,.51],6);obstacles.push({x,z:11,r:.5});}
 props.cone(OLD_SURVEY.x,groundY(OLD_SURVEY.x,OLD_SURVEY.z),OLD_SURVEY.z,.9,.4,[.4,.47,.39],6,.8);obstacles.push({...OLD_SURVEY,r:.7});
 const roadGeo=new Geometry();for(const[a,b]of roads){const dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz),nx=-dz/len*1.45,nz=dx/len*1.45;for(let t=0;t<len;t+=2){const t2=Math.min(len,t+2),point=(t,side)=>{const x=a[0]+dx*t/len+nx*side,z=a[1]+dz*t/len+nz*side;return[x,groundY(x,z)+.08,z];};roadGeo.quad(point(t,-1),point(t,1),point(t2,1),point(t2,-1),[.43,.48,.32]);}}const roadMesh=R.upload(roadGeo);
+const gardenLamps=decorateGarden(props,{height:groundY,pathDistance:pathDist,landmarks:[npc,portal,fracture,SCOUT,OLD_SURVEY,...ECHO_SITES,...memories,...seals.map(p=>({...p,clearance:8})),{x:13,z:-69,clearance:9}],obstacles,soft:SOFT});
 const worldMesh=R.upload(ground),propMesh=R.upload(props),gridMesh=R.upload(gridGeo);
 // A quiet environmental clue: no marker, no label, no objective counter.
 const brokenGeo=new Geometry();brokenGeo.cone(fracture.x,groundY(fracture.x,fracture.z),fracture.z,.62,.9,[.37,.45,.39],5,.4);
@@ -143,13 +147,13 @@ for(let i=0;i<3;i++)for(let j=0;j<3;j++){const a=j/3*TAU;enemies.push({id:i*3+j,
 const boss={id:99,x:13,z:-69,home:{x:13,z:-69},hp:300,max:300,type:3,wind:0,cd:2,hit:0};enemies.push(boss);
 for(let i=0;i<5;i++){const x=(rand()-.5)*22,z=-8-rand()*12;enemies.push({id:20+i,x,z,home:{x,z},hp:36,max:36,type:0,wind:0,cd:1,jitter:i,hit:0});}
 function burst(x,z,color,n=14){for(let i=0;i<n;i++){const a=rand()*TAU,s=1+rand()*3;particles.push({x,z,y:.6,vx:Math.cos(a)*s,vz:Math.sin(a)*s,vy:2+rand()*2,life:.5+rand()*.6,color});}}
-function damageEnemy(e,amount){if(e.hp<=0)return;e.hp=Math.max(0,e.hp-amount);e.hit=.17;burst(e.x,e.z,[.85,.79,.49],7);sound(180+rand()*100,.07,'triangle');if(!e.hp){player.xp+=e.type===3?100:15;player.hp=Math.min(100,player.hp+8);burst(e.x,e.z,[.65,.84,.6],20);if(e===boss){state.boss=true;toast('수호자의 명령이 멈췄다. 다가가 E로 기억을 확인하세요.');}else toast('기억의 빛 +15 · 생명력 +8');save();}}
+function damageEnemy(e,amount){if(e.hp<=0)return;e.hp=Math.max(0,e.hp-amount);e.hit=.17;effects.push({kind:'impact',x:e.x,z:e.z,life:.32,max:.32,boss:e===boss,angle:Math.atan2(player.face.z,player.face.x)});burst(e.x,e.z,[.85,.79,.49],7);sound(180+rand()*100,.07,'triangle');if(!e.hp){player.xp+=e.type===3?100:15;player.hp=Math.min(100,player.hp+8);burst(e.x,e.z,[.65,.84,.6],20);if(e===boss){state.boss=true;toast('수호자의 명령이 멈췄다. 다가가 E로 기억을 확인하세요.');}else toast('기억의 빛 +15 · 생명력 +8');save();}}
 function takeDamage(n){if(player.inv>0)return;player.hp-=n;player.inv=.85;sound(100,.2,'sawtooth',.025);burst(player.x,player.z,[.83,.4,.35],10);if(player.hp<=0){player.x=0;player.z=7;player.hp=100;player.dashTime=0;player.inv=1.5;keys.clear();boss.hp=state.boss?0:boss.max;for(const e of enemies){e.x=e.home.x;e.z=e.home.z;e.wind=0;e.sequence=false;e.pulse=0;e.cd=1;}toast('관문이 당신을 불러냈다. 기억은 사라지지 않았다.');save();}}
 function action(name){
  if(name==='interact'){interact();return;}if(!started||paused||study||dialog||contextLost)return;
- if(name==='attack'&&player.attack<=0){player.attack=.38;const a=Math.atan2(player.face.z,player.face.x);effects.push({kind:'slash',x:player.x,z:player.z,angle:a,life:.2,max:.2});for(const e of enemies)if(e.hp>0&&(e!==boss||state.seals.every(Boolean))&&inSector(player,e,player.face))damageEnemy(e,20+Math.floor(player.xp/60)*2);sound(650,.07,'triangle');}
+ if(name==='attack'&&player.attack<=0){player.attack=.38;const a=Math.atan2(player.face.z,player.face.x);effects.push({kind:'slash',x:player.x,z:player.z,angle:a,life:.32,max:.32});for(const e of enemies)if(e.hp>0&&(e!==boss||state.seals.every(Boolean))&&inSector(player,e,player.face))damageEnemy(e,20+Math.floor(player.xp/60)*2);sound(650,.07,'triangle');}
  if(name==='dash'&&player.dash<=0){player.dash=1.6;player.dashTime=.2;player.inv=Math.max(player.inv,.25);sound(300,.12,'sine');}
- if(name==='skill'&&player.skill<=0){player.skill=5;effects.push({kind:'wave',x:player.x,z:player.z,life:.55,max:.55});for(const e of enemies)if(e.hp>0&&(e!==boss||state.seals.every(Boolean))&&distance(player,e)<=6)damageEnemy(e,36);sound(750,.4,'sine');}
+ if(name==='skill'&&player.skill<=0){player.skill=5;effects.push({kind:'wave',x:player.x,z:player.z,life:.75,max:.75});for(const e of enemies)if(e.hp>0&&(e!==boss||state.seals.every(Boolean))&&distance(player,e)<=6)damageEnemy(e,36);sound(750,.4,'sine');}
 }
 function nearest(){const all=[{...npc,kind:'npc',name:'루미'},{...SCOUT,kind:'scout',name:SCOUT.name},{...OLD_SURVEY,kind:'survey',name:OLD_SURVEY.name},...ECHO_SITES.map((s,i)=>({...s,kind:'echo',i})),{...portal,kind:'portal',name:'별의 관문'},...seals.map((s,i)=>({...s,kind:'seal',i})),...memories.map((s,i)=>({...s,kind:'memory',i})),{x:13,z:-69,kind:'boss',name:'수호자의 기억'}];if(distance(player,fracture)<1.3)all.push({...fracture,kind:'fracture',name:'갈라진 연결부'});return all.sort((a,b)=>distance(player,a)-distance(player,b)).find(o=>distance(player,o)<3.8);}
 function interact(){
@@ -188,7 +192,7 @@ function interact(){
  if(!state.boss){toast('수호자의 공격 신호를 보고 회피하세요.');return;}
  showDialog('수호자의 마지막 기록',['[보존 명령 제0001호. 발령자: 당신.]\n[외부 간섭을 차단한다. 거주민의 이탈을 허용하지 않는다.]','수호자는 숲을 지키고 있었다. 당신이 명령한 방식으로.\n과거의 이유는 아직 알 수 없다. 하지만 지금의 선택은 당신에게 있다.'],finalChoice);
  }
- if(o.kind==='portal'){player.hp=100;if(!state.complete)showDialog('별의 관문',['관문이 희미한 온기를 전한다. 생명력이 회복되었다.\n멀리 세 별의 신호가 들린다. 지금은 유온의 목소리에 귀를 기울이자.']);else showDialog('네 개의 별',[PLANETS.map((p,i)=>'0'+(i+1)+' '+p.name+' · '+p.subtitle).join('\n'),'v0.2 시제품은 여기까지입니다.\n다른 행성은 아직 제작되지 않았습니다. 유온를 더 탐험하거나 원리 보기에서 곡률과 판정을 비교해 보세요.']);}
+ if(o.kind==='portal'){player.hp=100;if(!state.complete)showDialog('별의 관문',['관문이 희미한 온기를 전한다. 생명력이 회복되었다.\n멀리 세 별의 신호가 들린다. 지금은 유온의 목소리에 귀를 기울이자.']);else showDialog('쇄해로 이어지는 신호',['바람 사이로 물이 차오르는 소리가 들린다.\n“제방은 안전합니다. 출항은 허가되지 않았습니다.”','루미는 기록장을 덮는다.\n“이번에는, 문이 닫힌 이유부터 물어봐요.”\n다음 장: 쇄해 · 닫힌 길의 바다'],()=>{save();location.href='swaehae.html';});}
 }
 function setStudy(v){study=v;keys.clear();$('study').classList.toggle('hidden',!v);}
 function togglePause(){if(!started||dialog||study)return;paused=!paused;keys.clear();$('pause').textContent=paused?'계속하기':'일시정지';if(paused)toast('일시정지 · 버튼 또는 Esc로 계속');}
@@ -251,10 +255,10 @@ function tick(dt){
  if(e.hp<=0)continue;e.hit=Math.max(0,e.hit-dt);if(e===boss&&!state.seals.every(Boolean))continue;
  e.cd=Math.max(0,e.cd-dt);const d=distance(player,e),isBoss=e===boss,range=isBoss?BOSS.engageRange:1.6;
  if(isBoss){
- if(advancePulseSequence(e,dt,radius=>{effects.push({kind:'enemy',x:e.x,z:e.z,life:.3,max:.3,r:radius});if(distance(player,e)<=radius)takeDamage(BOSS.damage);}))continue;
+ if(advancePulseSequence(e,dt,radius=>{effects.push({kind:'enemy',boss:true,pulse:e.pulse,x:e.x,z:e.z,life:.6,max:.6,r:radius});if(distance(player,e)<=radius)takeDamage(BOSS.damage);}))continue;
  if(e.cd>0)continue;if(d<range){beginPulseSequence(e);continue;}
  }else{
- if(e.wind>0){e.wind-=dt;if(e.wind<=0){effects.push({kind:'enemy',x:e.x,z:e.z,life:.3,max:.3,r:range});if(distance(player,e)<=range)takeDamage(10);e.cd=1.5;}continue;}
+ if(e.wind>0){e.wind-=dt;if(e.wind<=0){effects.push({kind:'enemy',variant:e.type,angle:Math.atan2(player.z-e.z,player.x-e.x),x:e.x,z:e.z,life:.48,max:.48,r:range});if(distance(player,e)<=range)takeDamage(10);e.cd=1.5;}continue;}
  if(d<range&&e.cd<=0){e.wind=.48;continue;}
  }
  const chase=d<(isBoss?18:10)&&distance(player,e.home)<(isBoss?25:15);
@@ -286,10 +290,12 @@ function draw(){
  shadow(g,player.x,player.z,.72);shadow(g,npc.x,npc.z,.7);
  for(const e of enemies)if(e.hp>0&&visible(e)){shadow(g,e.x,e.z,e===boss?1.8:.8);if(e.wind>0){const r=e===boss?BOSS.pulseRadii[e.pulse||0]:1.6,d=e===boss?(e.pulse?BOSS.gap:BOSS.windup):.48;g.ring(e.x,groundY(e.x,e.z)+.23,e.z,r,[.83,.39,.28],48,.12+clamp(1-e.wind/d,0,1)*.5);}if(debug)g.ring(e.x,.35,e.z,e===boss?1.4:.55,[.9,.4,.4],32,.07);}
  for(let i=0;i<3;i++){const s=seals[i],c=state.seals[i]?[.85,.82,.46]:[.45,.65,.56];g.ring(s.x,.35,s.z,2.1,c,48,.1);if(state.seals[i])g.ring(s.x,.38,s.z,2.35,c,48,.035);}
- for(const e of effects){const t=1-e.life/e.max;if(e.kind==='slash'){const a=e.angle;g.ring(e.x,.5,e.z,3.1,[.96,.91,.65],24,.12+e.life*.8,a-Math.acos(.25),a+Math.acos(.25));}else if(e.kind==='wave'){g.ring(e.x,.35,e.z,Math.max(.1,t*6),[.62,.91,.82],64,.2);}else g.ring(e.x,.3,e.z,e.r,[.85,.45,.3],48,.18);}
+ for(const e of effects)if(e.kind==='enemy')g.ring(e.x,groundY(e.x,e.z)+.12,e.z,e.r,[.85,.45,.3],48,.11);
  if(debug){g.ring(player.x,.3,player.z,.42,[.55,.9,.9],32,.06);const a=Math.atan2(player.face.z,player.face.x);g.ring(player.x,.38,player.z,3.1,[.9,.8,.4],32,.045,a-Math.acos(.25),a+Math.acos(.25));}
  for(const p of particles)g.cone(p.x,Math.max(.1,p.y)+groundY(p.x,p.z),p.z,.045,.1,p.color,3);
  R.drawDynamic(g);
+ combatVFX.draw(effects,enemies,time);
+ for(const lamp of gardenLamps)if(visible(lamp))R.sprite(glowTex,lamp.x,lamp.y-.5,lamp.z,1.1,1.1,.35+Math.sin(time*2+lamp.x)*.05);
  if(state.memories.every(Boolean)&&Math.sin(time*.8)>.98)R.sprite(glowTex,fracture.x,.87,fracture.z,.15,.15,.35);
  const draws=[];
  draws.push(()=>R.sprite(scoutTex,SCOUT.x,groundY(SCOUT.x,SCOUT.z),SCOUT.z,1.9,2.5));draws.push(()=>R.sprite(labels.scout,SCOUT.x,3.1,SCOUT.z,5.5,.65));
@@ -324,5 +330,5 @@ let previous=performance.now(),accumulator=0,frames=0,lastFPS=performance.now(),
 function loop(now){accumulator+=clamp((now-previous)/1000,0,.15);previous=now;let steps=0;while(accumulator>=1/60&&steps<8){tick(1/60);accumulator-=1/60;steps++;}if(steps===8)accumulator=0;if(!contextLost){const before=performance.now();draw();renderMs=performance.now()-before;}frames++;if(now-lastFPS>1000){fps=Math.round(frames*1000/(now-lastFPS));frames=0;lastFPS=now;}$('fps').textContent=fps+' FPS · '+renderMs.toFixed(1)+' ms/render';requestAnimationFrame(loop);}requestAnimationFrame(loop);
 $('world').addEventListener('webglcontextlost',e=>{e.preventDefault();contextLost=true;paused=true;save();showDialog('그래픽 연결 끊김',['진행을 저장했습니다. 계속을 누르면 게임을 다시 엽니다. 시작 화면에서 기억 이어가기를 선택하세요.'],()=>location.reload(),{record:false});});
 // Read-only observability for QA. No gameplay cheats or mutable state exposed.
-window.recommand={snapshot:()=>JSON.parse(JSON.stringify({player,state,started,paused,study,dialog:dialog?{name:dialog.name,index:dialog.index}:null,enemies:enemies.map(({id,x,z,hp,wind})=>({id,x,z,hp,wind})),curve,drawCalls:R.calls,backend:R.backend,fps,storageWarning,contextLost}))};
+window.recommand={snapshot:()=>JSON.parse(JSON.stringify({player,state,started,paused,study,dialog:dialog?{name:dialog.name,index:dialog.index}:null,enemies:enemies.map(({id,x,z,hp,wind})=>({id,x,z,hp,wind})),curve,drawCalls:R.calls,backend:R.backend,fps,vfxReady:combatVFX.ready,vfxFailed:!!combatVFX.failed,storageWarning,contextLost}))};
 
