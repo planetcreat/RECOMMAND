@@ -15,5 +15,5 @@ function bundle(entry,modules,css,output){
  fs.mkdirSync('release',{recursive:true});fs.writeFileSync('release/'+output,html);console.log(output+': '+Buffer.byteLength(html)+' bytes');
 }
 bundle('index.html',['math.js','story.js','content.js','save.js','engine.js','software.js','environment.js','vfx.js','game.js'],'style.css','RECOMMAND.html');
-bundle('swaehae.html',['math.js','engine.js','software.js','vfx.js','tide.js','swaehae.js'],'chapter.css','SWAEHAE.html');
+bundle('swaehae.html',['math.js','engine.js','software.js','vfx.js','tide.js','belrok.js','swaehae.js'],'chapter.css','SWAEHAE.html');
 
