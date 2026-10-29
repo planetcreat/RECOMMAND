@@ -5,6 +5,7 @@ function bundle(entry,modules,css,output){
  let html=read('dist/'+entry).replace(/<a[^>]+data-online-only[^>]*>[\s\S]*?<\/a>/g,'');
  let source=modules.map(f=>read('dist/'+f).replace(/^import .*;\r?\n/gm,'').replace(/\bexport /g,'')).join('\n');
  source=source.replace("img.src='./assets/combat-atlas.png';",()=>"img.src="+JSON.stringify(atlas)+';');
+ for(const name of ['actors-atlas','environment-atlas']){const data='data:image/png;base64,'+fs.readFileSync('dist/assets/'+name+'.png').toString('base64');source=source.replace('./assets/'+name+'.png',()=>data);}
  if(entry==='index.html')source=source.replace("location.href='swaehae.html'","location.href='SWAEHAE.html'");
  new vm.Script(source);
  html=html.replace('<link rel="stylesheet" href="'+css+'">',()=>'<style>'+read('dist/'+css)+'</style>');
@@ -14,6 +15,6 @@ function bundle(entry,modules,css,output){
  if(/<script[^>]+src=|<link[^>]+href=/i.test(html))throw Error('External code remains in '+output);
  fs.mkdirSync('release',{recursive:true});fs.writeFileSync('release/'+output,html);console.log(output+': '+Buffer.byteLength(html)+' bytes');
 }
-bundle('index.html',['math.js','story.js','content.js','save.js','engine.js','software.js','environment.js','vfx.js','game.js'],'style.css','RECOMMAND.html');
-bundle('swaehae.html',['math.js','engine.js','software.js','vfx.js','tide.js','belrok.js','swaehae.js'],'chapter.css','SWAEHAE.html');
+bundle('index.html',['math.js','story.js','content.js','save.js','engine.js','software.js','environment.js','vfx.js','art.js','boss-models.js','game.js'],'style.css','RECOMMAND.html');
+bundle('swaehae.html',['math.js','engine.js','software.js','vfx.js','art.js','boss-models.js','tide.js','belrok.js','swaehae.js'],'chapter.css','SWAEHAE.html');
 
