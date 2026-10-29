@@ -1,0 +1,8 @@
+import fs from 'node:fs';import path from 'node:path';import {deflateRawSync} from 'node:zlib';
+// Portable ZIP writer. Generated releases and the archive itself are excluded.
+const table=Array.from({length:256},(_,n)=>{for(let i=0;i<8;i++)n=n&1?0xedb88320^(n>>>1):n>>>1;return n>>>0;});
+function crc32(b){let n=0xffffffff;for(const v of b)n=table[(n^v)&255]^(n>>>8);return(n^0xffffffff)>>>0;}
+function files(dir=''){return fs.readdirSync(dir||'.',{withFileTypes:true}).flatMap(e=>{const p=path.posix.join(dir,e.name);if(e.name.startsWith('.')||['node_modules','release'].includes(e.name)||p==='dist/source.zip')return[];return e.isDirectory()?files(p):[p];});}
+const names=files().sort(),parts=[],central=[];let offset=0;
+for(const name of names){const bytes=fs.readFileSync(name),data=deflateRawSync(bytes),n=Buffer.from(name),crc=crc32(bytes),h=Buffer.alloc(30);h.writeUInt32LE(0x04034b50,0);h.writeUInt16LE(20,4);h.writeUInt16LE(0x800,6);h.writeUInt16LE(8,8);h.writeUInt32LE(crc,14);h.writeUInt32LE(data.length,18);h.writeUInt32LE(bytes.length,22);h.writeUInt16LE(n.length,26);const c=Buffer.alloc(46);c.writeUInt32LE(0x02014b50,0);c.writeUInt16LE(20,4);h.copy(c,6,4,28);c.writeUInt32LE(offset,42);parts.push(h,n,data);central.push(c,n);offset+=h.length+n.length+data.length;}
+const directory=Buffer.concat(central),end=Buffer.alloc(22);end.writeUInt32LE(0x06054b50,0);end.writeUInt16LE(names.length,8);end.writeUInt16LE(names.length,10);end.writeUInt32LE(directory.length,12);end.writeUInt32LE(offset,16);fs.writeFileSync('dist/source.zip',Buffer.concat([...parts,directory,end]));console.log('Source ZIP:',names.length,'files');
