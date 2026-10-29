@@ -1,6 +1,6 @@
 export const PLANETS=[
 {id:'yuon',name:'유온',roman:'Yuon',subtitle:'남겨진 숨의 정원',implemented:true},
-{id:'swaehae',name:'쇄해',roman:'Swaehae',subtitle:'닫힌 길의 바다',implemented:false},
+{id:'swaehae',name:'쇄해',roman:'Swaehae',subtitle:'닫힌 길의 바다',implemented:true},
 {id:'mumyeong',name:'무명',roman:'Mumyeong',subtitle:'지워진 이름의 설원',implemented:false},
 {id:'hwanseong',name:'환성',roman:'Hwanseong',subtitle:'돌아온 목소리의 궤도',implemented:false}];
 export const BOSS={name:'삼박의 문지기 · 오르문',windup:1.1,gap:.65,recovery:2.8,pulseRadii:[4.2,5.2,6.4],damage:16,engageRange:4.8,intelligence:'오르문은 한 번에 세 번 울린다. 마지막 파동이 가장 멀리 닿는다.\n세 번째까지 바깥으로 빠진 뒤 접근하라. 마지막 울림 뒤에는 긴 정적이 있다.'};

@@ -6,6 +6,8 @@ import {clamp,distance,normalize,inSector,resolveMove,seeded} from './math.js';
 import {canRewrite,discoveredTriggers} from './story.js';
 import {CombatVFX} from './vfx.js';
 import {decorateGarden} from './environment.js';
+import {WorldArt,visualTerrain} from './art.js';
+import {makeBossModel} from './boss-models.js';
 const $=id=>document.getElementById(id),TAU=Math.PI*2,SAVE='recommand-save-v1';
 let R;let hardwareWarning='';
 try{R=new Renderer($('world'));R.backend='webgl';}catch(e){hardwareWarning=e.message;const canvas=document.createElement('canvas');canvas.id='world';canvas.tabIndex=0;canvas.setAttribute('aria-label','행성 탐험 게임');$('world').replaceWith(canvas);R=new SoftwareRenderer(canvas);}
@@ -73,14 +75,14 @@ function finishEnding(rewrite){
  ],()=>toast('첫 행성 구간 완료 · 관문에서 다음 별의 신호를 확인하세요.'));
 }
 const groundY=(x,z)=>Math.sin(x*.13)*Math.cos(z*.11)*.18;
-const combatVFX=new CombatVFX(R,groundY);
+const combatVFX=new CombatVFX(R,groundY),worldArt=new WorldArt(R),gardenArtProps=[];
 const roads=[[[0,11],[0,-10]],[[0,-10],[-19,-20]],[[-19,-20],[22,-33]],[[22,-33],[-14,-55]],[[-14,-55],[13,-69]]];
 function segmentDistance(x,z,a,b){const dx=b[0]-a[0],dz=b[1]-a[1],t=clamp(((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz),0,1);return Math.hypot(x-a[0]-dx*t,z-a[1]-dz*t);}
 const pathDist=(x,z)=>Math.min(...roads.map(([a,b])=>segmentDistance(x,z,a,b)));
-const ground=new Geometry(),props=new Geometry(),gridGeo=new Geometry();
+const ground=new Geometry(),props=new Geometry(),gridGeo=new Geometry(),treeGeo=new Geometry();
 const groundStep=SOFT?5:2;
 for(let x=-95;x<95;x+=groundStep)for(let z=-95;z<95;z+=groundStep){
- const step=groundStep,p=pathDist(x+step/2,z+step/2),v=terrainRand()*.035,c=(!SOFT&&p<2.8)?[.43+v,.48+v,.32+v]:[.23+v,.39+v,.27+v];
+ const step=groundStep,p=pathDist(x+step/2,z+step/2),v=terrainRand()*.035,c=(!SOFT&&p<2.8)?[.43+v,.48+v,.32+v]:visualTerrain(x,z);
  ground.quad([x,groundY(x,z),z],[x+step,groundY(x+step,z),z],[x+step,groundY(x+step,z+step),z+step],[x,groundY(x,z+step),z+step],c);
  if(x%5===0&&z%5===0){gridGeo.quad([x,.22,z],[x+.035,.22,z],[x+.035,.22,z+5],[x,.22,z+5],[.56,.67,.49]);gridGeo.quad([x,.22,z],[x+5,.22,z],[x+5,.22,z+.035],[x,.22,z+.035],[.56,.67,.49]);}
 }
@@ -89,9 +91,10 @@ for(let i=0;i<360;i++){
  const x=rand()*166-83,z=rand()*166-83;
  if(pathDist(x,z)<4||Math.hypot(x,z)<8||distance({x,z},fracture)<2.5||distance({x,z},SCOUT)<3||distance({x,z},OLD_SURVEY)<2.5||ECHO_SITES.some(e=>distance({x,z},e)<3)||seals.some(s=>distance({x,z},s)<6)||distance({x,z},{x:13,z:-69})<8||memories.some(s=>distance({x,z},s)<3))continue;
  const h=3+rand()*3,r=1+rand()*.9;obstacles.push({x,z,r:.6});shadow(props,x+.6,z+.5,r*1.1);
- props.cone(x,groundY(x,z),z,.24,h*.45,[.28,.28,.19],6,.17);
+ treeGeo.cone(x,groundY(x,z),z,.24,h*.45,[.28,.28,.19],6,.17);
  const col=rand()>.3?[.18,.35,.28]:[.33,.44,.28];
- if(SOFT)props.cone(x,h*.22,z,r,h*.88,col,4);else{props.cone(x,h*.22,z,r,h*.64,col);props.cone(x,h*.47,z,r*.76,h*.53,col.map(v=>v*1.12));props.cone(x,h*.7,z,r*.49,h*.4,col.map(v=>v*1.23));}
+ gardenArtProps.push({key:col[0]<.3?'pine':'oak',x,z,size:h*1.25});
+ if(SOFT)treeGeo.cone(x,h*.22,z,r,h*.88,col,4);else{treeGeo.cone(x,h*.22,z,r,h*.64,col);treeGeo.cone(x,h*.47,z,r*.76,h*.53,col.map(v=>v*1.12));treeGeo.cone(x,h*.7,z,r*.49,h*.4,col.map(v=>v*1.23));}
 }
 for(let i=0;i<370;i++){const x=rand()*160-80,z=rand()*160-80;if(pathDist(x,z)<2||distance({x,z},OLD_SURVEY)<2||ECHO_SITES.some(e=>distance({x,z},e)<2))continue;const y=groundY(x,z);if(i%3===0){props.cone(x,y,z,.3+rand()*.45,.3+rand()*.5,[.37,.45,.39],5,.12);}else{const c=i%4===0?[.72,.68,.37]:[.31,.5,.32];props.cone(x,y,z,.13,.32,c,4);}}
 for(const s of [...seals,...memories,...ECHO_SITES]){
@@ -103,7 +106,7 @@ for(const x of[-2.6,2.6]){props.cone(x,.15,11,.5,3.5,[.38,.47,.4],6,.35);props.c
 props.cone(OLD_SURVEY.x,groundY(OLD_SURVEY.x,OLD_SURVEY.z),OLD_SURVEY.z,.9,.4,[.4,.47,.39],6,.8);obstacles.push({...OLD_SURVEY,r:.7});
 const roadGeo=new Geometry();for(const[a,b]of roads){const dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz),nx=-dz/len*1.45,nz=dx/len*1.45;for(let t=0;t<len;t+=2){const t2=Math.min(len,t+2),point=(t,side)=>{const x=a[0]+dx*t/len+nx*side,z=a[1]+dz*t/len+nz*side;return[x,groundY(x,z)+.08,z];};roadGeo.quad(point(t,-1),point(t,1),point(t2,1),point(t2,-1),[.43,.48,.32]);}}const roadMesh=R.upload(roadGeo);
 const gardenLamps=decorateGarden(props,{height:groundY,pathDistance:pathDist,routes:roads,landmarks:[npc,portal,fracture,SCOUT,OLD_SURVEY,...ECHO_SITES,...memories,...seals.map(p=>({...p,clearance:8})),{x:13,z:-69,clearance:9}],obstacles,soft:SOFT});
-const worldMesh=R.upload(ground),propMesh=R.upload(props),gridMesh=R.upload(gridGeo);
+const worldMesh=R.upload(ground),propMesh=R.upload(props),gridMesh=R.upload(gridGeo),treeMesh=R.upload(treeGeo);
 // A quiet environmental clue: no marker, no label, no objective counter.
 const brokenGeo=new Geometry();brokenGeo.cone(fracture.x,groundY(fracture.x,fracture.z),fracture.z,.62,.9,[.37,.45,.39],5,.4);
 brokenGeo.quad([8.82,.92,-5.37],[8.88,.92,-5.37],[9.1,.92,-4.73],[9.04,.92,-4.73],[.22,.34,.31]);
@@ -285,7 +288,7 @@ function updateHUD(){
  $('location').textContent=player.z<-58?'명령의 잔해':player.z<-28?'잊힌 관측림':player.z<-10?'뒤틀린 뿌리길':'귀환의 정원';
 }
 function draw(){
- const camX=started?player.x:0,camZ=started?player.z:-1;R.begin(camX,camZ,curve);R.mesh(worldMesh);R.mesh(roadMesh);if(grid)R.mesh(gridMesh);R.mesh(propMesh);R.mesh(brokenMesh);
+ const camX=started?player.x:0,camZ=started?player.z:-1;R.begin(camX,camZ,curve);R.mesh(worldMesh);R.mesh(roadMesh);if(grid)R.mesh(gridMesh);R.mesh(propMesh);if(!worldArt.propReady)R.mesh(treeMesh);R.mesh(brokenMesh);
  const g=new Geometry(),visible=e=>Math.abs(e.x-camX)<48&&Math.abs(e.z-camZ)<58;
  shadow(g,player.x,player.z,.72);shadow(g,npc.x,npc.z,.7);
  for(const e of enemies)if(e.hp>0&&visible(e)){shadow(g,e.x,e.z,e===boss?1.8:.8);if(e.wind>0){const r=e===boss?BOSS.pulseRadii[e.pulse||0]:1.6,d=e===boss?(e.pulse?BOSS.gap:BOSS.windup):.48;g.ring(e.x,groundY(e.x,e.z)+.23,e.z,r,[.83,.39,.28],48,.12+clamp(1-e.wind/d,0,1)*.5);}if(debug)g.ring(e.x,.35,e.z,e===boss?1.4:.55,[.9,.4,.4],32,.07);}
@@ -295,20 +298,24 @@ function draw(){
  for(const p of particles)g.cone(p.x,Math.max(.1,p.y)+groundY(p.x,p.z),p.z,.045,.1,p.color,3);
  R.drawDynamic(g);
  combatVFX.draw(effects,enemies,time);
+ for(const p of gardenArtProps)if(visible(p))worldArt.drawProp(p.key,p.x,groundY(p.x,p.z),p.z,p.size);
+ for(const [a,b]of roads){const length=Math.hypot(b[0]-a[0],b[1]-a[1]);for(let t=2;t<length;t+=5){const x=a[0]+(b[0]-a[0])*t/length,z=a[1]+(b[1]-a[1])*t/length;for(const side of[-1,1]){const px=x+(b[1]-a[1])/length*side*3.5,pz=z-(b[0]-a[0])/length*side*3.5;if(visible({x:px,z:pz}))worldArt.drawProp(t%3<1?'mushrooms':'flowers',px,groundY(px,pz),pz,1.7);}}}
+ for(const p of gardenLamps)if(visible(p))worldArt.drawProp('lamp',p.x,groundY(p.x,p.z),p.z,3.3);
+ worldArt.drawProp('portal',0,0,11,5.5);for(const p of seals)if(visible(p))worldArt.drawProp('altar',p.x,groundY(p.x,p.z),p.z,3.1);for(const p of memories)if(visible(p))worldArt.drawProp('observatory',p.x,groundY(p.x,p.z),p.z,2.9);
  for(const lamp of gardenLamps)if(visible(lamp))R.sprite(glowTex,lamp.x,lamp.y-.5,lamp.z,1.1,1.1,.35+Math.sin(time*2+lamp.x)*.05);
  if(state.memories.every(Boolean)&&Math.sin(time*.8)>.98)R.sprite(glowTex,fracture.x,.87,fracture.z,.15,.15,.35);
  const draws=[];
- draws.push(()=>R.sprite(scoutTex,SCOUT.x,groundY(SCOUT.x,SCOUT.z),SCOUT.z,1.9,2.5));draws.push(()=>R.sprite(labels.scout,SCOUT.x,3.1,SCOUT.z,5.5,.65));
+ draws.push(()=>R.sprite(worldArt.actor('scout',scoutTex),SCOUT.x,groundY(SCOUT.x,SCOUT.z),SCOUT.z,1.9,2.5));draws.push(()=>R.sprite(labels.scout,SCOUT.x,3.1,SCOUT.z,5.5,.65));
  if(distance(player,OLD_SURVEY)<7)draws.push(()=>R.sprite(labels.survey,OLD_SURVEY.x,1.3,OLD_SURVEY.z,4.5,.55));
  if(state.sidequest===1)for(let i=0;i<2;i++){const s=ECHO_SITES[i];if(visible(s))draws.push(()=>R.sprite(labels.echoes[i],s.x,3,s.z,4.5,.6));}
- draws.push(()=>R.sprite(npcTex,npc.x,groundY(npc.x,npc.z),npc.z,1.9,2.5));
+ draws.push(()=>R.sprite(worldArt.actor('lumi',npcTex),npc.x,groundY(npc.x,npc.z),npc.z,1.9,2.5));
  draws.push(()=>R.sprite(labels.npc,npc.x,3.1,npc.z,5,.62));
  draws.push(()=>R.sprite(labels.portal,0,4.4,11,5,.62));
  for(let i=0;i<3;i++){const s=seals[i];if(!visible(s))continue;draws.push(()=>{R.sprite(glowTex,s.x,1.5+Math.sin(time*2)*.15,s.z,3,3,state.seals[i]?.85:.32);R.sprite(labels.seals[i],s.x,3.3,s.z,5,.62);});}
  for(let i=0;i<2;i++){const s=memories[i];if(visible(s))draws.push(()=>{R.sprite(glowTex,s.x,1.5,s.z,1.6,1.6,.5);R.sprite(labels.memories[i],s.x,3,s.z,5,.62);});}
- for(const e of enemies){if(e.hp<=0||!visible(e))continue;const isBoss=e===boss,w=isBoss?4.8:2.2,h=isBoss?5.2:2;draws.push(()=>{R.sprite(isBoss?bossTex:slimeTextures[e.type][Math.floor(time*4+(e.jitter||0))%2],e.x,groundY(e.x,e.z)+Math.sin(time*4)*.06,e.z,w,h,e.hit>0?.45:1);if(isBoss)R.sprite(labels.boss,e.x,6.1,e.z,6,.75);if(e.hp<e.max||e.wind>0){const tex=R.texture('hp'+e.id+'-'+Math.ceil(e.hp/10),c=>{c.fillStyle='#143632';c.fillRect(10,45,108,12);c.fillStyle=isBoss?'#dfb271':'#bfd495';c.fillRect(12,47,104*e.hp/e.max,8);});R.sprite(tex,e.x,h+.4,e.z,isBoss?4:2.6,.65);}});}
+ for(const e of enemies){if(e.hp<=0||!visible(e))continue;const isBoss=e===boss,w=isBoss?4.8:2.2,h=isBoss?5.2:2;draws.push(()=>{if(isBoss)R.drawDynamic(makeBossModel('ormun',e.x,groundY(e.x,e.z),e.z,time,e,SOFT));else R.sprite(worldArt.actor('slime'+e.type+(Math.floor(time*2+(e.jitter||0))%2?'b':''),slimeTextures[e.type][Math.floor(time*4+(e.jitter||0))%2]),e.x,groundY(e.x,e.z)+Math.sin(time*4)*.06,e.z,w,h,e.hit>0?.45:1);if(isBoss)R.sprite(labels.boss,e.x,6.1,e.z,6,.75);if(e.hp<e.max||e.wind>0){const tex=R.texture('hp'+e.id+'-'+Math.ceil(e.hp/10),c=>{c.fillStyle='#143632';c.fillRect(10,45,108,12);c.fillStyle=isBoss?'#dfb271':'#bfd495';c.fillRect(12,47,104*e.hp/e.max,8);});R.sprite(tex,e.x,h+.4,e.z,isBoss?4:2.6,.65);}});}
  const frame=(Math.floor(player.walk)%2)+(player.face.z<-.2?2:0);
- draws.push(()=>R.sprite(heroSprites[frame],player.x,groundY(player.x,player.z),player.z,1.9,2.6,player.inv>0&&Math.floor(time*16)%2?.45:1));
+ draws.push(()=>R.sprite(worldArt.actor(['hero0','hero1','heroBack0','heroBack1'][frame],heroSprites[frame]),player.x,groundY(player.x,player.z),player.z,1.9,2.6,player.inv>0&&Math.floor(time*16)%2?.45:1));
  // Alpha cutoff writes depth, so opaque sprite pixels occlude correctly with 3D trees.
  for(const d of draws)d();
  for(let i=0;i<26;i++){const x=camX+Math.sin(i*19.7+time*.09)*25,z=camZ+Math.cos(i*13.1+time*.08)*28;R.sprite(glowTex,x,1.5+Math.sin(time*.5+i),z,.25,.25,.55);}
