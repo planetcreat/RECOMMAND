@@ -1,5 +1,5 @@
 import {seeded} from './math.js';
-export function decorateGarden(g,{height,pathDistance,landmarks,obstacles,soft=false}){
+export function decorateGarden(g,{height,pathDistance,landmarks,obstacles,routes=[],soft=false}){
  const random=seeded(90315),TAU=Math.PI*2,lamps=[];
  const clear=(x,z,r=3)=>pathDistance(x,z)>3.4&&landmarks.every(p=>Math.hypot(x-p.x,z-p.z)>(p.clearance||r));
  // Separate decorative seed: adding a flower cannot move a tree, enemy, or story clue.
@@ -8,6 +8,8 @@ export function decorateGarden(g,{height,pathDistance,landmarks,obstacles,soft=f
   else if(v<.83){g.cone(x,y,z,.38,.25,[.21,.4,.29],5);g.cone(x+.21,y+.1,z+.11,.24,.26,[.32,.5,.34],5);}
   else{g.cone(x,y,z,.14,.25,[.62,.58,.43],5,.1);g.disc(x,y+.25,z,.29,[.68,.35,.32],7);g.disc(x+.2,y+.13,z+.18,.18,[.78,.56,.38],6);}
  }
+ // Dense planted edges lead the eye along the winding path, leaving its center clear.
+ for(const [a,b]of routes){const dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz),nx=-dz/len,nz=dx/len;for(let t=1;t<len;t+=3.5)for(const side of[-1,1]){const x=a[0]+dx*t/len+nx*side*3.5,z=a[1]+dz*t/len+nz*side*3.5;if(!landmarks.every(p=>Math.hypot(x-p.x,z-p.z)>(p.clearance||3.2)))continue;const y=height(x,z);g.cone(x,y,z,.85,.55,[.22,.43,.3],6);g.cone(x+.42,y+.15,z+.2,.55,.5,[.32,.52,.35],5);for(let j=0;j<4;j++){const angle=j/4*TAU,px=x+Math.cos(angle)*.65,pz=z+Math.sin(angle)*.65;g.cone(px,y+.35,pz,.12,.16,j%2?[.85,.72,.42]:[.75,.56,.65],5,.06);}}}
  for(const [x,z]of[[-5,-7],[7,-14],[-24,-15],[-12,-28],[17,-25],[28,-38],[-20,-47],[3,-59],[20,-64]]){
   const y=height(x,z);g.cone(x,y,z,.19,2.1,[.27,.32,.27],6,.12);g.cone(x,y+2.1,z,.33,.13,[.56,.53,.35],6,.38);g.cone(x,y+2.23,z,.21,.46,[.91,.77,.4],6,.21);g.cone(x,y+2.69,z,.37,.25,[.3,.4,.32],6);lamps.push({x,z,y:y+2.35});obstacles.push({x,z,r:.23});
  }

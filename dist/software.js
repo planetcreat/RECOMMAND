@@ -1,4 +1,5 @@
 import {perspective,lookAt} from './math.js';
+import {effectGrid} from './engine.js';
 // CPU projection fallback for devices without WebGL. Uses the same logical world and bend formula.
 export class SoftwareRenderer{
  constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false});if(!this.ctx)throw Error('화면을 만들 수 없습니다.');this.backend='software';this.gl={getError:()=>0};this.textures=new Map();this.calls=0;this.queue=[];}
@@ -20,8 +21,8 @@ export class SoftwareRenderer{
  }
  drawDynamic(g){this.mesh({data:g.data});}
  sprite(texture,x,y,z,w,h,alpha=1){const p=this.project(x,y,z);if(!p)return;const scale=this.focal/p.depth,pw=w*scale,ph=h*scale;if(p.x+pw<0||p.x-pw>this.width||p.y<0||p.y-ph>this.height)return;this.queue.push({type:1,layer:1,depth:p.depth,texture,x:p.x-pw/2,y:p.y-ph,w:pw,h:ph,alpha});this.calls++;}
- effect(texture,points,alpha=1,additive=true){const p=points.map(v=>this.project(...v));if(p.some(v=>!v))return;this.queue.push({type:2,layer:1,depth:p.reduce((n,v)=>n+v.depth/4,0),texture,points:p,alpha,additive});this.calls++;}
- drawEffect(e){const c=this.ctx,w=e.texture.width,h=e.texture.height;const source=[[0,h],[w,h],[w,0],[0,0]];for(const ids of[[0,1,2],[0,2,3]]){const [a,b,d]=ids.map(i=>e.points[i]),[s,t,u]=ids.map(i=>source[i]);const den=s[0]*(t[1]-u[1])+t[0]*(u[1]-s[1])+u[0]*(s[1]-t[1]);if(!den)continue;const solve=k=>[(a[k]*(t[1]-u[1])+b[k]*(u[1]-s[1])+d[k]*(s[1]-t[1]))/den,(a[k]*(u[0]-t[0])+b[k]*(s[0]-u[0])+d[k]*(t[0]-s[0]))/den,(a[k]*(t[0]*u[1]-u[0]*t[1])+b[k]*(u[0]*s[1]-s[0]*u[1])+d[k]*(s[0]*t[1]-t[0]*s[1]))/den];const x=solve('x'),y=solve('y');c.save();c.globalAlpha=e.alpha;c.globalCompositeOperation=e.additive?'lighter':'source-over';c.beginPath();c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);c.lineTo(d.x,d.y);c.closePath();c.clip();c.transform(x[0],y[0],x[1],y[1],x[2],y[2]);c.drawImage(e.texture,0,0);c.restore();}}
+ effect(texture,points,alpha=1,additive=true){const data=effectGrid(points,4);for(let i=0;i<data.length;i+=15){const p=[0,5,10].map(k=>this.project(data[i+k],data[i+k+1],data[i+k+2]));if(p.some(v=>!v))continue;const uv=[0,5,10].map(k=>[data[i+k+3]*texture.width,data[i+k+4]*texture.height]);this.queue.push({type:2,layer:1,depth:p.reduce((n,v)=>n+v.depth/3,0),texture,points:p,uv,alpha,additive});}this.calls++;}
+ drawEffect(e){const c=this.ctx,[a,b,d]=e.points,[s,t,u]=e.uv;const den=s[0]*(t[1]-u[1])+t[0]*(u[1]-s[1])+u[0]*(s[1]-t[1]);if(!den)return;const solve=k=>[(a[k]*(t[1]-u[1])+b[k]*(u[1]-s[1])+d[k]*(s[1]-t[1]))/den,(a[k]*(u[0]-t[0])+b[k]*(s[0]-u[0])+d[k]*(t[0]-s[0]))/den,(a[k]*(t[0]*u[1]-u[0]*t[1])+b[k]*(u[0]*s[1]-s[0]*u[1])+d[k]*(s[0]*t[1]-t[0]*s[1]))/den];const x=solve('x'),y=solve('y');c.save();c.globalAlpha=e.alpha;c.globalCompositeOperation=e.additive?'lighter':'source-over';c.beginPath();c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);c.lineTo(d.x,d.y);c.closePath();c.clip();c.transform(x[0],y[0],x[1],y[1],x[2],y[2]);c.drawImage(e.texture,0,0);c.restore();}
  finish(){const c=this.ctx;this.queue.sort((a,b)=>a.layer-b.layer||b.depth-a.depth);for(const e of this.queue){if(e.type===2)this.drawEffect(e);else if(e.type){c.globalAlpha=e.alpha;c.drawImage(e.texture,e.x,e.y,e.w,e.h);c.globalAlpha=1;}else{c.fillStyle=e.color;c.beginPath();c.moveTo(e.p.x,e.p.y);c.lineTo(e.q.x,e.q.y);c.lineTo(e.r.x,e.r.y);c.closePath();c.fill();}}}
 }
 
