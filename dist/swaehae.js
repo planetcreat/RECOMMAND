@@ -57,8 +57,8 @@ function seaInteract(){if(seaPaused)return;if(seaDialog){seaAdvance();return;}
  }
 }
 const seaGround=new Geometry(),seaProps=new Geometry(),seaBase=new Geometry();
-for(let x=-55;x<55;x+=3)for(let z=-80;z<40;z+=3){const land=Math.abs(x)<20&&z<18&&z>-72,c=land?visualTerrain(x,z,'harbor'):[.13+.025*Math.sin(x*.2),.37,.44];seaGround.quad([x,0,z],[x+3,0,z],[x+3,0,z+3],[x,0,z+3],c);}
-const seaRoad=(x,z,w,l)=>seaBase.quad([x-w/2,.08,z-l/2],[x+w/2,.08,z-l/2],[x+w/2,.08,z+l/2],[x-w/2,.08,z+l/2],[.57,.54,.43]);seaRoad(0,-9,5,52);seaRoad(-6,-4,18,3);seaRoad(6,-15,18,3);
+for(let x=-55;x<55;x+=3)for(let z=-80;z<40;z+=3){const land=Math.abs(x)<20&&z<18&&z>-72,c=land?visualTerrain(x,z,'harbor'):[.13+.025*Math.sin(x*.2),.37,.44];seaGround.quad([x,0,z],[x+3,0,z],[x+3,0,z+3],[x,0,z+3],c);if(land)for(let k=seaGround.data.length-36;k<seaGround.data.length;k+=6){const col=visualTerrain(seaGround.data[k],seaGround.data[k+2],'harbor');for(let j=0;j<3;j++)seaGround.data[k+3+j]=col[j];}}
+const seaRoad=(x,z,w,l)=>{for(let px=x-w/2;px<x+w/2;px+=1.1)for(let pz=z-l/2;pz<z+l/2;pz+=1.45){const ex=Math.min(px+1.04,x+w/2),ez=Math.min(pz+1.38,z+l/2),n=Math.sin(px*8+pz*3)*.035;seaBase.quad([px,.1,pz],[ex,.1,pz],[ex,.1,ez],[px,.1,ez],[.6+n,.59+n,.49+n]);}};seaRoad(0,-9,5,52);seaRoad(-6,-4,18,3);seaRoad(6,-15,18,3);
 for(const x of[-20,20])for(let z=-43;z<18;z+=3){seaProps.cone(x,0,z,.65,.85,[.47,.5,.43],4,.6);seaObstacles.push({x,z,r:.6});}
 for(const side of[-1,1])for(let z=-39;z<14;z+=7){const x=side*17;seaProps.cone(x,0,z,.18,2.7,[.28,.32,.29],6,.12);seaProps.cone(x,2.7,z,.34,.5,[.9,.74,.43],6,.24);seaProps.cone(x,3.2,z,.43,.25,[.28,.41,.4],6);seaObstacles.push({x,z,r:.3});}
 for(const o of seaObjects){if(o.kind==='gate'){seaProps.cone(o.x,0,o.z,.9,.5,[.37,.45,.43],6,.8);seaProps.cone(o.x,.5,o.z,.19,1.6,[.63,.56,.37],6,.16);seaObstacles.push({x:o.x,z:o.z,r:.9});}else if(o.kind==='gauge'){seaProps.cone(o.x,0,o.z,.65,1.45,[.4,.51,.49],6,.45);seaProps.cone(o.x,1.45,o.z,.8,.12,[.75,.72,.48],8,.75);seaObstacles.push({x:o.x,z:o.z,r:.8});}}

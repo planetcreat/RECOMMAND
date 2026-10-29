@@ -8,6 +8,7 @@ function bossBall(g,x,y,z,rx,ry,rz,color,rotation=0,detail=12){
  for(let j=0;j<lat;j++)for(let i=0;i<detail;i++){const a=point(i,j),b=point(i+1,j),c=point(i+1,j+1),d=point(i,j+1);g.data.push(...a,...b,...c,...a,...c,...d);}
 }
 function bossTube(g,points,r,color,detail){for(let i=0;i<points.length;i++){const p=points[i];bossBall(g,...p,r,r,r,color,0,detail);}}
+function bossRing(g,x,y,z,r,tube,col,spin=0,detail=24){const sides=6,point=(i,j)=>{const a=i/detail*BOSS_TAU+spin,b=j/sides*BOSS_TAU,nx=Math.cos(a)*Math.cos(b),ny=Math.sin(a)*Math.cos(b),nz=Math.sin(b),shade=.65+.3*Math.max(0,ny*.6+nz*.7-nx*.25);return[x+Math.cos(a)*(r+tube*Math.cos(b)),y+Math.sin(a)*(r+tube*Math.cos(b)),z+tube*Math.sin(b),...col.map(c=>c*shade)];};for(let i=0;i<detail;i++)for(let j=0;j<sides;j++){const a=point(i,j),b=point(i+1,j),c=point(i+1,j+1),d=point(i,j+1);g.data.push(...a,...b,...c,...a,...c,...d);}}
 export function makeBossModel(kind,x,y,z,clock,state={},soft=false){
  const g=new Geometry(),p=bossPose(kind,clock,state),n=soft?8:14,Y=y+p.breath;
  if(kind==='ormun'){
@@ -16,6 +17,8 @@ export function makeBossModel(kind,x,y,z,clock,state={},soft=false){
   bossBall(g,x,Y+2,z,1.3,1.55,.94,stone,p.sway,n+2);bossBall(g,x,Y+3.45,z,.98,.85,.84,moss,-p.sway,n+2);bossBall(g,x,Y+3.3,z+.73,.85,.39,.2,dark,0,n);
   for(const side of[-1,1]){bossBall(g,x+side*.38,Y+3.42,z+.91,.12,.16,.07,[1,.87,.45],0,8);bossTube(g,Array.from({length:7},(_,i)=>[x+side*(.7+i*.06),Y+2.7-i*.28,z+.71+Math.sin(i)*.05]),.08,dark,6);}
   bossBall(g,x,Y+2,z+.93,.36,.48,.15,gold,0,n);for(let i=0;i<7;i++){const a=i/7*BOSS_TAU;bossBall(g,x+Math.cos(a)*.8,Y+4.03+Math.sin(i*2)*.15,z+Math.sin(a)*.5,.3,.45,.28,moss,i*.3,8);}
+  bossRing(g,x,Y+2,z+1.05,.5,.08,[.69,.79,.54],0,soft?12:24);
+  for(let i=0;i<9;i++){const a=i/9*BOSS_TAU;bossBall(g,x+Math.cos(a)*1.12,Y+2+Math.sin(a)*1.05,z+.73,.22,.34,.14,i%2?moss:dark,a,8);}
   for(let i=0;i<3;i++)g.cone(x+(i-1)*.63,Y+4.1,z,.22,.7+Math.sin(clock*2+i)*.05,[.67,.87,.71],6);
  }else{
   const teal=[.19,.43,.46],copper=[.7,.48,.25],brass=[.91,.73,.41],iron=[.25,.37,.4],light=p.open?[.55,1,.88]:[.2,.61,.67];
@@ -25,6 +28,11 @@ export function makeBossModel(kind,x,y,z,clock,state={},soft=false){
   const dial=(p.pressure*2-1)*1.1;bossTube(g,Array.from({length:6},(_,i)=>[x+Math.sin(dial)*i*.07,Y+2.25+Math.cos(dial)*i*.07,z+1.17]),.035,[.98,.91,.68],6);
   for(const side of[-1,1]){const slide=.3+p.open*.5;bossBall(g,x+side*slide,Y+2.3,z+.95,.24,.74,.24,copper,side*(.08+p.open*.42),n);bossBall(g,x+side*.8,Y+4.13,z-.1,.13,.65,.13,iron,side*.08,8);}
   for(let i=0;i<8;i++){const a=i/8*BOSS_TAU;bossBall(g,x+Math.cos(a)*.95,Y+2.25+Math.sin(a)*1.12,z+.68,.09,.09,.09,brass,0,6);}
+  bossRing(g,x,Y+2.25,z+1.08,.66,.095,brass,0,soft?12:28);bossRing(g,x,Y+3.48,z+.91,.77,.045,copper,0,soft?12:24);
+  for(const side of[-1,1]){bossBall(g,x+side*.9,Y+2.25,z-.75,.43,1.25,.45,iron,0,n);bossRing(g,x+side*1.46,Y+2.75,z+.54,.28,.065,copper,clock*.35*side,soft?10:18);for(let i=0;i<6;i++){const a=i*Math.PI/3;bossBall(g,x+side*1.46+Math.cos(a)*.29,Y+2.75+Math.sin(a)*.29,z+.57,.055,.055,.07,brass,0,6);}}
+  for(let i=0;i<10;i++){const a=i/10*BOSS_TAU;bossBall(g,x+Math.cos(a)*.87,Y+3.67+Math.sin(a)*.3,z+.47,.055,.055,.06,brass,0,6);}
  }
+ // Enlarge the visual silhouette without touching combat distances or collision.
+ const scale=1.2;for(let i=0;i<g.data.length;i+=6){g.data[i]=x+(g.data[i]-x)*scale;g.data[i+1]=y+(g.data[i+1]-y)*scale;g.data[i+2]=z+(g.data[i+2]-z)*scale;}
  return g;
 }

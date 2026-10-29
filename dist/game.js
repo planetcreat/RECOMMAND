@@ -79,11 +79,12 @@ const combatVFX=new CombatVFX(R,groundY),worldArt=new WorldArt(R),gardenArtProps
 const roads=[[[0,11],[0,-10]],[[0,-10],[-19,-20]],[[-19,-20],[22,-33]],[[22,-33],[-14,-55]],[[-14,-55],[13,-69]]];
 function segmentDistance(x,z,a,b){const dx=b[0]-a[0],dz=b[1]-a[1],t=clamp(((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz),0,1);return Math.hypot(x-a[0]-dx*t,z-a[1]-dz*t);}
 const pathDist=(x,z)=>Math.min(...roads.map(([a,b])=>segmentDistance(x,z,a,b)));
-const ground=new Geometry(),props=new Geometry(),gridGeo=new Geometry(),treeGeo=new Geometry();
+const ground=new Geometry(),props=new Geometry(),gridGeo=new Geometry(),treeGeo=new Geometry(),portalGeo=new Geometry();
 const groundStep=SOFT?5:2;
 for(let x=-95;x<95;x+=groundStep)for(let z=-95;z<95;z+=groundStep){
  const step=groundStep,p=pathDist(x+step/2,z+step/2),v=terrainRand()*.035,c=(!SOFT&&p<2.8)?[.43+v,.48+v,.32+v]:visualTerrain(x,z);
  ground.quad([x,groundY(x,z),z],[x+step,groundY(x+step,z),z],[x+step,groundY(x+step,z+step),z+step],[x,groundY(x,z+step),z+step],c);
+ for(let k=ground.data.length-36;k<ground.data.length;k+=6){const px=ground.data[k],pz=ground.data[k+2],col=visualTerrain(px,pz);for(let j=0;j<3;j++)ground.data[k+3+j]=col[j];}
  if(x%5===0&&z%5===0){gridGeo.quad([x,.22,z],[x+.035,.22,z],[x+.035,.22,z+5],[x,.22,z+5],[.56,.67,.49]);gridGeo.quad([x,.22,z],[x+5,.22,z],[x+5,.22,z+.035],[x,.22,z+.035],[.56,.67,.49]);}
 }
 function shadow(g,x,z,r){g.disc(x,groundY(x,z)+.025,z,r,[.16,.29,.22]);}
@@ -102,11 +103,11 @@ for(const s of [...seals,...memories,...ECHO_SITES]){
  obstacles.push({x:s.x,z:s.z,r:.75});
 }
 props.disc(0,.08,11,3,[.35,.43,.36]);props.ring(0,.1,11,2.7,[.74,.73,.48],64,.12);
-for(const x of[-2.6,2.6]){props.cone(x,.15,11,.5,3.5,[.38,.47,.4],6,.35);props.cone(x,3.65,11,.48,.8,[.66,.75,.51],6);obstacles.push({x,z:11,r:.5});}
+for(const x of[-2.6,2.6]){portalGeo.cone(x,.15,11,.5,3.5,[.38,.47,.4],6,.35);portalGeo.cone(x,3.65,11,.48,.8,[.66,.75,.51],6);obstacles.push({x,z:11,r:.5});}
 props.cone(OLD_SURVEY.x,groundY(OLD_SURVEY.x,OLD_SURVEY.z),OLD_SURVEY.z,.9,.4,[.4,.47,.39],6,.8);obstacles.push({...OLD_SURVEY,r:.7});
 const roadGeo=new Geometry();for(const[a,b]of roads){const dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz),nx=-dz/len*1.45,nz=dx/len*1.45;for(let t=0;t<len;t+=2){const t2=Math.min(len,t+2),point=(t,side)=>{const x=a[0]+dx*t/len+nx*side,z=a[1]+dz*t/len+nz*side;return[x,groundY(x,z)+.08,z];};roadGeo.quad(point(t,-1),point(t,1),point(t2,1),point(t2,-1),[.43,.48,.32]);}}const roadMesh=R.upload(roadGeo);
 const gardenLamps=decorateGarden(props,{height:groundY,pathDistance:pathDist,routes:roads,landmarks:[npc,portal,fracture,SCOUT,OLD_SURVEY,...ECHO_SITES,...memories,...seals.map(p=>({...p,clearance:8})),{x:13,z:-69,clearance:9}],obstacles,soft:SOFT});
-const worldMesh=R.upload(ground),propMesh=R.upload(props),gridMesh=R.upload(gridGeo),treeMesh=R.upload(treeGeo);
+const worldMesh=R.upload(ground),propMesh=R.upload(props),gridMesh=R.upload(gridGeo),treeMesh=R.upload(treeGeo),portalMesh=R.upload(portalGeo);
 // A quiet environmental clue: no marker, no label, no objective counter.
 const brokenGeo=new Geometry();brokenGeo.cone(fracture.x,groundY(fracture.x,fracture.z),fracture.z,.62,.9,[.37,.45,.39],5,.4);
 brokenGeo.quad([8.82,.92,-5.37],[8.88,.92,-5.37],[9.1,.92,-4.73],[9.04,.92,-4.73],[.22,.34,.31]);
@@ -288,7 +289,7 @@ function updateHUD(){
  $('location').textContent=player.z<-58?'명령의 잔해':player.z<-28?'잊힌 관측림':player.z<-10?'뒤틀린 뿌리길':'귀환의 정원';
 }
 function draw(){
- const camX=started?player.x:0,camZ=started?player.z:-1;R.begin(camX,camZ,curve);R.mesh(worldMesh);R.mesh(roadMesh);if(grid)R.mesh(gridMesh);R.mesh(propMesh);if(!worldArt.propReady)R.mesh(treeMesh);R.mesh(brokenMesh);
+ const camX=started?player.x:0,camZ=started?player.z:-1;R.begin(camX,camZ,curve);R.mesh(worldMesh);R.mesh(roadMesh);if(grid)R.mesh(gridMesh);R.mesh(propMesh);if(!worldArt.propReady){R.mesh(treeMesh);R.mesh(portalMesh);}R.mesh(brokenMesh);
  const g=new Geometry(),visible=e=>Math.abs(e.x-camX)<48&&Math.abs(e.z-camZ)<58;
  shadow(g,player.x,player.z,.72);shadow(g,npc.x,npc.z,.7);
  for(const e of enemies)if(e.hp>0&&visible(e)){shadow(g,e.x,e.z,e===boss?1.8:.8);if(e.wind>0){const r=e===boss?BOSS.pulseRadii[e.pulse||0]:1.6,d=e===boss?(e.pulse?BOSS.gap:BOSS.windup):.48;g.ring(e.x,groundY(e.x,e.z)+.23,e.z,r,[.83,.39,.28],48,.12+clamp(1-e.wind/d,0,1)*.5);}if(debug)g.ring(e.x,.35,e.z,e===boss?1.4:.55,[.9,.4,.4],32,.07);}
