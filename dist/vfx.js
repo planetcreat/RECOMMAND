@@ -10,7 +10,7 @@ export class CombatVFX{
  draw(effects,enemies=[],clock=0){if(typeof this.r.effect!=='function')return;const g=new Geometry(),TAU=Math.PI*2;g.alpha=.52;g.additive=true;
   for(const e of effects){if(!['slash','wave','enemy','impact'].includes(e.kind))continue;const t=Math.max(0,Math.min(1,1-e.life/e.max)),fade=Math.pow(1-t,.65),frame=effectFrame(e),y=this.ground(e.x,e.z)+.14;
    if(e.kind==='impact'){const tex=this.texture(e.boss?3:0,Math.min(3,frame));this.r.effect(tex,uprightQuad(e.x,y+.2,e.z,1.7+t,2+t,e.angle||0,.25),fade*.9);continue;}
-   const isBoss=e.kind==='enemy'&&e.boss,row=e.kind==='slash'?0:e.kind==='wave'?1:isBoss?3:2,col=FX_PALETTES[isBoss?'boss':e.kind==='enemy'?'enemy':e.kind],tex=this.texture(row,frame);
+   const isBoss=e.kind==='enemy'&&e.boss,row=e.water?1:e.kind==='slash'?0:e.kind==='wave'?1:isBoss?3:2,col=e.water?[.25,.85,1]:FX_PALETTES[isBoss?'boss':e.kind==='enemy'?'enemy':e.kind],tex=this.texture(row,frame);
    if(e.kind==='slash'){
     const a=e.angle||0,r=1.1+t*1.9,start=a-1.18+t*.8,end=start+1.8;
     for(let i=0;i<20;i++){const p=start+(end-start)*i/20,q=start+(end-start)*(i+1)/20,h=.35+Math.sin(i/20*Math.PI)*1.65*fade;g.quad([e.x+Math.cos(p)*r,y,e.z+Math.sin(p)*r],[e.x+Math.cos(q)*r,y,e.z+Math.sin(q)*r],[e.x+Math.cos(q)*(r-.2),y+h,e.z+Math.sin(q)*(r-.2)],[e.x+Math.cos(p)*(r-.2),y+h,e.z+Math.sin(p)*(r-.2)],col.map(v=>v*(.65+.35*fade)));}
