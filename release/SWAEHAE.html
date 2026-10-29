@@ -1,15 +1,18 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#152b38"><title>쇄해 · RE:COMMAND</title><style>:root{color-scheme:dark;font-family:'Malgun Gothic',sans-serif;color:#f3e9ce;background:#152b38}*{box-sizing:border-box}body{margin:0;overflow:hidden}button,a{-webkit-tap-highlight-color:transparent}button{font:inherit;color:inherit;border:1px solid #d9c99255;background:#173845db;border-radius:6px;padding:10px 16px;cursor:pointer}button:hover{background:#315565}button:focus-visible,a:focus-visible{outline:2px solid #edce89;outline-offset:3px}#chapterWorld{position:fixed;inset:0;width:100%;height:100%;touch-action:none}.sea-vignette{position:fixed;inset:0;pointer-events:none;background:linear-gradient(#0b182555,transparent 24%,transparent 78%,#091c31a0)}.chapter-header{position:fixed;top:22px;left:30px;right:30px;display:flex;justify-content:space-between;align-items:center}.chapter-header a{color:#eaddb4;text-decoration:none;letter-spacing:3px;font-size:13px;font-weight:700}.chapter-header a span{font-size:10px;color:#adcbcd;letter-spacing:1px;margin-left:16px;font-weight:400}.chapter-header button{font-size:11px}.chapter-title{position:fixed;left:35px;top:100px;pointer-events:none}.chapter-title p{font-size:9px;letter-spacing:3px;color:#b9d4cf}.chapter-title h1{font-size:43px;font-weight:500;margin:7px 0}.chapter-title small{font-size:14px;color:#bfd6d1;letter-spacing:2px}.chapter-title>span{font-size:12px;color:#c7d6c8}.chapter-objective{position:fixed;top:108px;right:30px;width:275px;background:#143342d6;border-left:2px solid #d9bf7b;padding:18px 20px;pointer-events:none}.chapter-objective>span{font-size:10px;letter-spacing:2px;color:#d6c286}.chapter-objective h2{font-size:15px;line-height:1.7;font-weight:500}.chapter-objective p{font-size:11px;line-height:1.8;color:#b7d1d1}#chapterRecord{color:#e5ca8e}#chapterPrompt{position:fixed;left:50%;bottom:26%;transform:translateX(-50%);background:#132e3ee8;padding:10px 18px;border:1px solid #d7c78e66;border-radius:5px;font-size:12px;white-space:nowrap}#chapterPrompt:empty{display:none}.chapter-controls{position:fixed;left:30px;bottom:23px;font-size:10px;color:#b5c8c3;letter-spacing:1px}.chapter-dialog{position:fixed;left:50%;bottom:85px;transform:translateX(-50%);width:min(700px,92vw);max-height:72vh;overflow:auto;padding:23px 29px;background:#102f40f5;border:1px solid #c3c89b55;border-top:2px solid #dbc68b;box-shadow:0 25px 70px #0006}.chapter-dialog>span{font-size:8px;letter-spacing:2px;color:#94babd}.chapter-dialog h2{font-size:17px;font-weight:500;color:#edc986}.chapter-dialog p{font-size:14px;line-height:2;white-space:pre-line}.chapter-dialog button{float:right}.chapter-dialog:after{content:'';display:block;clear:both}.hidden{display:none!important}.chapter-touch{display:none;position:fixed;left:16px;right:16px;bottom:60px;align-items:end;justify-content:space-between}.chapter-touch>div{display:grid;grid-template-columns:repeat(3,42px);gap:3px}.chapter-touch button{touch-action:none;padding:10px}.chapter-touch [data-sea-key=w]{grid-column:2}.chapter-touch [data-sea-key=a]{grid-column:1;grid-row:2}.chapter-touch [data-sea-key=s]{grid-column:2;grid-row:2}.chapter-touch [data-sea-key=d]{grid-column:3;grid-row:2}@media(pointer:coarse){.chapter-touch{display:flex}.chapter-controls{display:none}.chapter-dialog{bottom:160px}}@media(max-width:760px){.chapter-header{left:16px;right:16px;top:16px}.chapter-header a span{display:none}.chapter-title{left:18px;top:75px}.chapter-title h1{font-size:30px}.chapter-title small{font-size:10px}.chapter-objective{top:80px;right:15px;width:165px;padding:12px}.chapter-objective h2{font-size:11px}.chapter-objective p{font-size:9px}.chapter-dialog p{font-size:12px}.chapter-controls{left:16px;font-size:8px}}
 
 .chapter-actions{display:flex;gap:8px}.boat-quest{position:fixed;left:30px;bottom:65px;width:265px;padding:14px 17px;background:#143342e8;border-left:2px solid #79c9b4;pointer-events:none}.boat-quest>span{font-size:12px;color:#dcd5ab}.boat-quest p{font-size:11px;color:#bed7d1;line-height:1.8;margin:7px 0}.boat-quest small{font-size:10px;color:#e5ca8e}.boat-quest small:empty{display:none}@media(max-width:760px){.boat-quest{left:16px;bottom:65px;width:200px;padding:10px 12px}.boat-quest p{font-size:10px}.chapter-actions{gap:5px}.chapter-header button{padding:8px 10px}}@media(pointer:coarse){.boat-quest{bottom:170px}}
+
+.boss-hud{position:fixed;top:85px;right:30px;width:310px;padding:18px;background:#102f40ec;border-top:2px solid #d7b36b;pointer-events:none}.boss-hud>span{color:#f2d595;font-size:14px}.boss-meter,.hero-meter{height:7px;background:#081d28;margin-top:12px;overflow:hidden}.hero-meter{height:4px;margin-top:5px}.boss-meter i,.hero-meter i{display:block;height:100%;background:#db9c64;width:100%}.hero-meter i{background:#80d8bc}.boss-hud h2{font-size:14px;line-height:1.7;color:#f3ddaa}.boss-hud p{font-size:11px;line-height:1.8;color:#c7dfd8}.boss-hud small{font-size:10px;color:#c0d8d1}.sea-touch-actions{display:grid!important;grid-template-columns:repeat(2,auto)!important;gap:4px}@media(max-width:760px){.boss-hud{top:80px;right:15px;width:190px;padding:12px}.boss-hud>span{font-size:11px}.boss-hud h2{font-size:11px}.boss-hud p,.boss-hud small{font-size:9px}}
 </style></head>
 <body><canvas id="chapterWorld" tabindex="0" aria-label="쇄해의 제방 항구"></canvas><div class="sea-vignette"></div>
 <header class="chapter-header"><a href="RECOMMAND.html">RE:COMMAND <span>유온으로 돌아가기</span></a><div class="chapter-actions"><button id="chapterJournal">발견 기록</button><button id="chapterPause">일시정지</button></div></header>
 <section class="chapter-title"><p>PLANET 02 / 04 · ACT I</p><h1>쇄해 <small>Swaehae</small></h1><span>닫힌 길의 바다</span></section>
-<section class="chapter-objective"><span>돌아오지 않는 물</span><h2 id="chapterObjective">제방지기 나루를 찾아가세요.</h2><p id="tideStatus">두 수문이 닫혀 있다.</p><p id="chapterRecord">수압 관측 0 / 3</p></section>
+<section id="harborObjective" class="chapter-objective"><span>돌아오지 않는 물</span><h2 id="chapterObjective">제방지기 나루를 찾아가세요.</h2><p id="tideStatus">두 수문이 닫혀 있다.</p><p id="chapterRecord">수압 관측 0 / 3</p></section>
 <section id="boatQuest" class="boat-quest hidden" aria-label="도하의 부탁"><span id="boatTitle"></span><p id="boatHint"></p><small id="boatProgress"></small></section>
-<div id="chapterPrompt"></div><div class="chapter-controls">WASD / 방향키 이동 · E 조사 · J 검격 · L 파동</div>
+<section id="bossHud" class="boss-hud hidden" aria-label="벨로크 전투"><span id="bossName"></span><div class="boss-meter"><i id="bossHealth"></i></div><div class="hero-meter"><i id="heroHealth"></i></div><small id="bossNumbers"></small><h2 id="bossPhase"></h2><p id="bossMessage"></p><small id="bossSkills"></small></section>
+<div id="chapterPrompt"></div><div class="chapter-controls">WASD / 방향키 이동 · E 조사 · J 검격 · L 파동 · K / Space 회피</div>
 <div id="chapterDialog" class="chapter-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="chapterSpeaker"><span>SWAEHAE / THE SEA OF CLOSED ROADS</span><h2 id="chapterSpeaker"></h2><p id="chapterText"></p><button id="chapterNext">계속 E / Enter</button></div>
-<div class="chapter-touch"><div><button data-sea-key="w">↑</button><button data-sea-key="a">←</button><button data-sea-key="s">↓</button><button data-sea-key="d">→</button></div><button id="chapterInteract">E 조사</button></div>
+<div class="chapter-touch"><div><button data-sea-key="w">↑</button><button data-sea-key="a">←</button><button data-sea-key="s">↓</button><button data-sea-key="d">→</button></div><div class="sea-touch-actions"><button id="seaSlash">J 검격</button><button id="seaWave">L 파동</button><button id="seaDash">K 회피</button><button id="chapterInteract">E 조사</button></div></div>
 <script type="module">// Pure gameplay math: no renderer dependency. x/z is the logical ground plane.
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
@@ -97,7 +100,7 @@ class CombatVFX{
  draw(effects,enemies=[],clock=0){if(typeof this.r.effect!=='function')return;const g=new Geometry(),TAU=Math.PI*2;g.alpha=.52;g.additive=true;
   for(const e of effects){if(!['slash','wave','enemy','impact'].includes(e.kind))continue;const t=Math.max(0,Math.min(1,1-e.life/e.max)),fade=Math.pow(1-t,.65),frame=effectFrame(e),y=this.ground(e.x,e.z)+.14;
    if(e.kind==='impact'){const tex=this.texture(e.boss?3:0,Math.min(3,frame));this.r.effect(tex,uprightQuad(e.x,y+.2,e.z,1.7+t,2+t,e.angle||0,.25),fade*.9);continue;}
-   const isBoss=e.kind==='enemy'&&e.boss,row=e.kind==='slash'?0:e.kind==='wave'?1:isBoss?3:2,col=FX_PALETTES[isBoss?'boss':e.kind==='enemy'?'enemy':e.kind],tex=this.texture(row,frame);
+   const isBoss=e.kind==='enemy'&&e.boss,row=e.water?1:e.kind==='slash'?0:e.kind==='wave'?1:isBoss?3:2,col=e.water?[.25,.85,1]:FX_PALETTES[isBoss?'boss':e.kind==='enemy'?'enemy':e.kind],tex=this.texture(row,frame);
    if(e.kind==='slash'){
     const a=e.angle||0,r=1.1+t*1.9,start=a-1.18+t*.8,end=start+1.8;
     for(let i=0;i<20;i++){const p=start+(end-start)*i/20,q=start+(end-start)*(i+1)/20,h=.35+Math.sin(i/20*Math.PI)*1.65*fade;g.quad([e.x+Math.cos(p)*r,y,e.z+Math.sin(p)*r],[e.x+Math.cos(q)*r,y,e.z+Math.sin(q)*r],[e.x+Math.cos(q)*(r-.2),y+h,e.z+Math.sin(q)*(r-.2)],[e.x+Math.cos(p)*(r-.2),y+h,e.z+Math.sin(p)*(r-.2)],col.map(v=>v*(.65+.35*fade)));}
@@ -119,7 +122,7 @@ class CombatVFX{
  }
 }
 
-const TIDE_INITIAL={v:1,arrival:false,introduced:false,gates:[false,false],observations:[false,false,false],foregate:false,boat:{met:false,stage:'unknown',elapsed:0}};
+const TIDE_INITIAL={v:1,arrival:false,introduced:false,gates:[false,false],observations:[false,false,false],foregate:false,boat:{met:false,stage:'unknown',elapsed:0},boss:{defeated:false,rewritten:false}};
 const BOAT_SECONDS=14;
 const BOAT_STAGES=['unknown','charted','repaired','sailing','returned','complete'];
 function boatAction(s,action){
@@ -138,13 +141,69 @@ function tideState(gates){return gates[0]?(gates[1]?'circulation':'filling'):(ga
 function tideDescription(gates){return{sealed:'두 수문이 닫혀 있다. 항구 쪽 수압만 높아진다.',filling:'서쪽 저류지로 물이 들어간다. 오래된 벽면의 눈금이 잠긴다.',draining:'동쪽 배수로로 물이 빠진다. 물 아래에 묻혔던 되돌림 표식이 나타난다.',circulation:'물이 고이지 않고 순환한다. 중앙 보행교의 잠금이 풀렸다.'}[tideState(gates)];}
 function observeTide(state){const i=['filling','draining','circulation'].indexOf(tideState(state.gates));if(i>=0)state.observations[i]=true;return state;}
 function tideIntel(state){return state.observations.every(Boolean);}
-function decodeTide(raw){const s=typeof raw==='string'?JSON.parse(raw):raw;const bools=(v,n)=>Array.isArray(v)&&v.length===n&&v.every(x=>typeof x==='boolean');if(s?.v!==1||!['arrival','introduced','foregate'].every(k=>typeof s[k]==='boolean')||!bools(s.gates,2)||!bools(s.observations,3)||s.foregate&&!s.introduced)throw Error('쇄해의 기록을 읽을 수 없습니다.');const b=s.boat===undefined?{...TIDE_INITIAL.boat}:s.boat;if(!b||typeof b.met!=='boolean'||!BOAT_STAGES.includes(b.stage)||!Number.isFinite(b.elapsed)||b.elapsed<0||b.elapsed>BOAT_SECONDS||b.stage!=='unknown'&&(!b.met||!s.introduced||!s.observations.every(Boolean))||['returned','complete'].includes(b.stage)&&b.elapsed!==BOAT_SECONDS||['unknown','charted','repaired'].includes(b.stage)&&b.elapsed!==0)throw Error('종이배의 기록을 읽을 수 없습니다.');return{v:1,arrival:s.arrival,introduced:s.introduced,gates:[...s.gates],observations:[...s.observations],foregate:s.foregate,boat:{met:b.met,stage:b.stage,elapsed:b.elapsed}};}
+function decodeTide(raw){const s=typeof raw==='string'?JSON.parse(raw):raw;const bools=(v,n)=>Array.isArray(v)&&v.length===n&&v.every(x=>typeof x==='boolean');if(s?.v!==1||!['arrival','introduced','foregate'].every(k=>typeof s[k]==='boolean')||!bools(s.gates,2)||!bools(s.observations,3)||s.foregate&&!s.introduced)throw Error('쇄해의 기록을 읽을 수 없습니다.');const b=s.boat===undefined?{...TIDE_INITIAL.boat}:s.boat;if(!b||typeof b.met!=='boolean'||!BOAT_STAGES.includes(b.stage)||!Number.isFinite(b.elapsed)||b.elapsed<0||b.elapsed>BOAT_SECONDS||b.stage!=='unknown'&&(!b.met||!s.introduced||!s.observations.every(Boolean))||['returned','complete'].includes(b.stage)&&b.elapsed!==BOAT_SECONDS||['unknown','charted','repaired'].includes(b.stage)&&b.elapsed!==0)throw Error('종이배의 기록을 읽을 수 없습니다.');const boss=s.boss===undefined?{...TIDE_INITIAL.boss}:s.boss;if(!boss||typeof boss.defeated!=='boolean'||typeof boss.rewritten!=='boolean'||boss.defeated&&!s.foregate||boss.rewritten&&!boss.defeated)throw Error('벨로크의 기록을 읽을 수 없습니다.');return{v:1,arrival:s.arrival,introduced:s.introduced,gates:[...s.gates],observations:[...s.observations],foregate:s.foregate,boat:{met:b.met,stage:b.stage,elapsed:b.elapsed},boss:{defeated:boss.defeated,rewritten:boss.rewritten}};}
 const SWAEHAE_SCENES={
  arrival:['발밑의 관문은 모래가 아니라, 바닷물이 말라붙은 계단 위에 열렸다.\n멀리 배들이 묶여 있다. 돛은 모두 육지 쪽을 향한다.','[제방 안전 확인. 외부 항로 봉쇄 유지.]\n사람을 반기는 말보다, 오래된 안내 방송이 먼저 들렸다.','루미: “유온에서는 숲이 말을 못 했어요. 여기는 사람들이 말하고 있는데…… 문은 듣지 않네요.”'],
  naru:['나루: “파도가 길을 삼킨 날, 명령권자가 제방을 닫았어요. 그 덕분에 살아남았죠.”','주인공: “그 뒤로 한 번도 열지 않았나요?”\n나루: “닫아야 한다는 명령은 남았는데, 언제 열어도 되는지는 없었거든요.”','나루: “명령을 가진 사람이라면 열 수 있겠죠. 하지만 먼저 저 물을 봐요. 문만 연다고 길이 돌아오지는 않아요.”\n서쪽은 저류지, 동쪽은 배수로다. 두 수문과 중앙 수압계를 직접 살펴보자.'],
  child:['도하: “이 배는 바다에 띄우려고 만든 거예요. 어른들은 책장으로 쓰면 튼튼하겠대요.”','주인공: “어디로 가고 싶은데?”\n도하: “저도 아직 몰라요. 그래도 배가 어느 쪽으로 가는지는, 물에 놓아 봐야 알잖아요.”','루미는 기록장에 목적지를 쓰려다 멈춘다. 대신 ‘배를 띄워 보고 싶다’고 적는다.'],
- foregate:['중앙 보행교가 내려앉으며 수문 안쪽의 원형 방이 드러났다.\n벽에 걸린 문장은 파도에 닳아 있었다. [안전은 정지된 상태로 유지한다.]','문지기의 가슴에서 물이 바깥으로 한 번 밀려났다. 돌아온 물은 같은 홈을 따라 안으로 빨려 들었다.\n옆의 작은 정비 통로만, 흐름이 바뀔 때 잠깐 조용해졌다.','루미: “같은 물인데, 나갈 때와 돌아올 때가 다르네요.”\n주인공은 명령 장치에서 손을 뗐다. 이번에는 먼저, 물이 돌아오는 길을 보았다.','쇄해 1막 · 돌아오지 않는 물 — 도입부 완료.\n다음 제작: 역류의 문지기 벨로크의 전장과 수문 실험을 연결한 보스전. 현재 이 문 너머의 전투는 아직 구현되지 않았다.']
+ foregate:['중앙 보행교가 내려앉으며 수문 안쪽의 원형 방이 드러났다.\n벽에 걸린 문장은 파도에 닳아 있었다. [안전은 정지된 상태로 유지한다.]','문지기의 가슴에서 물이 바깥으로 한 번 밀려났다. 돌아온 물은 같은 홈을 따라 안으로 빨려 들었다.\n옆의 작은 정비 통로만, 흐름이 바뀔 때 잠깐 조용해졌다.','루미: “같은 물인데, 나갈 때와 돌아올 때가 다르네요.”\n주인공은 명령 장치에서 손을 뗐다. 이번에는 먼저, 물이 돌아오는 길을 보았다.','문지기의 수압계가 붉게 기울어진다.\n[외부 항로 봉쇄. 접근하는 압력을 배출한다.]']
 };
+
+// Deterministic combat model. Visuals consume these same circular hazard coordinates.
+const BELROK={x:0,z:-54,hp:360,device:{x:-9,z:-48},entry:{x:0,z:-44},radius:12};
+const BELROK_PHASES={outWarn:['토출 예고',1.8],out:['토출',1.2],returnWarn:['회수 예고 · 역류에 대비',2.8],back:['회수',1.2],lockWarn:['압력 봉쇄 예고',1.5],lock:['압력 봉쇄',1.5],open:['과압 방출 · 가슴 노출',3.4]};
+function createBelrok(){return{active:false,hp:BELROK.hp,hero:100,phase:'outWarn',time:0,cycle:0,diverted:false,invul:0,slash:0,wave:0,dash:0,dashing:0,hazards:[],bursts:[],message:'',shieldFlash:0};}
+function patternBelrok(b,p){
+ const make=(x,z,r,at=0)=>({x,z,r,at,done:false});
+ if(b.phase==='outWarn')return Array.from({length:8},(_,i)=>{const a=i*Math.PI/4+b.cycle*.18;return make(Math.cos(a)*7,BELROK.z+Math.sin(a)*7,2.15);});
+ if(b.phase==='returnWarn')return[-7,-3.5,0,3.5,7].map((x,i)=>make(x,BELROK.z+(i%2?-3:2),2.15));
+ if(b.phase==='lockWarn')return[-1,0,1].map((v,i)=>make(Math.max(-10,Math.min(10,p.x+v*3)),Math.max(-64,Math.min(-44,p.z+v)),2.1,i*.38));
+ return[];
+}
+function enterBelrok(b,phase,p){b.phase=phase;b.time=0;if(phase==='outWarn'){b.diverted=false;b.cycle++;}if(phase.endsWith('Warn'))b.hazards=patternBelrok(b,p);if(phase==='open')b.hazards=[];}
+function startBelrok(b,p){Object.assign(b,createBelrok(),{active:true});p.x=BELROK.entry.x;p.z=BELROK.entry.z;enterBelrok(b,'outWarn',p);}
+function divertBelrok(b,p,knowledge){
+ if(!b.active||b.hero<=0||b.hp<=0)return false;
+ if(Math.hypot(p.x-BELROK.device.x,p.z-BELROK.device.z)>3)return false;
+ if(!knowledge){b.message='갈라진 원의 표식. 되돌림 수로의 작동 원리를 아직 모른다.';return false;}
+ if(b.phase!=='returnWarn'||b.diverted){b.message='회수 예고 중에 장치를 열어야 역류를 우회시킬 수 있다.';return false;}
+ b.diverted=true;b.message='되돌림 수로 개방 · 역류 우회 성공!';return true;
+}
+function hitBelrok(b,p,kind){
+ if(!b.active||b.hp<=0||b.hero<=0||!['slash','wave'].includes(kind)||b[kind]>0)return false;
+ b[kind]=kind==='slash'?.38:5;
+ const dx=BELROK.x-p.x,dz=BELROK.z-p.z,d=Math.hypot(dx,dz),range=kind==='slash'?3.8:6;
+ if(d>range||kind==='slash'&&d>.01&&(dx*p.face.x+dz*p.face.z)/d<.15)return true;
+ if(b.phase!=='open'){b.shieldFlash=.3;b.message='수압 장갑 · 과압 방출 때 가슴을 노려라.';return true;}
+ b.hp=Math.max(0,b.hp-(kind==='slash'?18:26));if(b.hp===0){b.active=false;b.phase='won';b.hazards=[];b.bursts=[];b.message='봉쇄 장치 정지 · 가슴의 명령 장치를 조사하세요.';}return true;
+}
+function dashBelrok(b){if(!b.active||b.hero<=0||b.dash>0)return false;b.dash=1.2;b.dashing=.18;b.invul=Math.max(b.invul,.28);return true;}
+function tickBelrok(b,p,dt){
+ if(!b.active||!Number.isFinite(dt)||dt<=0)return;
+ // Bound steps to preserve telegraph windows even after a slow frame.
+ for(let left=Math.min(dt,.25);left>1e-9;){const d=Math.min(left,1/60);left-=d;
+  for(const k of['invul','slash','wave','dash','dashing','shieldFlash'])b[k]=Math.max(0,b[k]-d);
+  b.time+=d;const firing=['out','back','lock'].includes(b.phase);
+  if(firing&&!(b.phase==='back'&&b.diverted))for(const h of b.hazards){
+   if(b.time>=h.at&&!h.fired){h.fired=true;b.bursts.push({x:h.x,z:h.z,r:h.r,kind:b.phase});}
+   if(b.time>=h.at&&b.time<h.at+.35&&b.invul<=0&&Math.hypot(p.x-h.x,p.z-h.z)<h.r+.35){b.hero=Math.max(0,b.hero-22);b.invul=.9;b.message='수압 충격 · 바닥 원의 바깥으로 회피하세요.';}
+   if(b.time>=h.at+.35)h.done=true;
+  }
+  if(b.hero===0){b.active=false;b.phase='lost';b.hazards=[];b.bursts=[];return;}
+  const duration=b.phase==='open'&&b.diverted?7.2:BELROK_PHASES[b.phase][1];
+  if(b.time+1e-8>=duration){const next={outWarn:'out',out:'returnWarn',returnWarn:'back',back:b.diverted?'open':'lockWarn',lockWarn:'lock',lock:'open',open:'outWarn'}[b.phase];enterBelrok(b,next,p);}
+ }
+}
+function belrokPhaseText(b){return BELROK_PHASES[b.phase]?.[0]||({won:'명령 장치 조사 · E',lost:'항구로 귀환'}[b.phase]||'');}
+const BELROK_CLUE='나루: “갈라진 원은 정비 수로의 표식이에요. 문지기의 수압계가 거꾸로 꺾일 때, 회수 전에 그 장치를 열어요. 돌아오는 물이 옆길로 빠지면 가슴 덮개가 오래 열릴 거예요.”';
+const BELROK_ENDING=[
+ '벨로크의 가슴 덮개 안에서 오래된 명령이 반복된다.\n[항로를 봉쇄하라. 안전은 정지된 상태로 유지한다.]',
+ '나루: “문을 닫아서 살았어요. 하지만 언제까지 살아갈 길도 닫아야 하죠?”\n도하는 젖은 종이배를 두 손에 쥐고 기다린다.',
+ '주인공이 명령을 다시 쓴다.\nRE:COMMAND — 돌아올 길을 지켜라.',
+ '벨로크의 수압계가 천천히 가운데로 돌아온다. 제방 바깥의 문은 열리고, 되돌림 수로에는 작은 등불이 켜진다.\n[귀환 항로 보호. 출항 여부는 주민에게 위임.]',
+ '나루: “오늘은 항구부터 손볼게요. 내일 배를 띄울지는…… 우리가 정하죠.”\n도하: “저는 한 번 더 띄워 볼래요.”',
+ '쇄해 1막 완료 · 돌아오는 길\n수호자는 항로를 지키고, 사람들은 떠날 때를 고른다. 다음 행성의 항로는 후속 제작에서 이어집니다.'
+];
 
 const el=id=>document.getElementById(id),SEA_SAVE='recommand-swaehae-v1';
 let seaRenderer;try{seaRenderer=new Renderer(el('chapterWorld'));seaRenderer.backend='webgl';}catch{const c=document.createElement('canvas');c.id='chapterWorld';c.tabIndex=0;c.setAttribute('aria-label','쇄해의 제방 항구');el('chapterWorld').replaceWith(c);seaRenderer=new SoftwareRenderer(c);}
@@ -152,6 +211,7 @@ const seaSoft=seaRenderer.backend==='software';if(seaSoft)Geometry.lowDetail=tru
 const seaHeight=()=>0,seaVFX=new CombatVFX(seaRenderer,seaHeight),seaKeys=new Set(),seaEffects=[],seaObstacles=[],seaRandom=seeded(56241);
 let seaState=structuredClone(TIDE_INITIAL),seaPaused=false,seaDialog=null,seaClock=0,seaCooldown=0,seaSaveFailed=false;
 const seaPlayer={x:0,z:10,face:{x:0,z:-1},walk:0};
+const seaBoss=createBelrok();let seaArena=false;
 try{const raw=localStorage.getItem(SEA_SAVE);if(raw)seaState=decodeTide(raw);}catch{}
 function saveSea(){try{localStorage.setItem(SEA_SAVE,JSON.stringify(seaState));seaSaveFailed=false;}catch{seaSaveFailed=true;}}
 function seaTalk(title,lines,after){seaKeys.clear();seaDialog={title,lines,index:0,after};el('chapterSpeaker').textContent=title;el('chapterText').textContent=lines[0];el('chapterDialog').classList.remove('hidden');el('chapterNext').focus();}
@@ -159,20 +219,26 @@ function seaAdvance(){if(!seaDialog)return;if(++seaDialog.index<seaDialog.lines.
 const seaObjects=[{x:4,z:3,kind:'naru',name:'나루 · 제방지기'},{x:-6,z:9,kind:'child',name:'도하 · 작은 배의 주인'},{x:-12,z:-4,kind:'gate',index:0,name:'서쪽 저류 수문'},{x:12,z:-15,kind:'gate',index:1,name:'동쪽 배수 수문'},{x:0,z:-14,kind:'gauge',name:'중앙 수압계'},{x:0,z:-32,kind:'foregate',name:'문지기의 수문'},{x:-8.5,z:-12,kind:'return',name:'오래된 되돌림 수로'},{x:-4.7,z:13,kind:'launch',name:'작은 배의 선착장'}];
 function seaVisible(o){return o.kind==='return'?(seaState.boat.stage!=='unknown'||seaState.boat.met&&tideIntel(seaState)&&tideState(seaState.gates)==='draining'):o.kind==='launch'?['repaired','sailing','returned','complete'].includes(seaState.boat.stage):true;}
 function seaNearest(){return seaObjects.filter(o=>seaVisible(o)&&distance(o,seaPlayer)<3.7).sort((a,b)=>distance(a,seaPlayer)-distance(b,seaPlayer))[0];}
-function seaInteract(){if(seaPaused)return;if(seaDialog){seaAdvance();return;}const o=seaNearest();if(!o)return;
- if(o.kind==='naru'){if(!seaState.introduced)seaTalk(o.name,SWAEHAE_SCENES.naru,()=>{seaState.introduced=true;saveSea();});else seaTalk(o.name,[seaState.foregate?'“물을 내보내는 것과, 길을 열어 두는 건 다르죠. 문 너머에서도 그걸 잊지 말아요.”':tideIntel(seaState)?'“밀려날 때는 넓은 길이 위험하고, 돌아올 때는 좁은 홈이 위험해져요. 흐름이 바뀌는 순간 정비 통로를 살펴보세요.”':'“저류지만 열 때, 배수로만 열 때, 둘 다 열 때. 수압계에 직접 남긴 관측이 있나요? 같은 파도도 돌아오는 길은 달라요.”']);}
+function seaInteract(){if(seaPaused)return;if(seaDialog){seaAdvance();return;}
+ if(seaArena){
+  if(seaBoss.active){divertBelrok(seaBoss,seaPlayer,seaState.boat.stage==='complete');return;}
+  if(seaState.boss.defeated&&!seaState.boss.rewritten&&distance(seaPlayer,BELROK)<4){seaTalk('RE:COMMAND · 돌아올 길을 지켜라',BELROK_ENDING,()=>{seaState.boss.rewritten=true;saveSea();seaArena=false;seaPlayer.x=0;seaPlayer.z=10;seaEffects.length=0;});return;}
+  if(distance(seaPlayer,BELROK.entry)<4){seaArena=false;seaPlayer.x=0;seaPlayer.z=-29;seaEffects.length=0;}return;
+ }
+ const o=seaNearest();if(!o)return;
+ if(o.kind==='naru'){if(!seaState.introduced)seaTalk(o.name,SWAEHAE_SCENES.naru,()=>{seaState.introduced=true;saveSea();});else seaTalk(o.name,[seaState.boss.rewritten?'나루: “돌아올 길은 열어 두었어요. 언제 출항할지는 우리가 정할게요.”':seaState.boat.stage==='complete'?BELROK_CLUE:seaState.foregate?'“물을 내보내는 것과, 길을 열어 두는 건 다르죠. 문 너머에서도 그걸 잊지 말아요.”':tideIntel(seaState)?'“밀려날 때는 넓은 길이 위험하고, 돌아올 때는 좁은 홈이 위험해져요. 흐름이 바뀌는 순간 정비 통로를 살펴보세요.”':'“저류지만 열 때, 배수로만 열 때, 둘 다 열 때. 수압계에 직접 남긴 관측이 있나요? 같은 파도도 돌아오는 길은 달라요.”']);}
  if(o.kind==='child'){
   if(seaState.boat.stage==='returned')seaTalk('돌아오는 배',[
    '종이배가 도하의 손끝으로 돌아왔다. 접힌 돛에는 낯선 물때가 묻어 있지만, 배는 아직 물 위에 떠 있다.',
    '도하: “돌아왔어요! 이제 어디로 갔다 왔는지 물어볼 수 있겠네요.”\n루미: “목적지를 정해 주지 않아도, 돌아올 길을 만들어 줄 수는 있군요.”',
-   '히든 퀘스트 「돌아오는 배」 완료\n물길의 기억 획득 · 밀려나는 물과 돌아오는 물은 서로 다른 홈을 따른다. 문지기 앞의 정비 수로에도 같은 표식이 있다.'
+   '히든 퀘스트 「돌아오는 배」 완료\n물길의 기억 획득 · 밀려나는 물과 돌아오는 물은 서로 다른 홈을 따른다. 문지기 앞의 정비 수로에도 같은 표식이 있다.',BELROK_CLUE
   ],()=>{boatAction(seaState,'claim');saveSea();});
   else if(seaState.boat.stage==='complete')seaTalk(o.name,['도하: “다음에는 제가 띄울 거예요. 돌아올 길은 이제 아니까요.”\n물길의 기억은 발견 기록에 남아 있다.']);
   else if(seaState.boat.met)seaTalk(o.name,[boatHint(seaState)]);
   else seaTalk(o.name,[...SWAEHAE_SCENES.child,'도하: “돌아올 길이 있는지, 먼저 물을 봐 줄래요?”'],()=>{boatAction(seaState,'meet');saveSea();});
  }
  if(o.kind==='return'){
-  if(seaState.boat.stage==='unknown'){if(boatAction(seaState,'chart')){saveSea();seaTalk('히든 퀘스트 발견 · 돌아오는 배',['빠져나간 물 아래에 굽은 화살표가 드러났다. 세 관측의 눈금과 맞아떨어진다. 항구로 돌아오는 작은 수로다.','통로를 막은 돌과 묵은 밧줄이 보인다. 두 수문을 모두 닫아 물을 멈춘 뒤 수리하자.']);}}
+  if(seaState.boat.stage==='unknown'){if(boatAction(seaState,'chart')){saveSea();seaTalk('히든 퀘스트 발견 · 돌아오는 배',['빠져나간 물 아래에 갈라진 원의 표식이 나타났다. 세 관측의 눈금과 맞아떨어진다. 항구로 돌아오는 작은 수로다.','통로를 막은 돌과 묵은 밧줄이 보인다. 두 수문을 모두 닫아 물을 멈춘 뒤 수리하자.']);}}
   else if(seaState.boat.stage==='charted'){if(boatAction(seaState,'repair')){saveSea();seaTalk(o.name,['물살이 멎었다. 끼어 있던 돌을 빼고 묵은 밧줄을 걷어냈다. 되돌림 수로가 항구의 물길과 이어진다.','두 수문을 열어 순환을 회복한 뒤, 도하 옆 작은 선착장에서 종이배를 띄워 보자.']);}else seaTalk(o.name,['흐르는 물에 손을 넣기에는 위험하다. 서쪽과 동쪽 수문을 모두 닫은 뒤 수리하자.']);}
   else seaTalk(o.name,['복구된 홈을 따라 물이 돌아온다.\n'+boatHint(seaState)]);
  }
@@ -182,10 +248,14 @@ function seaInteract(){if(seaPaused)return;if(seaDialog){seaAdvance();return;}co
  }
  if(o.kind==='gate'){if(!seaState.introduced){seaTalk(o.name,['레버에는 제방지기의 봉인이 걸려 있다. 먼저 나루와 이야기하자.']);return;}seaState.gates[o.index]=!seaState.gates[o.index];saveSea();seaTalk(o.name,[(seaState.gates[o.index]?'수문을 열었다.':'수문을 닫았다.')+'\n'+tideDescription(seaState.gates),'눈금의 변화는 중앙 수압계에서 기록할 수 있다.']);}
  if(o.kind==='gauge'){observeTide(seaState);saveSea();seaTalk(o.name,[tideDescription(seaState.gates),tideIntel(seaState)?'세 관측이 하나로 이어진다.\n같은 수로도 밀려갈 때와 되돌아올 때 물의 힘이 다르다. 보스가 흐름을 뒤집을 때, 안전한 곳도 바뀔 것이다.':'흐름을 바꾸어 다시 관측하면, 수로가 어느 방향으로 힘을 전달하는지 비교할 수 있다.']);}
- if(o.kind==='foregate'){if(!seaState.introduced)return;if(tideState(seaState.gates)!=='circulation'){seaTalk(o.name,['보행교가 들려 있다. 한쪽에 고인 수압 때문에 내릴 수 없다.\n저류지와 배수로를 함께 열어 물이 순환하게 해야 한다.']);return;}seaTalk('역류의 문지기 · 벨로크',[...SWAEHAE_SCENES.foregate,...(seaState.boat.stage==='complete'?['물길의 기억이 겹친다. 종이배가 돌아왔던 홈과 같은 표식이다.\n루미: “힘으로 버티기보다, 돌아오는 길을 먼저 봐야겠어요.”']:[])],()=>{seaState.foregate=true;saveSea();});}
+ if(o.kind==='foregate'){if(!seaState.introduced)return;if(tideState(seaState.gates)!=='circulation'){seaTalk(o.name,['보행교가 들려 있다. 한쪽에 고인 수압 때문에 내릴 수 없다.\n저류지와 배수로를 함께 열어 물이 순환하게 해야 한다.']);return;}
+  if(seaState.boss.rewritten){seaTalk('귀환 항로의 수호자',['벨로크: [귀환 항로 보호 중. 출항 여부는 주민에게 위임.]','문지기는 더 이상 항구를 가두지 않는다.']);return;}
+  const enter=()=>{seaState.foregate=true;saveSea();seaArena=true;seaEffects.length=0;if(seaState.boss.defeated){seaBoss.active=false;seaBoss.hp=0;seaBoss.hero=100;seaBoss.phase='won';seaPlayer.x=0;seaPlayer.z=-50;}else startBelrok(seaBoss,seaPlayer);seaPlayer.face={x:0,z:-1};};
+  seaTalk('역류의 문지기 · 벨로크',[...SWAEHAE_SCENES.foregate,...(seaState.boat.stage==='complete'?['물길의 기억이 겹친다. 종이배가 돌아왔던 홈과 같은 갈라진 원이다.\n'+BELROK_CLUE]:[]),'전장 진입 · 토출과 회수의 원을 피하고 과압 방출 때 공격하자.\nJ 검격 · L 파동 · K / Space 회피 · E 정비 장치'],enter);
+ }
 }
 const seaGround=new Geometry(),seaProps=new Geometry();
-for(let x=-55;x<55;x+=3)for(let z=-60;z<40;z+=3){const land=Math.abs(x)<20&&z<18&&z>-43,c=land?[.39,.43,.38]:[.16,.38,.45];seaGround.quad([x,0,z],[x+3,0,z],[x+3,0,z+3],[x,0,z+3],c);}
+for(let x=-55;x<55;x+=3)for(let z=-80;z<40;z+=3){const land=Math.abs(x)<20&&z<18&&z>-72,c=land?[.39,.43,.38]:[.16,.38,.45];seaGround.quad([x,0,z],[x+3,0,z],[x+3,0,z+3],[x,0,z+3],c);}
 const seaRoad=(x,z,w,l)=>seaProps.quad([x-w/2,.08,z-l/2],[x+w/2,.08,z-l/2],[x+w/2,.08,z+l/2],[x-w/2,.08,z+l/2],[.57,.54,.43]);seaRoad(0,-9,5,52);seaRoad(-6,-4,18,3);seaRoad(6,-15,18,3);
 for(const x of[-20,20])for(let z=-43;z<18;z+=3){seaProps.cone(x,0,z,.65,.85,[.47,.5,.43],4,.6);seaObstacles.push({x,z,r:.6});}
 for(const side of[-1,1])for(let z=-39;z<14;z+=7){const x=side*17;seaProps.cone(x,0,z,.18,2.7,[.28,.32,.29],6,.12);seaProps.cone(x,2.7,z,.34,.5,[.9,.74,.43],6,.24);seaProps.cone(x,3.2,z,.43,.25,[.28,.41,.4],6);seaObstacles.push({x,z,r:.3});}
@@ -199,14 +269,32 @@ function seaSprite(key,color,hat=false){return seaRenderer.texture('sea-person-'
 const seaHero=seaSprite('hero','#466974'),seaNaru=seaSprite('naru','#7e7860',true),seaChild=seaSprite('child','#8c8f60');
 const seaLabels=seaObjects.map(o=>seaRenderer.texture('sea-label-'+o.kind+o.index,c=>{c.font='22px Malgun Gothic';c.textAlign='center';c.shadowColor='#0b2330';c.shadowBlur=5;c.fillStyle='#f0d9a2';c.fillText(o.name,256,36);},512,64));
 const seaGlow=seaRenderer.texture('sea-glow',c=>{const a=c.createRadialGradient(64,64,0,64,64,60);a.addColorStop(0,'#fff0ba');a.addColorStop(.25,'#dac38299');a.addColorStop(1,'#e3ce9700');c.fillStyle=a;c.fillRect(0,0,128,128);});
-function seaDraw(){seaRenderer.begin(seaPlayer.x,seaPlayer.z,.012);seaRenderer.mesh(seaGroundMesh);seaRenderer.mesh(seaPropsMesh);const g=new Geometry(),status=tideState(seaState.gates),flow=status==='circulation'?1:status==='draining'?-1:0.3,waterY=status==='filling'?.36:status==='draining'?.04:.2;
+// Replaceable 2D art; the combat model never depends on sprite dimensions.
+const seaBossArt=seaRenderer.texture('belrok-closed',c=>drawBelrokArt(c,false),384,384),seaBossOpenArt=seaRenderer.texture('belrok-open',c=>drawBelrokArt(c,true),384,384);
+function drawBelrokArt(c,open){c.scale(3,3);c.fillStyle='#102f3466';c.beginPath();c.ellipse(64,120,45,7,0,0,Math.PI*2);c.fill();c.fillStyle='#263f46';c.fillRect(35,91,22,29);c.fillRect(72,91,22,29);c.fillStyle='#a78957';c.fillRect(24,44,80,54);c.fillStyle='#3d6568';c.fillRect(31,48,66,45);c.fillStyle='#6d7767';c.fillRect(15,53,17,44);c.fillRect(97,53,17,44);c.fillStyle='#3d5c60';c.beginPath();c.ellipse(64,34,29,27,0,Math.PI,Math.PI*2);c.fill();c.fillRect(35,33,58,18);c.strokeStyle='#ba9d62';c.lineWidth=5;c.strokeRect(35,33,58,18);c.fillStyle='#8ce3db';c.fillRect(45,35,38,8);for(const x of[36,91])for(const y of[49,65,84]){c.fillStyle='#d6bc83';c.beginPath();c.arc(x,y,2,0,Math.PI*2);c.fill();}c.fillStyle=open?'#aaf6e8':'#293f43';c.beginPath();c.arc(64,70,20,0,Math.PI*2);c.fill();c.strokeStyle='#e1c889';c.lineWidth=3;c.stroke();c.strokeStyle=open?'#fcffe5':'#e2b564';c.lineWidth=2;c.beginPath();c.moveTo(64,70);c.lineTo(open?54:73,56);c.stroke();if(open){c.fillStyle='#576f68';c.fillRect(33,53,8,33);c.fillRect(88,53,8,33);}c.fillStyle='#36565b';c.fillRect(21,6,6,40);c.fillRect(101,13,6,33);}
+function drawBelrokArena(){
+ const g=new Geometry(),b=seaBoss,open=b.phase==='open'||seaState.boss.defeated;
+ g.disc(0,.12,-54,12,[.28,.36,.36],64);g.ring(0,.15,-54,12,[.75,.66,.43],64,.17);
+ for(const x of[-7,7])for(let z=-64;z<-43;z+=2)g.quad([x-.45,.16,z],[x+.45,.16,z],[x+.45,.16,z+2],[x-.45,.16,z+2],[.22,.49,.54]);
+ for(let i=0;i<12;i++){const a=i*Math.PI/6,x=Math.cos(a)*12,z=-54+Math.sin(a)*12;g.cone(x,.1,z,.45,2.8,[.36,.48,.47],6,.3);g.cone(x,2.9,z,.24,.4,[.77,.71,.48],5);}
+ const d=BELROK.device;g.cone(d.x,.2,d.z,.7,1.1,[.57,.56,.4],7,.5);g.ring(d.x,.22,d.z,1.4,b.diverted?[.4,.95,.8]:[.92,.77,.41],32,.1,.35,Math.PI*2-.35);
+ // Broken-circle mark is shared with the repaired paper-boat channel.
+ g.ring(d.x,1.32,d.z,.6,[.96,.87,.57],28,.1,.35,Math.PI*2-.35);
+ for(const h of b.hazards){if(h.done)continue;g.ring(h.x,.24,h.z,h.r,b.diverted&&b.phase==='back'?[.3,.85,.72]:[1,.4,.24],40,.09);if(b.phase.endsWith('Warn')){const t=b.time/({outWarn:1.8,returnWarn:2.8,lockWarn:1.5}[b.phase]);g.ring(h.x,.245,h.z,Math.max(.1,h.r*t),[.86,.64,.36],32,.045);}}
+ if(b.phase==='returnWarn')for(let i=0;i<6;i++){const a=i*Math.PI/3+seaClock;g.cone(Math.cos(a)*2,3.2+Math.sin(a*3)*.3,-54+Math.sin(a)*2,.12,.5,[.3,.85,.95],5);}
+ seaRenderer.drawDynamic(g);seaVFX.draw(seaEffects,[],seaClock);
+ seaRenderer.sprite(open?seaBossOpenArt:seaBossArt,0,0,-54,5.4,6.6,seaState.boss.rewritten?.7:1);seaRenderer.sprite(seaHero,seaPlayer.x,0,seaPlayer.z,1.9,2.6,b.invul>0&&Math.sin(seaClock*40)>0?.45:1);seaRenderer.finish();
+ el('chapterPrompt').textContent=b.active?(distance(seaPlayer,d)<3?'E · '+(seaState.boat.stage==='complete'?'갈라진 원 · 정비 장치':'낯선 정비 표식'):''):distance(seaPlayer,BELROK)<4&&!seaState.boss.rewritten?'E · 명령을 다시 쓰기':distance(seaPlayer,BELROK.entry)<4?'E · 항구로 돌아가기':'';
+ el('bossName').textContent='역류의 문지기 · 벨로크';el('bossHealth').style.width=b.hp/BELROK.hp*100+'%';el('heroHealth').style.width=b.hero+'%';el('bossNumbers').textContent=b.hp+' / '+BELROK.hp+' · 여행자 '+b.hero+' / 100';el('bossPhase').textContent=belrokPhaseText(b)+(b.diverted?' · 우회 성공':'');el('bossMessage').textContent=b.message||'바닥의 원을 피하고, 과압 방출 때 가슴을 공격하세요.';el('bossSkills').textContent='J 검격 · L 파동 '+(b.wave>0?b.wave.toFixed(1)+'초':'준비')+' · K 회피 '+(b.dash>0?b.dash.toFixed(1)+'초':'준비');
+}
+function seaDraw(){el('bossHud').classList.toggle('hidden',!seaArena);el('harborObjective').classList.toggle('hidden',seaArena);el('boatQuest').classList.toggle('hidden',seaArena||!seaState.boat.met);seaRenderer.begin(seaPlayer.x,seaPlayer.z,.012);seaRenderer.mesh(seaGroundMesh);if(seaArena){drawBelrokArena();return;}seaRenderer.mesh(seaPropsMesh);const g=new Geometry(),status=tideState(seaState.gates),flow=status==='circulation'?1:status==='draining'?-1:0.3,waterY=status==='filling'?.36:status==='draining'?.04:.2;
  for(const x of[-4.7,4.7])for(let z=-38;z<13;z+=1.5){const dy=Math.sin(seaClock*3+z*.5)*.018;g.quad([x-.6,waterY+dy,z],[x+.6,waterY+dy,z],[x+.6,waterY+dy,z+1.5],[x-.6,waterY+dy,z+1.5],[.24,.58,.61]);const p=z+(seaClock*flow)%1.5;g.ring(x,waterY+.03,p,.32,[.61,.8,.74],8,.025);}
  for(const z of[-19,9])g.quad([-4.7,waterY,z-.6],[4.7,waterY,z-.6],[4.7,waterY,z+.6],[-4.7,waterY,z+.6],[.24,.58,.61]);
  for(let i=0;i<13;i++){const x=-3+i*.5,z=-24,y=status==='circulation'?.12:.3+Math.abs(x)*.65;g.cone(x,y,z,.21,.13,[.6,.57,.44],4,.2);}
  g.ring(0,.15,-32,3.3,[.64,.7,.58],48,.12);for(let i=0;i<8;i++){const a=i/8*Math.PI*2;g.cone(Math.cos(a)*3.3,.1,-32+Math.sin(a)*3.3,.35,2.1+(i%2)*.7,[.39,.49,.46],5,.26);}
  // The hidden channel is revealed by drained water; repairs and the paper boat persist.
  const returnSite=seaObjects.find(o=>o.kind==='return'),b=seaState.boat;
- if(seaVisible(returnSite)){g.ring(-8.5,.17,-12,1.25,[.9,.77,.46],24,.07);for(let i=0;i<5;i++)g.cone(-8.5+i*.65,.1,-12,.1,.12,[.89,.78,.5],3,.04);}
+ if(seaVisible(returnSite)){g.ring(-8.5,.17,-12,1.25,[.9,.77,.46],24,.07,.35,Math.PI*2-.35);for(let i=0;i<5;i++)g.cone(-8.5+i*.65,.1,-12,.1,.12,[.89,.78,.5],3,.04);}
  if(['repaired','sailing','returned','complete'].includes(b.stage)){
   g.quad([-9,.13,-12.6],[-4.7,.13,-12.6],[-4.7,.13,-11.4],[-9,.13,-11.4],[.3,.58,.57]);
   for(let i=0;i<5;i++)g.cone(-4.7+i*.15,.2,12.1,.16,.15,[.7,.6,.4],4,.16);
@@ -217,20 +305,31 @@ function seaDraw(){seaRenderer.begin(seaPlayer.x,seaPlayer.z,.012);seaRenderer.m
  }
  seaRenderer.drawDynamic(g);seaVFX.draw(seaEffects,[],seaClock);seaRenderer.sprite(seaHero,seaPlayer.x,0,seaPlayer.z,1.9,2.6);seaRenderer.sprite(seaNaru,4,0,3,1.9,2.6);seaRenderer.sprite(seaChild,-6,0,9,1.5,2.05);
  seaObjects.forEach((o,i)=>{if(seaVisible(o))seaRenderer.sprite(seaLabels[i],o.x,o.kind==='gate'?3:3.2,o.z,5.5,.65);});for(const side of[-1,1])for(let z=-39;z<14;z+=7)seaRenderer.sprite(seaGlow,side*17,2.2,z,1.6,1.6,.5);seaRenderer.finish();
- const nearest=seaNearest();el('chapterPrompt').textContent=nearest&&!seaDialog?'E · '+nearest.name:'';el('tideStatus').textContent=tideDescription(seaState.gates);el('chapterRecord').textContent='수압 관측 '+seaState.observations.filter(Boolean).length+' / 3'+(tideIntel(seaState)?' · 역류 원리 발견':'')+(seaSaveFailed?' · 저장 불가':'');el('chapterObjective').textContent=seaState.foregate?'쇄해 도입부 완료 · 항구를 더 둘러보세요.':!seaState.introduced?'제방지기 나루와 대화하세요.':status==='circulation'?'내려간 보행교를 건너 북쪽 수문을 조사하세요.':'두 수문의 흐름을 바꾸고 수압계를 관측하세요.';
+ const nearest=seaNearest();el('chapterPrompt').textContent=nearest&&!seaDialog?'E · '+nearest.name:'';el('tideStatus').textContent=tideDescription(seaState.gates);el('chapterRecord').textContent='수압 관측 '+seaState.observations.filter(Boolean).length+' / 3'+(tideIntel(seaState)?' · 역류 원리 발견':'')+(seaSaveFailed?' · 저장 불가':'');el('chapterObjective').textContent=seaState.boss.rewritten?'쇄해 1막 완료 · 돌아올 길을 지켜라.':seaState.boss.defeated?'문지기의 수문에서 남은 명령을 다시 쓰세요.':seaState.foregate?'북쪽 수문을 조사해 벨로크에 도전하세요.':!seaState.introduced?'제방지기 나루와 대화하세요.':status==='circulation'?'내려간 보행교를 건너 북쪽 수문을 조사하세요.':'두 수문의 흐름을 바꾸고 수압계를 관측하세요.';
  el('boatQuest').classList.toggle('hidden',!b.met);el('boatTitle').textContent=b.stage==='unknown'?'도하의 작은 부탁':b.stage==='complete'?'돌아오는 배 · 완료':'히든 퀘스트 · 돌아오는 배';el('boatHint').textContent=boatHint(seaState);el('boatProgress').textContent=b.stage==='sailing'?Math.floor(b.elapsed/14*100)+'%':b.stage==='complete'?'획득: 물길의 기억':'';
 }
-function seaTick(dt){if(seaPaused||seaDialog)return;seaClock+=dt;if(tickBoat(seaState,dt))saveSea();seaCooldown=Math.max(0,seaCooldown-dt);let x=Number(seaKeys.has('d')||seaKeys.has('arrowright'))-Number(seaKeys.has('a')||seaKeys.has('arrowleft')),z=Number(seaKeys.has('s')||seaKeys.has('arrowdown'))-Number(seaKeys.has('w')||seaKeys.has('arrowup'));const d=normalize(x,z);if(x||z){seaPlayer.face=d;seaPlayer.walk+=dt*9;}const blockers=tideState(seaState.gates)==='circulation'?seaObstacles:[...seaObstacles,...Array.from({length:13},(_,i)=>({x:-3+i*.5,z:-24,r:.42}))];const p=resolveMove(seaPlayer,d.x*6.2*dt,d.z*6.2*dt,blockers);seaPlayer.x=clamp(p.x,-18.5,18.5);seaPlayer.z=clamp(p.z,-40,16);for(let i=seaEffects.length-1;i>=0;i--)if((seaEffects[i].life-=dt)<=0)seaEffects.splice(i,1);}
-function seaAttack(kind){if(seaPaused||seaDialog||seaCooldown>0)return;seaCooldown=kind==='wave'?.75:.38;seaEffects.push({kind,x:seaPlayer.x,z:seaPlayer.z,angle:Math.atan2(seaPlayer.face.z,seaPlayer.face.x),life:kind==='wave'?.75:.32,max:kind==='wave'?.75:.32});}
+function seaTick(dt){if(seaPaused||seaDialog)return;if(seaArena){seaArenaTick(dt);return;}seaClock+=dt;if(tickBoat(seaState,dt))saveSea();seaCooldown=Math.max(0,seaCooldown-dt);let x=Number(seaKeys.has('d')||seaKeys.has('arrowright'))-Number(seaKeys.has('a')||seaKeys.has('arrowleft')),z=Number(seaKeys.has('s')||seaKeys.has('arrowdown'))-Number(seaKeys.has('w')||seaKeys.has('arrowup'));const d=normalize(x,z);if(x||z){seaPlayer.face=d;seaPlayer.walk+=dt*9;}const blockers=tideState(seaState.gates)==='circulation'?seaObstacles:[...seaObstacles,...Array.from({length:13},(_,i)=>({x:-3+i*.5,z:-24,r:.42}))];const p=resolveMove(seaPlayer,d.x*6.2*dt,d.z*6.2*dt,blockers);seaPlayer.x=clamp(p.x,-18.5,18.5);seaPlayer.z=clamp(p.z,-40,16);for(let i=seaEffects.length-1;i>=0;i--)if((seaEffects[i].life-=dt)<=0)seaEffects.splice(i,1);}
+function seaAttack(kind){if(seaPaused||seaDialog)return;if(seaArena){if(!hitBelrok(seaBoss,seaPlayer,kind))return;}else{if(seaCooldown>0)return;seaCooldown=kind==='wave'?.75:.38;}seaEffects.push({kind,x:seaPlayer.x,z:seaPlayer.z,angle:Math.atan2(seaPlayer.face.z,seaPlayer.face.x),life:kind==='wave'?.75:.32,max:kind==='wave'?.75:.32});}
+function seaArenaTick(dt){
+ const b=seaBoss;seaClock+=dt;tickBelrok(b,seaPlayer,dt);
+ if(b.phase==='lost'){seaArena=false;seaEffects.length=0;seaPlayer.x=0;seaPlayer.z=-29;seaKeys.clear();seaTalk('제방 앞에서 다시',['루미: “괜찮아요. 돌아오는 길은 남아 있어요.”\n히든 퀘스트와 관측 기록은 유지됩니다. 수문을 조사하면 체력을 회복한 상태로 재도전합니다.']);return;}
+ if(b.phase==='won'&&!seaState.boss.defeated){seaState.boss.defeated=true;seaEffects.length=0;seaKeys.clear();saveSea();}
+ let x=Number(seaKeys.has('d')||seaKeys.has('arrowright'))-Number(seaKeys.has('a')||seaKeys.has('arrowleft')),z=Number(seaKeys.has('s')||seaKeys.has('arrowdown'))-Number(seaKeys.has('w')||seaKeys.has('arrowup'));let d=normalize(x,z);if(x||z)seaPlayer.face=d;else if(b.dashing>0)d=seaPlayer.face;
+ const p=resolveMove(seaPlayer,d.x*(b.dashing>0?18:6.2)*dt,d.z*(b.dashing>0?18:6.2)*dt,[{x:0,z:-54,r:1.7}]),dx=p.x,dz=p.z+54,len=Math.hypot(dx,dz),factor=len>11.4?11.4/len:1;seaPlayer.x=dx*factor;seaPlayer.z=-54+dz*factor;
+ if(seaKeys.has('j'))seaAttack('slash');
+ for(const h of b.bursts.splice(0))seaEffects.push({kind:'enemy',boss:true,water:true,x:h.x,z:h.z,r:h.r,life:.65,max:.65});
+ for(let i=seaEffects.length-1;i>=0;i--)if((seaEffects[i].life-=dt)<=0)seaEffects.splice(i,1);
+}
 function pauseSea(){seaPaused=!seaPaused;seaKeys.clear();el('chapterPause').textContent=seaPaused?'계속하기':'일시정지';}
-el('chapterJournal').onclick=()=>{if(seaDialog||seaPaused)return;const s=seaState,b=s.boat;seaTalk('쇄해 · 발견 기록',[
+el('chapterJournal').onclick=()=>{if(seaDialog||seaPaused||seaArena)return;const s=seaState,b=s.boat;seaTalk('쇄해 · 발견 기록',[
  '수압 관측 '+s.observations.filter(Boolean).length+' / 3\n'+s.observations.map((v,i)=>(v?'● ':'○ ')+['저류: 들어오는 물의 압력','배수: 되돌림 표식','순환: 물이 돌아오는 경로'][i]).join('\n'),
  b.met?(b.stage==='unknown'?'도하의 작은 부탁':'돌아오는 배')+'\n'+boatHint(s):'아직 주민들의 작은 부탁을 기록하지 않았다.',
- b.stage==='complete'?'물길의 기억\n밀려가는 길과 돌아오는 길은 다르다. 벨로크의 수문 옆 정비 수로에도 같은 표식이 있다.\n보스전과 전투 이후의 항로 선택은 다음 제작 범위다.':'획득한 물길의 기억이 없다.'
+ b.stage==='complete'?'물길의 기억\n'+BELROK_CLUE:'획득한 물길의 기억이 없다.'
 ]);};
+el('seaSlash').onpointerdown=e=>{e.preventDefault();seaAttack('slash');};el('seaWave').onclick=()=>seaAttack('wave');el('seaDash').onclick=()=>{if(seaArena&&!seaDialog&&!seaPaused)dashBelrok(seaBoss);};
 el('chapterPause').onclick=pauseSea;el('chapterNext').onclick=seaAdvance;el('chapterInteract').onclick=seaInteract;
 for(const b of document.querySelectorAll('[data-sea-key]')){b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);seaKeys.add(b.dataset.seaKey);};b.onpointerup=b.onpointercancel=b.onlostpointercapture=()=>seaKeys.delete(b.dataset.seaKey);}
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['BUTTON','A'].includes(e.target?.tagName)&&['enter',' '].includes(k))return;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();if(e.repeat)return;if(k==='e'||k==='enter'&&seaDialog){seaInteract();return;}if(k==='escape'){pauseSea();return;}if(seaDialog)return;seaKeys.add(k);if(k==='j')seaAttack('slash');if(k==='l')seaAttack('wave');});addEventListener('keyup',e=>seaKeys.delete(e.key.toLowerCase()));addEventListener('blur',()=>{seaKeys.clear();if(!seaPaused)pauseSea();saveSea();});document.addEventListener('visibilitychange',()=>{if(document.hidden){seaKeys.clear();if(!seaPaused)pauseSea();saveSea();}});addEventListener('pagehide',saveSea);
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['BUTTON','A'].includes(e.target?.tagName)&&['enter',' '].includes(k))return;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();if(e.repeat)return;if(k==='e'||k==='enter'&&seaDialog){seaInteract();return;}if(k==='escape'){pauseSea();return;}if(seaDialog)return;seaKeys.add(k);if(seaArena&&(k==='k'||k===' '))dashBelrok(seaBoss);if(k==='j')seaAttack('slash');if(k==='l')seaAttack('wave');});addEventListener('keyup',e=>seaKeys.delete(e.key.toLowerCase()));addEventListener('blur',()=>{seaKeys.clear();if(!seaPaused)pauseSea();saveSea();});document.addEventListener('visibilitychange',()=>{if(document.hidden){seaKeys.clear();if(!seaPaused)pauseSea();saveSea();}});addEventListener('pagehide',saveSea);
 let seaPrevious=performance.now(),seaAccumulator=0;function seaLoop(now){seaAccumulator+=clamp((now-seaPrevious)/1000,0,.15);seaPrevious=now;let n=0;while(seaAccumulator>=1/60&&n++<8){seaTick(1/60);seaAccumulator-=1/60;}if(n>=8)seaAccumulator=0;seaDraw();requestAnimationFrame(seaLoop);}requestAnimationFrame(seaLoop);
 if(!seaState.arrival)seaTalk('쇄해 · 닫힌 길의 바다',SWAEHAE_SCENES.arrival,()=>{seaState.arrival=true;saveSea();});
 window.recommandSea={snapshot:()=>JSON.parse(JSON.stringify({state:seaState,player:seaPlayer,paused:seaPaused,tide:tideState(seaState.gates),vfxReady:seaVFX.ready,backend:seaRenderer.backend}))};
