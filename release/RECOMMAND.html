@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101e29"><title>리커맨드 · RE:COMMAND</title><style>:root{font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;color:#f4f3de;background:#101e29;font-synthesis:none}*{box-sizing:border-box}body{margin:0;overflow:hidden}button,a,input{-webkit-tap-highlight-color:transparent}button{font:inherit;color:inherit;background:#152e35cc;border:1px solid #b7cebd40;border-radius:6px;padding:10px 15px;cursor:pointer}button:hover{background:#36554c;border-color:#d4ebc18c}button:focus-visible,a:focus-visible{outline:2px solid #e7d493;outline-offset:3px}kbd{font-family:inherit;font-size:10px;color:#ddd6b7}#world,#vignette{position:fixed;inset:0;width:100%;height:100%}#vignette{pointer-events:none;background:linear-gradient(#0a182550,transparent 23%,transparent 73%,#08171bc9),radial-gradient(ellipse,transparent 50%,#0a1d264d)}header{position:fixed;top:0;left:0;right:0;padding:23px 32px;display:flex;justify-content:space-between;align-items:center;z-index:3}.brand{text-decoration:none;color:#ecedce;letter-spacing:3px;font-weight:700;font-size:14px}.brand span{letter-spacing:1px;font-weight:400;color:#bdcbbb;margin-left:15px;font-size:12px}.header-actions{display:flex;align-items:center;gap:10px}.version{font-size:9px;letter-spacing:2px;color:#b5c6ba;margin-right:14px}.header-actions button{font-size:11px;padding:8px 12px}#hud{position:fixed;inset:0;pointer-events:none}.planet{position:absolute;top:105px;left:40px}.eyebrow{font-size:10px;letter-spacing:2.8px;color:#c6d4ac}.planet h1{margin:7px 0 1px;font-size:43px;font-weight:500;letter-spacing:-2px}.planet h1 span{font-size:15px;font-weight:400;letter-spacing:2px;color:#c6d3be;margin-left:10px}.planet p{font-size:12px;color:#c5d0bc;margin-top:2px}.planet-dots{display:flex;gap:10px;margin-top:22px}.planet-dots i{width:6px;height:6px;border:1px solid #d8dec0;border-radius:50%;opacity:.4}.planet-dots .active{opacity:1;background:#dfd59c;box-shadow:0 0 12px #e6d789}.objective{position:absolute;right:32px;top:110px;width:255px;padding:18px 20px;background:linear-gradient(120deg,#102c31d9,#102c3166);border-left:2px solid #cfc58c}.objective h2{font-size:16px;font-weight:500;margin:9px 0}.objective p{font-size:12px;line-height:1.8;color:#d3dbc6;margin:0}#sealProgress{display:flex;gap:7px;margin-top:14px}#sealProgress span{height:3px;width:37px;background:#8a9c8c66}#sealProgress .done{background:#ead592;box-shadow:0 0 10px #ead59266}.vitals{position:absolute;bottom:125px;left:35px;display:flex;gap:12px;align-items:center}.portrait{display:grid;place-items:center;width:48px;height:48px;transform:rotate(45deg);border:1px solid #c9cfa67a;background:#142e33;font-size:27px;color:#f0d294}.vitals>div:last-child{width:205px}.player-label{font-size:11px;margin-bottom:7px}.player-label span{float:right;color:#e8d49b}.bar{height:15px;background:#15292e;position:relative;border:1px solid #b7c39d66;overflow:hidden}.bar i{height:100%;display:block;background:linear-gradient(90deg,#649475,#b8d09a);transition:width .2s}.bar span{position:absolute;inset:0;text-align:center;font-size:9px;line-height:13px}.xp{height:3px;margin-top:5px;background:#ffffff20}.xp i{display:block;height:100%;background:#e6d390}#location{position:absolute;top:80px;left:50%;transform:translateX(-50%);font-size:11px;letter-spacing:4px;color:#d5dec8}#interact{position:absolute;left:50%;bottom:27%;transform:translateX(-50%);font-size:12px;background:#10292ae6;border:1px solid #d0d7af55;padding:10px 18px;border-radius:5px;display:none}#toast{position:absolute;top:25%;left:50%;transform:translateX(-50%);text-align:center;font-size:14px;color:#f8e5af;text-shadow:0 2px 10px #000;transition:opacity .4s;opacity:0;width:80%}.bottom{position:absolute;bottom:23px;left:32px;right:32px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}.keys{font-size:10px;color:#e6dfb9;padding-bottom:15px}.keys span{color:#adbfaf}.skills{display:flex;gap:9px;pointer-events:auto}.skills button{position:relative;overflow:hidden;width:95px;height:71px;padding:8px;background:#102c32db;border:1px solid #d9d6a44d;text-align:left}.skills kbd{display:block;font-size:9px;color:#d4c993}.skills b{display:block;font-size:13px;font-weight:500;margin-top:2px}.skills small{font-size:9px;color:#adbfaf}.skills i{position:absolute;bottom:0;left:0;height:3px;background:#e1c994;width:0}#minimap{position:fixed;right:33px;bottom:123px;width:150px;height:150px;border:1px solid #d4d5a653;border-radius:50%;background:#112f32b8}#overlay{position:fixed;inset:0;background:linear-gradient(90deg,#10252cf5,#10252c77 52%,#10252c11);display:flex;align-items:center;z-index:8}.intro{margin-left:10vw;max-width:490px}.intro h1{font-size:76px;letter-spacing:-5px;font-weight:500;margin:20px 0 5px}.english{font-size:12px;color:#d7d1aa;margin-left:6px}.intro p{line-height:2;font-size:16px;color:#d1d9c6;margin:32px 0}.primary{background:#d7d2a2;color:#193438;padding:16px 23px;font-weight:600;min-width:290px;text-align:left}.primary:hover{background:#f1e6b8}.primary span{float:right}.intro-note{font-size:10px;color:#b5c2b0;line-height:1.9;margin-top:26px;letter-spacing:1px}#continue{display:block;margin-top:10px;min-width:290px}#dialog{position:fixed;bottom:130px;left:50%;transform:translateX(-50%);width:min(650px,90vw);background:#112d32f5;border:1px solid #c4d1a966;border-top:2px solid #e4d19c;padding:22px 28px;z-index:9;box-shadow:0 20px 70px #0006}#dialog h2{font-size:17px;margin:8px 0;color:#ead9a7}#dialog p{font-size:14px;line-height:1.95;margin:8px 0 20px;white-space:pre-line}#dialogNext{float:right;font-size:11px;padding:7px 15px}#dialog:after{content:'';display:block;clear:both}#study{position:fixed;right:0;top:0;bottom:0;width:min(440px,100%);padding:65px 32px 30px;overflow:auto;background:#10282bf8;border-left:1px solid #c5cda855;z-index:12;box-shadow:-30px 0 80px #0005}#study h2{font-size:29px;font-weight:500;line-height:1.5;margin:15px 0 20px}#study p{font-size:12px;color:#c5d0bf;line-height:1.95}#study h3{font-size:14px;margin-top:25px}#study label{display:block;font-size:12px;margin-top:20px}#study input[type=range]{width:100%;accent-color:#dccf93;display:block;margin-top:15px}#study output{float:right;color:#e2cf94}#study pre{font-size:11px;background:#071b20;padding:18px;line-height:1.9;color:#d6d6a7;border-left:2px solid #c6c089}#study .check{display:flex;gap:10px;align-items:center}#study input[type=checkbox]{accent-color:#cdbd80}#study a{display:block;color:#e4d39c;font-size:12px;margin:24px 0}#reset{font-size:11px;color:#e7b7a3}.close{position:absolute;right:23px;top:19px}.muted{opacity:.6}.hidden{display:none!important}#touch{display:none;position:fixed;bottom:115px;left:18px;right:18px;justify-content:space-between;align-items:center;pointer-events:none}.dpad{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,42px);gap:3px}.dpad button,#touch>button{pointer-events:auto;touch-action:none;padding:5px;background:#143338aa}.dpad button:first-child{grid-column:2}.dpad button:nth-child(2){grid-column:1;grid-row:2}.dpad button:nth-child(3){grid-column:2;grid-row:2}.dpad button:nth-child(4){grid-column:3;grid-row:2}@media(pointer:coarse){#touch{display:flex}.vitals{bottom:235px}.skills button{touch-action:none}.keys{display:none}}@media(max-width:760px){header{padding:16px}.brand{font-size:11px}.brand span,.version{display:none}.header-actions button{font-size:10px;padding:7px}.planet{left:20px;top:80px}.planet h1{font-size:29px}.planet p{font-size:10px}.objective{right:15px;top:88px;width:180px;padding:12px}.objective h2{font-size:13px}.objective p{font-size:10px}.eyebrow{font-size:8px}.planet-dots{margin-top:12px}#location{top:62px;font-size:9px;letter-spacing:2px}.bottom{left:15px;right:15px;justify-content:center;bottom:16px}.keys{display:none}.vitals{left:22px}.vitals>div:last-child{width:150px}.portrait{width:35px;height:35px}.skills button{width:88px;height:66px}#minimap{right:18px;bottom:106px;width:105px;height:105px}.intro{margin:0 25px}.intro h1{font-size:56px}.intro .eyebrow{font-size:8px;letter-spacing:1.5px}#dialog{bottom:95px;padding:18px}#dialog p{font-size:12px}#interact{bottom:37%;font-size:10px;width:max-content;max-width:90%}}
+:root{--story-gold:#e5d39a}#choices{display:grid;gap:9px;margin-top:20px}#choices button{text-align:left;font-size:12px;line-height:1.7}#choices button:disabled{opacity:.45;cursor:not-allowed}#choices button:nth-child(2):not(:disabled){border-color:var(--story-gold);color:var(--story-gold)}
+
+#choices button:nth-child(2):not(:disabled){color:inherit;border-color:#b7cebd40}#choices button.alternative{color:#e5d39a!important;border-color:#e5d39a!important}.save-tools{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}.save-tools button{font-size:11px}#dialog{max-height:70vh;overflow:auto}#world{touch-action:none}
+.side-quest{position:absolute;right:32px;top:285px;width:255px;padding:15px 20px;background:#102c3199;border-left:1px solid #b3c4a6}.side-quest h2{font-size:13px;margin:8px 0}.side-quest p{font-size:11px;line-height:1.8;color:#c7d3bd}#bossInfo{position:absolute;top:100px;left:50%;transform:translateX(-50%);width:min(340px,35vw);text-align:center}#bossInfo h2{font-size:13px;color:#e1c694;font-weight:500}.boss-bar{height:6px;background:#152e30;border:1px solid #d0bf8388}.boss-bar i{display:block;height:100%;background:#d1a879;transition:width .2s}#backend,#fps{font-size:10px!important}
+@media(max-width:760px){.side-quest{right:15px;top:275px;width:165px;padding:10px}.side-quest p{font-size:9px}.side-quest h2{font-size:11px}#bossInfo{top:198px;width:45vw;left:27%}#bossInfo h2{font-size:10px}.header-actions{flex-wrap:wrap;max-width:230px;gap:5px}header{align-items:flex-start}.header-actions button{font-size:9px;padding:6px}.planet,.objective{top:105px}#location{top:83px}}
+</style></head>
+<body><canvas id="world" tabindex="0" aria-label="행성 탐험 게임"></canvas><div id="vignette"></div>
+<header><a class="brand" href="#" id="brand">RE:COMMAND <span>리커맨드</span></a><div class="header-actions"><span class="version">PLAYABLE STUDY · 0.2</span><button id="learn">원리 보기 <kbd>F1</kbd></button><button id="journal">발견 기록</button><button id="pause">일시정지</button></div></header>
+<main id="hud"><section class="planet"><div class="eyebrow">PLANET 01 / 04</div><h1>유온 <span>Yuon</span></h1><p>남겨진 숨의 정원</p><div class="planet-dots"><i class="active"></i><i></i><i></i><i></i></div></section>
+<section class="objective"><div class="eyebrow">현재의 여정</div><h2 id="questTitle">숲의 신호를 따라서</h2><p id="questText">기록자 루미에게 다가가 E로 대화하세요.</p><div id="sealProgress"><span></span><span></span><span></span></div></section>
+<section id="sideQuest" class="side-quest hidden"><div class="eyebrow">발견한 의뢰</div><h2>기록에 없던 울림</h2><p id="sideQuestText"></p></section><section id="bossInfo" class="hidden"><h2 id="bossName"></h2><div class="boss-bar"><i id="bossHealth"></i></div></section><section class="vitals"><div class="portrait">✦</div><div><div class="player-label">이름 없는 여행자 <span id="level">Lv. 1</span></div><div class="bar"><i id="health"></i><span id="hpText">100 / 100</span></div><div class="xp"><i id="xp"></i></div></div></section>
+<div id="location">귀환의 정원</div><div id="interact"></div><div id="toast" role="status"></div>
+<section class="bottom"><div class="keys">WASD / 방향키 <span>이동</span>　E <span>대화·조사</span></div><div class="skills"><button data-action="attack"><kbd>J</kbd><b>검격</b><small>기본 공격</small><i id="cdAttack"></i></button><button data-action="dash"><kbd>K / Space</kbd><b>잔상</b><small>회피</small><i id="cdDash"></i></button><button data-action="skill"><kbd>L</kbd><b>별의 파동</b><small>범위 공격</small><i id="cdSkill"></i></button></div><div class="keys">C <span>곡률 비교</span>　V <span>판정 표시</span>　M <span>지도</span></div></section>
+</main><canvas id="minimap" width="200" height="200" aria-label="행성 지도"></canvas>
+<div id="dialog" class="hidden" role="dialog" aria-modal="true" aria-labelledby="speaker"><div class="eyebrow">MEMORY FRAGMENT</div><h2 id="speaker"></h2><p id="dialogText"></p><button id="dialogNext">계속 <kbd>E / Enter</kbd></button></div>
+<div id="overlay"><div class="intro"><div class="eyebrow">FOUR PLANETS. ONE COMMAND TO REWRITE.</div><h1>리커맨드</h1><div class="english">R E : C O M M A N D</div><p>별은 당신의 명령을 기억한다.<br>이번에는, 다른 선택을.</p><button class="primary" id="start">첫 번째 별에 내려서기 <span>→</span></button><button id="continue" class="hidden">기억 이어가기</button><div class="intro-note">2D 캐릭터 × 휘어진 3D 세계<br>이동 · 전투 · 탐험 · 기억의 조각</div></div></div>
+<aside id="study" class="hidden"><button id="closeStudy" class="close">닫기 ×</button><div class="eyebrow">RENDERING LAB / 학습 모드</div><h2>평평한 세계가<br>둥근 별이 되는 순간.</h2><p>이동과 전투는 평면의 <b>(x, z)</b> 좌표로 계산합니다. 화면에 그릴 때만 높이를 바꾸므로, 곡률을 바꿔도 공격 거리와 충돌 결과는 유지됩니다.</p><label>지형 곡률 <output id="curveValue">0.012</output><input id="curve" type="range" min="0" max="0.025" step="0.001" value="0.012"></label><pre>dx = worldX − playerX
+dz = worldZ − playerZ
+renderY = worldY − k × (dx² + dz²)</pre><p>이 식은 구의 근처를 흉내 낸 포물면입니다. 실제 구형 행성이나 구형 중력을 시뮬레이션하지 않습니다.</p><label class="check"><input type="checkbox" id="debug"> 충돌·공격 판정 표시 (V)</label><label class="check"><input type="checkbox" id="grid"> 지형 격자 표시</label><h3>2D 그림은 어떻게 서 있을까?</h3><p>투명 배경의 캐릭터 그림을 카메라를 향한 사각형에 붙입니다. 발 위치만 지형과 같은 식으로 변환하고, 그림 자체는 세워 두어 일그러짐을 줄입니다.</p><h3>검격은 어떻게 맞을까?</h3><p>거리 ≤ 3.1 이고, 적 방향과 바라보는 방향의 내적 ≥ 0.25 이면 적중합니다. 별의 파동은 반경 6의 원형 판정입니다.</p><h3>언리얼로 옮긴다면</h3><p>지형 변형은 머티리얼의 World Position Offset, 캐릭터는 빌보드/스프라이트, 전투는 별도의 판정 컴포넌트로 대응시킬 수 있습니다.</p><a href="data:text/plain;charset=utf-8,%23%20%EB%A6%AC%EC%BB%A4%EB%A7%A8%EB%93%9C%20%E2%80%94%20%EA%B5%AC%ED%98%84%20%EC%9B%90%EB%A6%AC%0A%23%23%20%EB%85%BC%EB%A6%AC%20%EA%B3%B5%EA%B0%84%EA%B3%BC%20%ED%99%94%EB%A9%B4%0A%EC%9D%B4%EB%8F%99%C2%B7%EC%B6%A9%EB%8F%8C%C2%B7%EA%B3%B5%EA%B2%A9%EC%9D%80%20%ED%8F%89%EB%A9%B4%EC%9D%98%20x%2Fz%20%EC%A2%8C%ED%91%9C%EB%A5%BC%20%EC%82%AC%EC%9A%A9%ED%95%9C%EB%8B%A4.%20%EC%A7%80%ED%98%95%20%EB%86%92%EC%9D%B4%EB%8A%94%20%EB%8B%A4%EC%9D%8C%20%EC%8B%9D%EC%9C%BC%EB%A1%9C%20%ED%99%94%EB%A9%B4%EC%97%90%20%ED%91%9C%EC%8B%9C%ED%95%A0%20%EB%95%8C%20%EB%B0%94%EA%BE%BC%EB%8B%A4.%0ArenderY%20%3D%20worldY%20-%20k%20*%20((worldX-playerX)%5E2%20%2B%20(worldZ-playerZ)%5E2)%0Ak%3D0%EC%9D%B4%EB%A9%B4%20%ED%8F%89%EB%A9%B4%EC%9D%B4%EB%8B%A4.%20%EB%B0%98%EA%B2%BD%20R%EC%9D%B8%20%EA%B5%AC%EC%9D%98%20%EA%BC%AD%EB%8C%80%EA%B8%B0%20%EA%B7%BC%EC%B2%98%EB%8A%94%20-r%C2%B2%2F(2R)%EB%A1%9C%20%EA%B7%BC%EC%82%AC%ED%95%A0%20%EC%88%98%20%EC%9E%88%EC%96%B4%20k%E2%89%881%2F(2R)%EB%A1%9C%20%ED%95%B4%EC%84%9D%ED%95%A0%20%EC%88%98%20%EC%9E%88%EB%8B%A4.%20%EC%A0%95%ED%99%95%ED%95%9C%20%EA%B5%AC%ED%98%95%20%ED%96%89%EC%84%B1%EC%9D%B4%EB%82%98%20%EA%B5%AC%ED%98%95%20%EC%A4%91%EB%A0%A5%EC%9D%80%20%EC%95%84%EB%8B%88%EB%8B%A4.%0A%0A%23%23%20%EB%91%90%20%EB%A0%8C%EB%8D%94%EB%9F%AC%0AWebGL%3A%20engine.js%EC%9D%98%20%EC%A0%95%EC%A0%90%20%EC%85%B0%EC%9D%B4%EB%8D%94%EA%B0%80%20%EC%A7%80%ED%98%95%EA%B3%BC%20%EC%82%AC%EB%AC%BC%EC%9D%98%20%EB%86%92%EC%9D%B4%EB%A5%BC%20%EB%B3%80%ED%98%95%ED%95%9C%EB%8B%A4.%20%EA%B9%8A%EC%9D%B4%20%EB%B2%84%ED%8D%BC%EB%A1%9C%20%EA%B0%80%EB%A6%BC%EC%9D%84%20%EC%B2%98%EB%A6%AC%ED%95%9C%EB%8B%A4.%20%EB%B0%98%ED%88%AC%EB%AA%85%20%ED%9A%A8%EA%B3%BC%EB%8A%94%20%EB%92%A4%EC%97%90%EC%84%9C%20%EC%95%9E%EC%9C%BC%EB%A1%9C%20%EC%A0%95%EB%A0%AC%ED%95%98%EA%B3%A0%20%EA%B9%8A%EC%9D%B4%EB%A5%BC%20%EA%B8%B0%EB%A1%9D%ED%95%98%EC%A7%80%20%EC%95%8A%EB%8A%94%EB%8B%A4.%0A%ED%98%B8%ED%99%98%20%EB%AA%A8%EB%93%9C%3A%20software.js%EA%B0%80%20%EA%B0%99%EC%9D%80%20%EB%86%92%EC%9D%B4%20%EB%B3%80%ED%98%95%EA%B3%BC%20%EC%B9%B4%EB%A9%94%EB%9D%BC%20%ED%96%89%EB%A0%AC%EC%9D%84%20CPU%EC%97%90%EC%84%9C%20%EC%A0%81%EC%9A%A9%ED%95%98%EA%B3%A0%20Canvas2D%EC%97%90%20%EC%82%BC%EA%B0%81%ED%98%95%EC%9D%84%20%EA%B7%B8%EB%A6%B0%EB%8B%A4.%20%EC%A7%80%ED%98%95%EC%9D%80%20%EB%A8%BC%EC%A0%80%2C%20%EC%82%AC%EB%AC%BC%EA%B3%BC%20%EC%8A%A4%ED%94%84%EB%9D%BC%EC%9D%B4%ED%8A%B8%EB%8A%94%20%EA%B9%8A%EC%9D%B4%20%EC%88%9C%EC%84%9C%EB%A1%9C%20%EA%B7%B8%EB%A6%B0%EB%8B%A4.%0A%ED%98%B8%ED%99%98%20%EB%AA%A8%EB%93%9C%EB%8A%94%20%EC%A0%95%ED%99%95%ED%95%9C%20%ED%94%BD%EC%85%80%20%EA%B9%8A%EC%9D%B4%20%EB%B2%84%ED%8D%BC%EB%A5%BC%20%EC%82%AC%EC%9A%A9%ED%95%98%EC%A7%80%20%EC%95%8A%EC%95%84%20%EB%B3%B5%EC%9E%A1%ED%95%98%EA%B2%8C%20%EA%B5%90%EC%B0%A8%ED%95%98%EB%8A%94%20%EC%82%AC%EB%AC%BC%EC%9D%98%20%EA%B0%80%EB%A6%BC%EC%9D%B4%20%EA%B7%BC%EC%82%AC%EC%A0%81%EC%9D%B4%EB%8B%A4.%20%EC%A7%80%ED%98%95%C2%B7%EB%82%98%EB%AC%B4%EC%9D%98%20%EB%A9%B4%20%EC%88%98%EC%99%80%20%EB%B3%B4%EC%9D%B4%EB%8A%94%20%EA%B5%AC%EC%97%AD%20%EA%B3%84%EC%82%B0%EC%9D%84%20%EC%A4%84%EC%97%AC%20%EB%B9%84%EC%9A%A9%EC%9D%84%20%EB%82%AE%EC%B6%98%EB%8B%A4.%20%EB%85%BC%EB%A6%AC%EC%A0%81%EC%9D%B8%20%EC%9E%A5%EC%95%A0%EB%AC%BC%EA%B3%BC%20%EC%A0%84%ED%88%AC%20%EA%B7%9C%EC%B9%99%EC%9D%80%20%EB%A0%8C%EB%8D%94%EB%9F%AC%EC%97%90%20%EB%94%B0%EB%9D%BC%20%EB%B0%94%EB%80%8C%EC%A7%80%20%EC%95%8A%EB%8A%94%EB%8B%A4.%0A%EC%9B%90%EB%A6%AC%20%EB%B3%B4%EA%B8%B0%EC%97%90%EC%84%9C%20%ED%98%84%EC%9E%AC%20%EB%B0%A9%EC%8B%9D%2C%20FPS%EC%99%80%20%EA%B7%B8%EB%A6%AC%EA%B8%B0%20%EC%8B%9C%EA%B0%84%EC%9D%84%20%ED%99%95%EC%9D%B8%ED%95%A0%20%EC%88%98%20%EC%9E%88%EB%8B%A4.%20%EA%B2%80%EC%A6%9D%20%EB%B8%8C%EB%9D%BC%EC%9A%B0%EC%A0%80%EC%97%90%EC%84%9C%20%EA%B4%80%EC%B8%A1%ED%95%9C%20%ED%94%84%EB%A0%88%EC%9E%84%20%EC%A3%BC%EA%B8%B0%EB%A5%BC%20%EC%9D%BC%EB%B0%98%20PC%20%EC%84%B1%EB%8A%A5%EC%9C%BC%EB%A1%9C%20%EA%B0%84%EC%A3%BC%ED%95%98%EB%A9%B4%20%EC%95%88%20%EB%90%9C%EB%8B%A4.%0A%0A%23%23%20%EC%8A%A4%ED%94%84%EB%9D%BC%EC%9D%B4%ED%8A%B8%0A%ED%88%AC%EB%AA%85%ED%95%9C%20Canvas%20%EC%9D%B4%EB%AF%B8%EC%A7%80%EA%B0%80%20%EC%BA%90%EB%A6%AD%ED%84%B0%20%EA%B7%B8%EB%A6%BC%EC%9D%B4%EB%8B%A4.%20%EB%B0%9C%20%EC%9C%84%EC%B9%98%EB%A5%BC%20%EA%B3%A1%EB%A5%A0%EC%97%90%20%EB%A7%9E%EC%B6%94%EA%B3%A0%20%EC%B9%B4%EB%A9%94%EB%9D%BC%EB%A5%BC%20%ED%96%A5%ED%95%9C%20%EC%82%AC%EA%B0%81%ED%98%95%EC%97%90%20%EB%B6%99%EC%9D%B8%EB%8B%A4.%0AWebGL%EC%9D%80%20%ED%88%AC%EB%AA%85%20%ED%94%BD%EC%85%80%EC%9D%84%20%EB%B2%84%EB%A6%AC%EA%B3%A0%20%EB%82%A8%EC%9D%80%20%ED%94%BD%EC%85%80%EC%9D%84%20%EA%B9%8A%EC%9D%B4%20%EB%B2%84%ED%8D%BC%EC%97%90%20%EA%B8%B0%EB%A1%9D%ED%95%9C%EB%8B%A4.%20%ED%98%B8%ED%99%98%20%EB%AA%A8%EB%93%9C%EB%8A%94%20drawImage%EB%A1%9C%20%EA%B9%8A%EC%9D%B4%20%EC%88%9C%EC%84%9C%EC%97%90%20%EB%A7%9E%EC%B6%B0%20%ED%95%A9%EC%84%B1%ED%95%9C%EB%8B%A4.%0A%EC%A7%80%EA%B8%88%EC%9D%80%20%EC%9E%84%EC%8B%9C%20%EC%BD%94%EB%93%9C%20%EA%B7%B8%EB%A6%BC%EA%B3%BC%20%EA%B0%84%EB%8B%A8%ED%95%9C%20%EC%95%9E%2F%EB%92%A4%20%EA%B1%B7%EA%B8%B0%EB%8B%A4.%20%EC%99%84%EC%84%B1%ED%98%95%20%EB%B0%A9%ED%96%A5%EB%B3%84%20%EC%95%84%ED%8A%B8%EB%82%98%20%EC%95%A0%EB%8B%88%EB%A9%94%EC%9D%B4%EC%85%98%EC%9D%B4%20%EC%95%84%EB%8B%88%EB%8B%A4.%0A%0A%23%23%20%EC%A0%84%ED%88%AC%0A%EA%B2%80%EA%B2%A9%EC%9D%80%20%EA%B1%B0%EB%A6%AC%20%3C%3D3.1%2C%20%EB%B0%94%EB%9D%BC%EB%B3%B4%EB%8A%94%20%EB%B0%A9%ED%96%A5%EA%B3%BC%20%EC%A0%81%20%EB%B0%A9%ED%96%A5%EC%9D%98%20%EB%82%B4%EC%A0%81%20%3E%3D0.25%20%EC%A1%B0%EA%B1%B4%EC%9D%B4%EB%8B%A4.%20%EB%B0%98%EA%B0%81%20acos(0.25)%E2%89%8875.5%C2%B0%EC%9D%B8%20%EB%B6%80%EC%B1%84%EA%BC%B4.%0A%EA%B8%B0%EB%B3%B8%20%ED%94%BC%ED%95%B4%2020%2C%20%EA%B2%BD%ED%97%98%EC%B9%98%2060%EB%A7%88%EB%8B%A4%20%ED%94%BC%ED%95%B4%202%20%EC%A6%9D%EA%B0%80.%20%ED%8C%8C%EB%8F%99%EC%9D%80%20%EB%B0%98%EA%B2%BD%206%C2%B7%ED%94%BC%ED%95%B4%2036%C2%B7%EC%9E%AC%EC%82%AC%EC%9A%A9%205%EC%B4%88.%0A%ED%9A%8C%ED%94%BC%EB%8A%94%20%EC%A7%A7%EC%9D%80%20%EA%B0%80%EC%86%8D%20%EC%9D%B4%EB%8F%99%EA%B3%BC%200.25%EC%B4%88%20%EB%AC%B4%EC%A0%81%2C%20%EC%9E%AC%EC%82%AC%EC%9A%A9%201.6%EC%B4%88.%20%ED%94%BC%EA%B2%A9%20%ED%9B%84%200.85%EC%B4%88%20%EC%9E%AC%ED%94%BC%EA%B2%A9%20%EB%B0%A9%EC%A7%80.%0A%EC%9D%BC%EB%B0%98%20%EC%A0%81%EC%9D%80%20%EC%95%BD%200.48%EC%B4%88%20%EC%98%88%EA%B3%A0%20%ED%9B%84%20%EA%B3%B5%EA%B2%A9%ED%95%9C%EB%8B%A4.%0A%EC%98%A4%EB%A5%B4%EB%AC%B8%EC%9D%80%201.1%EC%B4%88%20%EC%98%88%EA%B3%A0%20%E2%86%92%20%EB%B0%98%EA%B2%BD%204.2%20%ED%8C%8C%EB%8F%99%20%E2%86%92%200.65%EC%B4%88%20%EB%92%A4%20%EB%B0%98%EA%B2%BD%205.2%20%E2%86%92%200.65%EC%B4%88%20%EB%92%A4%20%EB%B0%98%EA%B2%BD%206.4%20%E2%86%92%202.8%EC%B4%88%20%ED%9A%8C%EB%B3%B5.%20%ED%8A%B9%EC%88%98%20%EC%9D%98%EB%A2%B0%EC%9D%98%20%EC%84%A4%EB%AA%85%EC%9D%B4%20%EC%9D%B4%20%EC%8B%A4%EC%A0%9C%20%EA%B7%9C%EC%B9%99%EA%B3%BC%20%EC%97%B0%EA%B2%B0%EB%90%9C%EB%8B%A4.%0A%EC%B6%A9%EB%8F%8C%EC%9D%80%20%EC%9E%91%EC%9D%80%20%EC%9D%B4%EB%8F%99%20%EA%B5%AC%EA%B0%84%EC%9C%BC%EB%A1%9C%20%EB%82%98%EB%88%84%EA%B3%A0%20x%2Fz%20%EC%B6%95%EC%9D%84%20%EB%94%B0%EB%A1%9C%20%EC%B2%98%EB%A6%AC%ED%95%9C%EB%8B%A4.%20%EB%B9%A0%EB%A5%B8%20%ED%9A%8C%ED%94%BC%EA%B0%80%20%EC%9E%A5%EC%95%A0%EB%AC%BC%EC%9D%84%20%EA%B1%B4%EB%84%88%EB%9B%B0%EC%A7%80%20%EC%95%8A%EA%B2%8C%20%ED%95%9C%EB%8B%A4.%20%EC%A0%81%EC%9D%98%20%EC%9D%B4%EB%8F%99%EC%9D%80%20%EC%A7%81%EC%A0%91%20%EC%B6%94%EC%A0%81%EC%9D%B4%EB%A9%B0%20%EB%B3%B5%EC%9E%A1%ED%95%9C%20A*%20%EA%B8%B8%20%EC%B0%BE%EA%B8%B0%EB%8A%94%20%EC%97%86%EB%8B%A4.%0A%0A%23%23%20%EA%B3%A0%EC%A0%95%20%EC%8B%9C%EA%B0%84%20%EA%B0%84%EA%B2%A9%0A%EC%8B%9C%EB%AE%AC%EB%A0%88%EC%9D%B4%EC%85%98%EC%9D%80%201%2F60%EC%B4%88%20%EA%B0%84%EA%B2%A9%EC%9C%BC%EB%A1%9C%20%EC%A7%84%ED%96%89%ED%95%9C%EB%8B%A4.%20%EB%8A%90%EB%A6%B0%20%ED%94%84%EB%A0%88%EC%9E%84%EC%97%90%EC%84%9C%20%EC%B2%98%EB%A6%AC%EB%9F%89%EC%9D%B4%20%EB%AC%B4%ED%95%9C%ED%9E%88%20%EC%8C%93%EC%9D%B4%EC%A7%80%20%EC%95%8A%EB%8F%84%EB%A1%9D%20%ED%95%9C%20%ED%94%84%EB%A0%88%EC%9E%84%EC%9D%98%20%EB%B3%B4%EC%B6%A9%20%ED%9A%9F%EC%88%98%EB%A5%BC%20%EC%A0%9C%ED%95%9C%ED%95%9C%EB%8B%A4.%0A%ED%83%AD%EC%9D%B4%20%EB%B9%84%ED%99%9C%EC%84%B1%ED%99%94%EB%90%98%EB%A9%B4%20%EC%9D%BC%EC%8B%9C%EC%A0%95%EC%A7%80%ED%95%9C%EB%8B%A4.%20%EC%9E%85%EB%A0%A5%EC%9D%84%20%EB%B9%84%EC%9A%B0%EB%AF%80%EB%A1%9C%20%EB%8F%8C%EC%95%84%EC%99%94%EC%9D%84%20%EB%95%8C%20%ED%82%A4%EA%B0%80%20%EB%88%8C%EB%A6%B0%20%EC%B1%84%20%EB%82%A8%EC%A7%80%20%EC%95%8A%EB%8A%94%EB%8B%A4.%0A%0A%23%23%20%EC%A0%80%EC%9E%A5%EA%B3%BC%20%EA%B2%B0%ED%95%A9%0Asave.js%EB%8A%94%20%EC%88%AB%EC%9E%90%20%EB%B2%94%EC%9C%84%2C%20%EB%B0%B0%EC%97%B4%20%EA%B8%B8%EC%9D%B4%2C%20%EC%A7%84%ED%96%89%20%EC%88%9C%EC%84%9C%2C%20%EC%A0%81%EA%B3%BC%20%EC%A0%9C%EB%8B%A8%EC%9D%98%20%EA%B8%B0%EB%A1%9D%2C%20%EC%84%A0%ED%83%9D%20%EC%A1%B0%EA%B1%B4%EC%9D%84%20%EB%A8%BC%EC%A0%80%20%EA%B2%80%EC%A6%9D%ED%95%9C%EB%8B%A4.%20%EC%84%B1%EA%B3%B5%ED%95%9C%20%EB%92%A4%EC%97%90%EB%A7%8C%20%ED%98%84%EC%9E%AC%20%EA%B2%8C%EC%9E%84%EC%97%90%20%EC%A0%81%EC%9A%A9%ED%95%9C%EB%8B%A4.%0A%EC%A0%81%EC%9D%98%20%EC%B2%B4%EB%A0%A5%C2%B7%EC%9C%84%EC%B9%98%2C%20%EB%B0%9C%EA%B2%AC%C2%B7%EC%9D%98%EB%A2%B0%20%EC%A7%84%ED%96%89%2C%20%EB%8C%80%ED%99%94%20%EA%B8%B0%EB%A1%9D%EC%9D%84%20%EB%B3%B4%EA%B4%80%ED%95%9C%EB%8B%A4.%20%EA%B8%B0%EB%B3%B8%20%EC%A0%80%EC%9E%A5%EC%9D%B4%20%EC%86%90%EC%83%81%EB%90%98%EB%A9%B4%20%EC%9D%B4%EC%A0%84%20%EC%9E%90%EB%8F%99%20%EC%A0%80%EC%9E%A5%EC%9D%84%20%EC%8B%9C%EB%8F%84%ED%95%9C%EB%8B%A4.%0A%EB%B8%8C%EB%9D%BC%EC%9A%B0%EC%A0%80%20%EC%A0%80%EC%9E%A5%EC%9D%80%20%EA%B8%B0%EA%B8%B0%2F%EB%B8%8C%EB%9D%BC%EC%9A%B0%EC%A0%80%20%EC%82%AC%EC%9D%B4%EC%97%90%20%EC%9E%90%EB%8F%99%20%EB%8F%99%EA%B8%B0%ED%99%94%EB%90%98%EC%A7%80%20%EC%95%8A%EB%8A%94%EB%8B%A4.%20%EC%A7%84%ED%96%89%20%EB%82%B4%EB%B3%B4%EB%82%B4%EA%B8%B0%2F%EA%B0%80%EC%A0%B8%EC%98%A4%EA%B8%B0%EB%A1%9C%20%EC%98%AE%EA%B8%B8%20%EC%88%98%20%EC%9E%88%EB%8B%A4.%0A%EB%8B%A8%EC%9D%BC%20HTML%20%ED%8C%8C%EC%9D%BC%EC%9D%98%20%EC%A0%80%EC%9E%A5%EC%9D%80%20%EB%B8%8C%EB%9D%BC%EC%9A%B0%EC%A0%80%20%EC%84%A4%EC%A0%95%EC%9D%B4%EB%82%98%20%ED%8C%8C%EC%9D%BC%20%EC%9C%84%EC%B9%98%20%EB%B3%80%EA%B2%BD%EC%97%90%20%EB%94%B0%EB%9D%BC%20%EB%8B%AC%EB%9D%BC%EC%A7%88%20%EC%88%98%20%EC%9E%88%EB%8B%A4.%0A%0A%23%23%20%EC%BD%94%EB%93%9C%20%EC%9D%BD%EB%8A%94%20%EC%88%9C%EC%84%9C%0Amath.js%20%E2%86%92%20content.js%20%2F%20story.js%20%E2%86%92%20save.js%20%E2%86%92%20engine.js%20%2F%20software.js%20%E2%86%92%20game.js%EC%9D%98%20tick%20%2F%20draw%20%2F%20interact.%0Abuild-standalone.mjs%EB%8A%94%20%EB%AA%A8%EB%93%A0%20%EB%AA%A8%EB%93%88%EA%B3%BC%20%EC%8A%A4%ED%83%80%EC%9D%BC%EC%9D%84%20%ED%95%9C%20%ED%8C%8C%EC%9D%BC%EB%A1%9C%20%EB%AC%B6%EB%8A%94%EB%8B%A4.%20%ED%8C%8C%EC%9D%BC%20%EB%AA%A8%EB%93%9C%EC%97%90%EC%84%9C%EB%8A%94%20%EC%99%B8%EB%B6%80%20import%EA%B0%80%20%EB%82%A8%EC%A7%80%20%EC%95%8A%EC%95%84%EC%95%BC%20%ED%95%9C%EB%8B%A4.%0Atests%EB%8A%94%20%ED%8C%90%EC%A0%95%C2%B7%EC%9D%B4%EB%8F%99%C2%B7%EC%A0%80%EC%9E%A5%C2%B7%EC%84%A0%ED%83%9D%C2%B7%ED%8A%B9%EC%88%98%20%EC%9D%98%EB%A2%B0%C2%B7%EC%8B%A4%EC%A0%9C%20%EB%A7%B5%20%EC%A0%91%EA%B7%BC%20%EA%B0%80%EB%8A%A5%EC%84%B1%EC%9D%84%20%EA%B2%80%EC%82%AC%ED%95%9C%EB%8B%A4.%20%ED%99%94%EB%A9%B4%EC%9D%84%20%EB%8C%80%EC%8B%A0%ED%95%B4%20%EC%A3%BC%EC%A7%80%EB%8A%94%20%EC%95%8A%EC%9C%BC%EB%AF%80%EB%A1%9C%20%EB%B8%8C%EB%9D%BC%EC%9A%B0%EC%A0%80%20%EA%B2%80%EC%A6%9D%EC%9D%B4%20%EB%B3%84%EB%8F%84%EB%A1%9C%20%ED%95%84%EC%9A%94%ED%95%98%EB%8B%A4.%0A%0A%23%23%20%EC%96%B8%EB%A6%AC%EC%96%BC%20%EB%8C%80%EC%9D%91%0A%EB%86%92%EC%9D%B4%20%EB%B3%80%ED%98%95%20%E2%86%92%20World%20Position%20Offset.%20%EC%BA%90%EB%A6%AD%ED%84%B0%20%ED%91%9C%EC%8B%9C%20%E2%86%92%20%EB%B9%8C%EB%B3%B4%EB%93%9C%2FPaper2D.%20%ED%8C%90%EC%A0%95%20%E2%86%92%20%EB%B3%84%EB%8F%84%EC%9D%98%20ActorComponent%2FTrace%2FOverlap.%20%EC%A7%84%ED%96%89%20%EC%A1%B0%EA%B1%B4%20%E2%86%92%20%EB%8D%B0%EC%9D%B4%ED%84%B0%20%EA%B8%B0%EB%B0%98%20%EC%A1%B0%EA%B1%B4%EA%B3%BC%20SaveGame.%0ACPU%EC%9D%98%20%EC%B6%A9%EB%8F%8C%EC%9D%80%20WPO%EB%A7%8C%EC%9C%BC%EB%A1%9C%20%EB%94%B0%EB%9D%BC%20%ED%9C%98%EC%96%B4%EC%A7%80%EC%A7%80%20%EC%95%8A%EB%8A%94%EB%8B%A4.%20%ED%81%B4%EB%A6%AD%20%EC%A2%8C%ED%91%9C%EC%9D%98%20%EC%97%AD%EB%B3%80%ED%99%98%2C%20%EA%B7%B8%EB%A6%BC%EC%9E%90%2C%20%EC%BB%AC%EB%A7%81%20%EB%B0%94%EC%9A%B4%EB%93%9C%EC%99%80%20%EC%9D%B4%ED%8E%99%ED%8A%B8%20%EB%B3%80%ED%98%95%EB%8F%84%20%EA%B3%A0%EB%A0%A4%ED%95%B4%EC%95%BC%20%ED%95%9C%EB%8B%A4.%0A%EB%B8%8C%EB%9D%BC%EC%9A%B0%EC%A0%80%20%EC%BD%94%EB%93%9C%EB%A5%BC%20%EA%B7%B8%EB%8C%80%EB%A1%9C%20%EC%96%B8%EB%A6%AC%EC%96%BC%20C%2B%2B%EC%97%90%20%EB%B6%99%EC%9D%BC%20%EC%88%98%20%EC%9E%88%EB%8B%A4%EB%8A%94%20%EB%9C%BB%EC%9D%80%20%EC%95%84%EB%8B%88%EB%8B%A4.%20%EC%88%98%ED%95%99%EA%B3%BC%20%EA%B3%84%EC%B8%B5%20%EB%B6%84%EB%A6%AC%20%EC%9B%90%EB%A6%AC%EB%A5%BC%20%EC%98%AE%EA%B8%B0%EB%8A%94%20%EA%B2%83%EC%9D%B4%EB%8B%A4.%0A%0A%23%23%20%EB%B2%94%EC%9C%84%0A%EC%9C%A0%EC%98%A8%EC%9D%98%20%EC%B2%AB%20%EA%B5%AC%EA%B0%84%20%EC%8B%9C%EC%A0%9C%ED%92%88%EC%9D%B4%EB%8B%A4.%20%EB%82%A8%EC%9D%80%20%EC%84%B8%20%ED%96%89%EC%84%B1%2C%20%EC%B5%9C%EC%A2%85%EC%9E%A5%2C%20%EB%8F%99%EB%A3%8C%20%EB%8F%99%ED%96%89%C2%B7%ED%98%91%EB%8F%99%20%EC%A0%84%ED%88%AC%2C%20%EC%83%81%EC%A0%90%C2%B7%EC%9E%A5%EB%B9%84%C2%B7%EC%9D%B8%EB%B2%A4%ED%86%A0%EB%A6%AC%C2%B7%EB%A9%80%ED%8B%B0%ED%94%8C%EB%A0%88%EC%9D%B4%C2%B7%EC%A0%95%ED%99%95%ED%95%9C%20%EA%B5%AC%ED%98%95%20%EC%9B%94%EB%93%9C%EB%8A%94%20%EA%B5%AC%ED%98%84%20%EC%A0%84%EC%9D%B4%EB%8B%A4.%0A%0A" download="RECOMMAND-LEARNING.md">원리 설명 내려받기 ↗</a><p id="backend"></p><p id="fps"></p><div class="save-tools"><button id="exportSave">진행 내보내기</button><button id="importSave">진행 가져오기</button><input id="saveFile" type="file" accept=".json,application/json" hidden></div><p id="saveStatus" role="status"></p><button id="reset">진행 초기화</button><p class="muted">실험 중에는 게임이 일시정지됩니다. 닫으면 이어집니다.</p></aside>
+<div id="touch"><div class="dpad"><button data-key="w">↑</button><button data-key="a">←</button><button data-key="s">↓</button><button data-key="d">→</button></div><button data-action="interact">E</button></div>
+<script type="module">// Pure gameplay math: no renderer dependency. x/z is the logical ground plane.
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
+function normalize(x,z){const n=Math.hypot(x,z);return n?{x:x/n,z:z/n}:{x:0,z:0};}
+function inSector(origin,target,facing,range=3.1,minDot=.25){const dx=target.x-origin.x,dz=target.z-origin.z,n=Math.hypot(dx,dz);return n<=range&&(n<1e-6||(dx*facing.x+dz*facing.z)/n>=minDot);}
+function bendHeight(x,y,z,cx,cz,k){return y-k*((x-cx)**2+(z-cz)**2);}
+function resolveMove(p,dx,dz,obstacles,bound=79){const out={x:p.x,z:p.z},steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dz))/.16));const free=(x,z)=>obstacles.every(o=>Math.hypot(x-o.x,z-o.z)>o.r+.42);for(let i=0;i<steps;i++){const nx=clamp(out.x+dx/steps,-bound,bound);if(free(nx,out.z))out.x=nx;const nz=clamp(out.z+dz/steps,-bound,bound);if(free(out.x,nz))out.z=nz;}return out;}
+function seeded(seed=9273){return()=>{seed=(Math.imul(seed,1664525)+1013904223)|0;return(seed>>>0)/4294967296;};}
+function perspective(fov,aspect,near,far){const f=1/Math.tan(fov/2),nf=1/(near-far);return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0]);}
+function lookAt(eye,target){let z=[eye[0]-target[0],eye[1]-target[1],eye[2]-target[2]],n=Math.hypot(...z);z=z.map(v=>v/n);let x=[z[2],0,-z[0]];n=Math.hypot(...x);x=x.map(v=>v/n);const y=[z[1]*x[2]-z[2]*x[1],z[2]*x[0]-z[0]*x[2],z[0]*x[1]-z[1]*x[0]];return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-x.reduce((s,v,i)=>s+v*eye[i],0),-y.reduce((s,v,i)=>s+v*eye[i],0),-z.reduce((s,v,i)=>s+v*eye[i],0),1]);}
+
+
+// Narrative conditions are independent of display/UI and can be tested in Node.
+function canRewrite(state){return state.memories?.[0]===true&&state.memories?.[1]===true&&state.bond===true&&state.fracture===true;}
+function discoveredTriggers(state){return Number(!!state.memories?.[0])+Number(!!state.memories?.[1])+Number(!!state.bond)+Number(!!state.fracture);}
+
+const PLANETS=[
+{id:'yuon',name:'유온',roman:'Yuon',subtitle:'남겨진 숨의 정원',implemented:true},
+{id:'swaehae',name:'쇄해',roman:'Swaehae',subtitle:'닫힌 길의 바다',implemented:false},
+{id:'mumyeong',name:'무명',roman:'Mumyeong',subtitle:'지워진 이름의 설원',implemented:false},
+{id:'hwanseong',name:'환성',roman:'Hwanseong',subtitle:'돌아온 목소리의 궤도',implemented:false}];
+const BOSS={name:'삼박의 문지기 · 오르문',windup:1.1,gap:.65,recovery:2.8,pulseRadii:[4.2,5.2,6.4],damage:16,engageRange:4.8,intelligence:'오르문은 한 번에 세 번 울린다. 마지막 파동이 가장 멀리 닿는다.\n세 번째까지 바깥으로 빠진 뒤 접근하라. 마지막 울림 뒤에는 긴 정적이 있다.'};
+const SCOUT={x:-7,z:-11,name:'이온 · 숲의 수리공'};
+const OLD_SURVEY={x:-4,z:4,name:'낡은 탐사 표석',text:'사전 탐사 17일차. 남쪽 진동목: 잔류 진동 없음. 북쪽 수호체: 휴면 유지. 추가 관측 의뢰 없음.\n기록 아래에는 오래된 관리 인장이 찍혀 있다.'};
+const ECHO_SITES=[{x:-8,z:-20,name:'남쪽 진동목',observation:'나무 안쪽이 세 번 울린다. 첫 번째보다 두 번째가, 두 번째보다 세 번째가 더 깊게 뿌리를 흔든다.'},{x:9,z:-29,name:'동쪽 진동목',observation:'울림이 세 번 끝나자 뿌리가 한동안 풀어진다. 수호자의 껍질도 그동안은 움직이지 않을 것 같다.'}];
+function beginPulseSequence(e){e.sequence=true;e.pulse=0;e.wind=BOSS.windup;}
+function advancePulseSequence(e,dt,onPulse){if(!e.sequence)return false;e.wind-=dt;while(e.sequence&&e.wind<=0){onPulse(BOSS.pulseRadii[e.pulse],e.pulse);if(!e.sequence)return true;e.pulse++;if(e.pulse===3){e.sequence=false;e.wind=0;e.cd=BOSS.recovery;}else e.wind+=BOSS.gap;}return true;}
+function canOfferSurvey(s){return s.seals?.[0]===true&&s.surveyRecord===true&&s.anomaly===true;}
+
+
+const finite=(v,a,b)=>typeof v==='number'&&Number.isFinite(v)&&v>=a&&v<=b;
+const bools=(a,n)=>Array.isArray(a)&&a.length===n&&a.every(x=>typeof x==='boolean');
+function snapshot(state,player,enemies,journal){return{format:'RECOMMAND',v:2,state:{...state,seals:[...state.seals],memories:[...state.memories],echoes:[...state.echoes]},player:{x:player.x,z:player.z,hp:player.hp,xp:player.xp},enemies:enemies.map(({id,x,z,hp})=>({id,x,z,hp})),journal:journal.map(e=>({name:e.name,lines:[...e.lines]}))};}
+function decode(raw,defs){
+ const s=typeof raw==='string'?JSON.parse(raw):raw,st=s?.state,p=s?.player;
+ if(![1,2].includes(s?.v)||!st||!bools(st.seals,3)||!bools(st.memories,2)||![0,1,2].includes(st.quest)||typeof st.boss!=='boolean'||typeof st.complete!=='boolean')throw Error('진행 정보가 손상되었습니다.');
+ if(!p||!finite(p.x,-79,79)||!finite(p.z,-79,79)||!finite(p.hp,1,100)||!finite(p.xp,0,1e6))throw Error('캐릭터 정보가 손상되었습니다.');
+ for(const k of ['bond','fracture','intel','surveyRecord','anomaly'])if(st[k]!==undefined&&typeof st[k]!=='boolean')throw Error('발견 정보가 손상되었습니다.');
+ const sidequest=st.sidequest??0,echoes=st.echoes??[false,false];
+ if(![0,1,2].includes(sidequest)||!bools(echoes,2))throw Error('의뢰 정보가 손상되었습니다.');
+ if(st.seals.some(Boolean)&&st.quest===0||st.boss&&!st.seals.every(Boolean)||st.complete&&(!st.boss||st.quest!==2)||!st.complete&&st.quest===2)throw Error('진행 순서가 일치하지 않습니다.');
+ if(st.anomaly&&!st.seals[0]||sidequest>0&&!(st.seals[0]&&st.surveyRecord&&st.anomaly)||sidequest===0&&echoes.some(Boolean)||sidequest===2&&(!echoes.every(Boolean)||!st.intel)||st.intel&&sidequest!==2)throw Error('의뢰의 선행 기록이 누락되었습니다.');
+ const state={quest:st.quest,seals:[...st.seals],memories:[...st.memories],boss:st.boss,complete:st.complete,ending:st.complete?(st.ending||'preserve'):null,bond:!!st.bond,fracture:!!st.fracture,sidequest,echoes:[...echoes],intel:!!st.intel,surveyRecord:!!st.surveyRecord,anomaly:!!st.anomaly};
+ if(state.ending&&!['preserve','rewrite'].includes(state.ending)||state.ending==='rewrite'&&!(state.memories.every(Boolean)&&state.bond&&state.fracture))throw Error('선택 정보가 손상되었습니다.');
+ let enemies;
+ if(s.v===2){if(s.format!=='RECOMMAND'||!Array.isArray(s.enemies)||s.enemies.length!==defs.length)throw Error('전투 기록이 손상되었습니다.');const seen=new Set();enemies=s.enemies.map(e=>{const d=defs.find(d=>d.id===e?.id);if(!d||seen.has(e.id)||!finite(e.x,-79,79)||!finite(e.z,-79,79)||!finite(e.hp,0,d.max))throw Error('적 정보가 손상되었습니다.');seen.add(e.id);return{id:e.id,x:e.x,z:e.z,hp:e.hp};});}
+ else {if(!Array.isArray(s.dead)||s.dead.some(id=>!defs.some(d=>d.id===id)))throw Error('이전 전투 기록이 손상되었습니다.');enemies=defs.map(d=>({id:d.id,x:d.home.x,z:d.home.z,hp:s.dead.includes(d.id)?0:d.max}));}
+ if(enemies.some(e=>e.id===99&&((e.hp===0)!==state.boss)||e.id<9&&state.seals[Math.floor(e.id/3)]&&e.hp>0))throw Error('전투와 제단의 기록이 일치하지 않습니다.');
+ const journal=s.journal??[];if(!Array.isArray(journal)||journal.length>100||journal.some(e=>typeof e?.name!=='string'||e.name.length>100||!Array.isArray(e.lines)||!e.lines.length||e.lines.length>15||e.lines.some(l=>typeof l!=='string'||l.length>5000)))throw Error('대화 기록이 손상되었습니다.');
+ return{state,player:{x:p.x,z:p.z,hp:p.hp,xp:p.xp},enemies,journal:journal.map(e=>({name:e.name,lines:[...e.lines]}))};
+}
+
+
+// Raw WebGL: the game has no third-party runtime dependencies.
+const meshVS=`attribute vec3 aPos;attribute vec3 aColor;uniform mat4 uView,uProj;uniform vec2 uCenter;uniform float uCurve;varying vec3 vColor;varying float vDepth;void main(){vec3 p=aPos;vec2 d=p.xz-uCenter;p.y-=uCurve*dot(d,d);vec4 view=uView*vec4(p,1.);gl_Position=uProj*view;vDepth=-view.z;vColor=aColor;}`;
+const meshFS=`precision mediump float;varying vec3 vColor;varying float vDepth;void main(){float fog=smoothstep(36.,100.,vDepth);gl_FragColor=vec4(mix(vColor,vec3(.34,.49,.51),fog),1.);}`;
+const spriteVS=`attribute vec2 aPos;uniform mat4 uView,uProj;uniform vec2 uCenter;uniform float uCurve;uniform vec3 uAnchor;uniform vec2 uSize;varying vec2 vUV;varying float vDepth;void main(){vec3 p=uAnchor;vec2 d=p.xz-uCenter;p.y-=uCurve*dot(d,d);p+=vec3(aPos.x*uSize.x,aPos.y*uSize.y*.78,-aPos.y*uSize.y*.625);vec4 view=uView*vec4(p,1.);gl_Position=uProj*view;vDepth=-view.z;vUV=vec2(aPos.x+.5,1.-aPos.y);}`;
+const spriteFS=`precision mediump float;uniform sampler2D uTex;uniform float uAlpha;varying vec2 vUV;varying float vDepth;void main(){vec4 c=texture2D(uTex,vUV);if(c.a<.08)discard;c.rgb=mix(c.rgb,vec3(.34,.49,.51),smoothstep(36.,100.,vDepth));gl_FragColor=vec4(c.rgb,c.a*uAlpha);}`;
+function program(gl,vs,fs){const compile=(type,src)=>{const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s;};const p=gl.createProgram();gl.attachShader(p,compile(gl.VERTEX_SHADER,vs));gl.attachShader(p,compile(gl.FRAGMENT_SHADER,fs));gl.bindAttribLocation(p,0,'aPos');gl.bindAttribLocation(p,1,'aColor');gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(p));return p;}
+class Geometry{
+ constructor(){this.data=[];}
+ tri(a,b,c,col){for(const p of[a,b,c])this.data.push(...p,...col);}
+ quad(a,b,c,d,col){this.tri(a,b,c,col);this.tri(a,c,d,col);}
+ cone(x,y,z,r,h,col,sides=7,topR=0){if(Geometry.lowDetail)sides=Math.min(sides,4);for(let i=0;i<sides;i++){const a=i/sides*Math.PI*2,b=(i+1)/sides*Math.PI*2,shade=.78+.22*Math.cos(a-1),c=col.map(v=>v*shade);this.quad([x+Math.cos(a)*r,y,z+Math.sin(a)*r],[x+Math.cos(b)*r,y,z+Math.sin(b)*r],[x+Math.cos(b)*topR,y+h,z+Math.sin(b)*topR],[x+Math.cos(a)*topR,y+h,z+Math.sin(a)*topR],c);}}
+ disc(x,y,z,r,col,n=28){if(Geometry.lowDetail)n=Math.min(n,6);for(let i=0;i<n;i++){const a=i/n*Math.PI*2,b=(i+1)/n*Math.PI*2;this.tri([x,y,z],[x+Math.cos(a)*r,y,z+Math.sin(a)*r],[x+Math.cos(b)*r,y,z+Math.sin(b)*r],col);}}
+ ring(x,y,z,r,col,n=48,width=.08,start=0,end=Math.PI*2){if(Geometry.lowDetail)n=Math.min(n,20);width=Math.min(width,r);for(let i=0;i<n;i++){const a=start+i/n*(end-start),b=start+(i+1)/n*(end-start);this.quad([x+Math.cos(a)*r,y,z+Math.sin(a)*r],[x+Math.cos(b)*r,y,z+Math.sin(b)*r],[x+Math.cos(b)*(r-width),y,z+Math.sin(b)*(r-width)],[x+Math.cos(a)*(r-width),y,z+Math.sin(a)*(r-width)],col);}}
+}
+class Renderer{
+ constructor(canvas){this.canvas=canvas;this.gl=canvas.getContext('webgl',{antialias:true,alpha:false});if(!this.gl)throw Error('WebGL을 사용할 수 없습니다. 브라우저 하드웨어 가속을 켜 주세요.');const g=this.gl;this.meshProgram=program(g,meshVS,meshFS);this.spriteProgram=program(g,spriteVS,spriteFS);this.quad=g.createBuffer();g.bindBuffer(g.ARRAY_BUFFER,this.quad);g.bufferData(g.ARRAY_BUFFER,new Float32Array([-.5,0,.5,0,.5,1,-.5,0,.5,1,-.5,1]),g.STATIC_DRAW);this.dynamic=g.createBuffer();this.textures=new Map();this.calls=0;g.enable(g.DEPTH_TEST);g.enable(g.BLEND);g.blendFunc(g.SRC_ALPHA,g.ONE_MINUS_SRC_ALPHA);g.clearColor(.34,.49,.51,1);}
+ upload(geometry){const g=this.gl,b=g.createBuffer();g.bindBuffer(g.ARRAY_BUFFER,b);g.bufferData(g.ARRAY_BUFFER,new Float32Array(geometry.data),g.STATIC_DRAW);return{buffer:b,count:geometry.data.length/6};}
+ uniform(p,name,value){const g=this.gl,l=g.getUniformLocation(p,name);if(value.length===16)g.uniformMatrix4fv(l,false,value);else if(value.length===3)g.uniform3fv(l,value);else if(value.length===2)g.uniform2fv(l,value);else g.uniform1f(l,value);}
+ begin(cx,cz,curve){const g=this.gl,c=this.canvas,dpr=Math.min(devicePixelRatio||1,1.8),w=Math.floor(innerWidth*dpr),h=Math.floor(innerHeight*dpr);if(c.width!==w||c.height!==h){c.width=w;c.height=h;}g.viewport(0,0,w,h);g.depthMask(true);g.clear(g.COLOR_BUFFER_BIT|g.DEPTH_BUFFER_BIT);this.transparent=[];this.center=[cx,cz];this.curve=curve;this.view=lookAt([cx,18,cz+22],[cx,0,cz-1]);this.proj=perspective(Math.PI/3,w/h,.3,180);this.calls=0;}
+ common(p){const g=this.gl;g.useProgram(p);this.uniform(p,'uView',this.view);this.uniform(p,'uProj',this.proj);this.uniform(p,'uCenter',this.center);this.uniform(p,'uCurve',this.curve);}
+ mesh(mesh,mode){const g=this.gl,p=this.meshProgram;this.common(p);g.bindBuffer(g.ARRAY_BUFFER,mesh.buffer);for(const[name,n,offset]of[['aPos',3,0],['aColor',3,12]]){const l=g.getAttribLocation(p,name);g.enableVertexAttribArray(l);g.vertexAttribPointer(l,n,g.FLOAT,false,24,offset);}g.drawArrays(mode||g.TRIANGLES,0,mesh.count);this.calls++;}
+ drawDynamic(geometry){const g=this.gl;g.bindBuffer(g.ARRAY_BUFFER,this.dynamic);g.bufferData(g.ARRAY_BUFFER,new Float32Array(geometry.data),g.DYNAMIC_DRAW);this.mesh({buffer:this.dynamic,count:geometry.data.length/6});}
+ texture(key,draw,w=128,h=128){if(this.textures.has(key))return this.textures.get(key);const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;draw(canvas.getContext('2d'),w,h);const g=this.gl,t=g.createTexture();g.bindTexture(g.TEXTURE_2D,t);g.texImage2D(g.TEXTURE_2D,0,g.RGBA,g.RGBA,g.UNSIGNED_BYTE,canvas);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_MIN_FILTER,g.LINEAR);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_MAG_FILTER,g.NEAREST);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_WRAP_S,g.CLAMP_TO_EDGE);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_WRAP_T,g.CLAMP_TO_EDGE);this.textures.set(key,t);return t;}
+ sprite(tex,x,y,z,w,h,alpha=1){if(alpha<1){const by=y-this.curve*((x-this.center[0])**2+(z-this.center[1])**2),v=this.view;this.transparent.push({args:[tex,x,y,z,w,h,alpha],depth:-(v[2]*x+v[6]*by+v[10]*z+v[14])});return;}this.drawSprite(tex,x,y,z,w,h,alpha);}
+ drawSprite(tex,x,y,z,w,h,alpha){const g=this.gl,p=this.spriteProgram;this.common(p);this.uniform(p,'uAnchor',[x,y,z]);this.uniform(p,'uSize',[w,h]);this.uniform(p,'uAlpha',alpha);g.bindBuffer(g.ARRAY_BUFFER,this.quad);g.disableVertexAttribArray(1);g.enableVertexAttribArray(0);g.vertexAttribPointer(0,2,g.FLOAT,false,0,0);g.activeTexture(g.TEXTURE0);g.bindTexture(g.TEXTURE_2D,tex);g.uniform1i(g.getUniformLocation(p,'uTex'),0);g.drawArrays(g.TRIANGLES,0,6);this.calls++;}
+ finish(){const g=this.gl;g.depthMask(false);this.transparent.sort((a,b)=>b.depth-a.depth);for(const item of this.transparent)this.drawSprite(...item.args);g.depthMask(true);}
+
+}
+
+
+// CPU projection fallback for devices without WebGL. Uses the same logical world and bend formula.
+class SoftwareRenderer{
+ constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false});if(!this.ctx)throw Error('화면을 만들 수 없습니다.');this.backend='software';this.gl={getError:()=>0};this.textures=new Map();this.calls=0;this.queue=[];}
+ upload(g){const chunks=new Map(),a=g.data;for(let i=0;i<a.length;i+=18){const x=(a[i]+a[i+6]+a[i+12])/3,z=(a[i+2]+a[i+8]+a[i+14])/3,cx=Math.floor(x/10),cz=Math.floor(z/10),key=cx+','+cz;if(!chunks.has(key))chunks.set(key,{x:cx*10+5,z:cz*10+5,data:[]});const chunk=chunks.get(key);for(let j=0;j<18;j++)chunk.data.push(a[i+j]);}return{chunks:[...chunks.values()].map(c=>({...c,data:new Float32Array(c.data)}))};}
+ texture(key,draw,w=128,h=128){if(this.textures.has(key))return this.textures.get(key);const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);this.textures.set(key,c);return c;}
+ begin(x,z,k){const c=this.canvas;const dpr=Math.min(devicePixelRatio||1,1);const w=Math.max(1,Math.floor(innerWidth*dpr)),h=Math.max(1,Math.floor(innerHeight*dpr));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}this.width=w;this.height=h;this.center=[x,z];this.curve=k;this.view=lookAt([x,18,z+22],[x,0,z-1]);this.focal=h/(2*Math.tan(Math.PI/6));this.queue.length=0;this.calls=0;const sky=this.ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#233c50');sky.addColorStop(.5,'#577d82');sky.addColorStop(1,'#7d9890');this.ctx.fillStyle=sky;this.ctx.fillRect(0,0,w,h);}
+ project(x,y,z){const v=this.view,by=y-this.curve*((x-this.center[0])**2+(z-this.center[1])**2);const depth=-(v[2]*x+v[6]*by+v[10]*z+v[14]);if(depth<=.3)return null;return{x:this.width/2+(v[0]*x+v[4]*by+v[8]*z+v[12])*this.focal/depth,y:this.height/2-(v[1]*x+v[5]*by+v[9]*z+v[13])*this.focal/depth,depth};}
+ mesh(mesh){
+ if(mesh.chunks){this.ground??=mesh;for(const chunk of mesh.chunks){if(Math.abs(chunk.x-this.center[0])>42||chunk.z-this.center[1]>30||chunk.z-this.center[1]<-48)continue;this.renderChunk(chunk.data,mesh===this.ground?0:1);}this.calls++;return;}this.renderChunk(mesh.data,1);this.calls++;}
+ renderChunk(a,layer){
+ for(let i=0;i<a.length;i+=18){
+ const p=this.project(a[i],a[i+1],a[i+2]),q=this.project(a[i+6],a[i+7],a[i+8]),r=this.project(a[i+12],a[i+13],a[i+14]);
+ if(!p||!q||!r)continue;
+ if(Math.max(p.x,q.x,r.x)<0||Math.min(p.x,q.x,r.x)>this.width||Math.max(p.y,q.y,r.y)<0||Math.min(p.y,q.y,r.y)>this.height)continue;
+ const depth=(p.depth+q.depth+r.depth)/3,t=Math.max(0,Math.min(1,(depth-36)/64)),fog=t*t*(3-2*t),sky=[.34,.49,.51];
+ const col=[0,1,2].map(j=>Math.round(Math.max(0,Math.min(1,a[i+3+j]*(1-fog)+sky[j]*fog))*255));
+ this.queue.push({type:0,layer,depth,p,q,r,color:'rgb('+col.join(',')+')'});
+ }
+ }
+ drawDynamic(g){this.mesh({data:g.data});}
+ sprite(texture,x,y,z,w,h,alpha=1){const p=this.project(x,y,z);if(!p)return;const scale=this.focal/p.depth,pw=w*scale,ph=h*scale;if(p.x+pw<0||p.x-pw>this.width||p.y<0||p.y-ph>this.height)return;this.queue.push({type:1,layer:1,depth:p.depth,texture,x:p.x-pw/2,y:p.y-ph,w:pw,h:ph,alpha});this.calls++;}
+ finish(){const c=this.ctx;this.queue.sort((a,b)=>a.layer-b.layer||b.depth-a.depth);for(const e of this.queue){if(e.type){c.globalAlpha=e.alpha;c.drawImage(e.texture,e.x,e.y,e.w,e.h);c.globalAlpha=1;}else{c.fillStyle=e.color;c.beginPath();c.moveTo(e.p.x,e.p.y);c.lineTo(e.q.x,e.q.y);c.lineTo(e.r.x,e.r.y);c.closePath();c.fill();}}}
+}
+
+
+const $=id=>document.getElementById(id),TAU=Math.PI*2,SAVE='recommand-save-v1';
+let R;let hardwareWarning='';
+try{R=new Renderer($('world'));R.backend='webgl';}catch(e){hardwareWarning=e.message;const canvas=document.createElement('canvas');canvas.id='world';canvas.tabIndex=0;canvas.setAttribute('aria-label','행성 탐험 게임');$('world').replaceWith(canvas);R=new SoftwareRenderer(canvas);}
+const terrainRand=seeded(2872),SOFT=R.backend==='software';if(SOFT)Geometry.lowDetail=true;
+const rand=seeded(2871), keys=new Set(), obstacles=[], particles=[], effects=[];
+const player={x:0,z:7,hp:100,xp:0,face:{x:0,z:-1},attack:0,dash:0,skill:0,inv:0,walk:0,dashTime:0};
+const npc={x:3,z:0},portal={x:0,z:11},fracture={x:9,z:-5};
+const seals=[{x:-19,z:-20,name:'뿌리의 제단'},{x:22,z:-33,name:'바람의 제단'},{x:-14,z:-55,name:'기억의 제단'}];
+const memories=[{x:22,z:-9,name:'쓰러진 기록석',text:'[이전 명령: 생태계 보존을 위해 거주민 접근을 차단한다.]\n차가운 문장 아래, 누군가 같은 필체로 덧붙였다.\n“보호와 감금은 무엇이 다른가?”'},{x:-32,z:-41,name:'낡은 관측기',text:'장치가 당신의 손에 반응한다.\n[명령권자 생체 서명 일치. 재명령 대기.]\n당신은 손을 뗀다. 처음 보는 장치인데, 사용법을 알고 있었다.'}];
+let state={quest:0,seals:[false,false,false],memories:[false,false],bond:false,fracture:false,boss:false,complete:false,ending:null,sidequest:0,echoes:[false,false],intel:false,surveyRecord:false,anomaly:false},started=false,paused=false,study=false,dialog=null,curve=.012,debug=false,grid=false,mapBig=false,time=0,toastTime=0,lastSave=0;
+let journal=[],storageWarning=false,contextLost=false;
+let audio;function sound(freq=500,dur=.08,type='sine',gain=.035){try{audio??=new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(40,freq*.6),audio.currentTime+dur);g.gain.setValueAtTime(gain,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+dur);}catch{}}
+function toast(t){$('toast').textContent=t;toastTime=4;$('toast').style.opacity=1;}
+function save(){
+ if(!started)return false;
+ try{const next=JSON.stringify(snapshot(state,player,enemies,journal)),previous=localStorage.getItem(SAVE);
+ if(previous&&previous!==next){try{decode(previous,enemies);localStorage.setItem(SAVE+'.backup',previous);}catch{}}
+ localStorage.setItem(SAVE,next);storageWarning=false;return true;
+ }catch{if(!storageWarning)toast('자동 저장을 사용할 수 없습니다. 진행 내보내기로 보관해 주세요.');storageWarning=true;return false;}
+}
+function applySave(data){
+ state=data.state;Object.assign(player,data.player);player.inv=1;player.attack=player.dash=player.skill=player.dashTime=0;keys.clear();effects.length=particles.length=0;journal=data.journal;
+ for(const e of enemies){Object.assign(e,data.enemies.find(v=>v.id===e.id));e.wind=0;e.sequence=false;e.pulse=0;e.cd=1;e.hit=0;if(obstacles.some(o=>distance(e,o)<=o.r+.42)){e.x=e.home.x;e.z=e.home.z;}}
+ if(obstacles.some(o=>distance(player,o)<=o.r+.42)){player.x=0;player.z=7;}
+}
+function restore(){
+ for(const key of [SAVE,SAVE+'.backup']){try{const raw=localStorage.getItem(key);if(!raw)continue;const data=decode(raw,enemies);applySave(data);if(key.endsWith('.backup'))toast('이전 자동 저장으로 복구했습니다.');return true;}catch{}}
+ return false;
+}
+function showDialog(name,lines,after,{record=true}={}){
+ keys.clear();$('choices')?.remove();$('dialogNext').classList.remove('hidden');dialog={name,lines,index:0,after};$('speaker').textContent=name;$('dialogText').textContent=lines[0];$('dialog').classList.remove('hidden');
+ if(record&&!journal.some(e=>e.name===name&&e.lines[0]===lines[0])){journal.push({name,lines:[...lines]});if(journal.length>100)journal.shift();save();}
+ $('dialogNext').focus({preventScroll:true});
+}
+function advance(){if(!dialog||dialog.choice)return;if(++dialog.index<dialog.lines.length){$('dialogText').textContent=dialog.lines[dialog.index];sound(450,.035);}else{const cb=dialog.after;dialog=null;$('dialog').classList.add('hidden');cb?.();if(!dialog)$('world').focus({preventScroll:true});save();}}
+function offerSurvey(){
+ $('dialog').classList.remove('hidden');
+ dialog={choice:true,name:'기록에 없던 울림',index:0};keys.clear();$('speaker').textContent='기록에 없던 울림';$('dialogText').textContent='오래된 기록에 없던 현상을 조사한다.';$('dialogNext').classList.add('hidden');
+ const box=document.createElement('div');box.id='choices';
+ for(const [text,accept] of [['두 진동목을 조사한다',true],['지금은 지나간다',false]]){const b=document.createElement('button');b.textContent=text;b.onclick=()=>{box.remove();$('dialogNext').classList.remove('hidden');$('dialog').classList.add('hidden');dialog=null;keys.clear();$('world').focus();if(accept){state.sidequest=1;save();toast('선택 의뢰 · 기록에 없던 울림');}};box.append(b);}
+ $('dialog').append(box);box.children[0].focus();
+}
+function finalChoice(){
+ $('choices')?.remove();
+ dialog={choice:true,name:'재명령',index:0};keys.clear();$('speaker').textContent='RE:COMMAND · 명령권자 확인';
+ $('dialogText').textContent=canRewrite(state)?'기록석의 빈 칸과 갈라진 연결부. 루미의 대답. 따로 남아 있던 기억들이 하나의 방법으로 이어진다.':'기존의 보호 명령이 떠오른다. 공격 지시를 멈출 권한은 남아 있다.';
+ $('dialogNext').classList.add('hidden');$('dialog').classList.remove('hidden');
+ const box=document.createElement('div');box.id='choices';
+ const add=(text,enabled,fn)=>{const b=document.createElement('button');b.textContent=text;b.disabled=!enabled;b.onclick=()=>{box.remove();$('dialogNext').classList.remove('hidden');dialog=null;fn();};box.append(b);return b;};
+ add('기존 보존 체계를 유지하고, 공격 명령만 중지한다',true,()=>finishEnding(false));
+ if(canRewrite(state))add('루미와 함께 주민들의 의사를 연결해, 명령을 다시 쓴다',true,()=>finishEnding(true)).classList.add('alternative');
+ add('아직 결정하지 않는다',true,()=>{$('dialog').classList.add('hidden');});
+ $('dialog').append(box);box.children[0].focus({preventScroll:true});
+}
+function finishEnding(rewrite){
+ state.complete=true;state.quest=2;state.ending=rewrite?'rewrite':'preserve';save();
+ showDialog(rewrite?'새로운 명령 · 함께 결정한다':'남겨진 명령 · 안전한 정지',rewrite?[
+ '루미가 말한다. “명령을 내리는 사람 말고, 대답을 듣는 사람이 되어 주면 안 돼요?”\n기록석의 빈 칸과 관측기의 회선이 하나의 방법으로 이어진다.',
+ '[RE:COMMAND]\n“누구도 대신 결정하지 않는다. 각 정착지의 응답으로 보호 경계를 다시 정의한다.”\n지킬 수 있다는 확신 대신, 함께 책임질 방법을 택한다.',
+ '루미는 당신의 손을 놓지 않는다.\n“다음 별에서는, 처음부터 물어봐요.”\n유온의 경계가 열렸다. — 대안 선택 완료'
+ ]:[
+ '[공격 명령 중지. 기존 보존 경계 유지.]\n숲의 생명들이 조용해진다. 주민들은 안전해졌지만, 숲 밖으로 나가는 문은 여전히 닫혀 있다.',
+ '루미는 한동안 당신의 손을 바라본다.\n“이번에는 아무도 다치지 않았네요. 그런데…… 우리가 어디로 가고 싶은지는 안 물어보네요.”',
+ '유온는 잠시 평온해졌다.\n관문 너머에서 다른 별의 신호가 들려온다.'
+ ],()=>toast('첫 행성 구간 완료 · 관문에서 다음 별의 신호를 확인하세요.'));
+}
+const groundY=(x,z)=>Math.sin(x*.13)*Math.cos(z*.11)*.18;
+const roads=[[[0,11],[0,-10]],[[0,-10],[-19,-20]],[[-19,-20],[22,-33]],[[22,-33],[-14,-55]],[[-14,-55],[13,-69]]];
+function segmentDistance(x,z,a,b){const dx=b[0]-a[0],dz=b[1]-a[1],t=clamp(((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz),0,1);return Math.hypot(x-a[0]-dx*t,z-a[1]-dz*t);}
+const pathDist=(x,z)=>Math.min(...roads.map(([a,b])=>segmentDistance(x,z,a,b)));
+const ground=new Geometry(),props=new Geometry(),gridGeo=new Geometry();
+const groundStep=SOFT?5:2;
+for(let x=-95;x<95;x+=groundStep)for(let z=-95;z<95;z+=groundStep){
+ const step=groundStep,p=pathDist(x+step/2,z+step/2),v=terrainRand()*.035,c=(!SOFT&&p<2.8)?[.43+v,.48+v,.32+v]:[.23+v,.39+v,.27+v];
+ ground.quad([x,groundY(x,z),z],[x+step,groundY(x+step,z),z],[x+step,groundY(x+step,z+step),z+step],[x,groundY(x,z+step),z+step],c);
+ if(x%5===0&&z%5===0){gridGeo.quad([x,.22,z],[x+.035,.22,z],[x+.035,.22,z+5],[x,.22,z+5],[.56,.67,.49]);gridGeo.quad([x,.22,z],[x+5,.22,z],[x+5,.22,z+.035],[x,.22,z+.035],[.56,.67,.49]);}
+}
+function shadow(g,x,z,r){g.disc(x,groundY(x,z)+.025,z,r,[.16,.29,.22]);}
+for(let i=0;i<360;i++){
+ const x=rand()*166-83,z=rand()*166-83;
+ if(pathDist(x,z)<4||Math.hypot(x,z)<8||distance({x,z},fracture)<2.5||distance({x,z},SCOUT)<3||distance({x,z},OLD_SURVEY)<2.5||ECHO_SITES.some(e=>distance({x,z},e)<3)||seals.some(s=>distance({x,z},s)<6)||distance({x,z},{x:13,z:-69})<8||memories.some(s=>distance({x,z},s)<3))continue;
+ const h=3+rand()*3,r=1+rand()*.9;obstacles.push({x,z,r:.6});shadow(props,x+.6,z+.5,r*1.1);
+ props.cone(x,groundY(x,z),z,.24,h*.45,[.28,.28,.19],6,.17);
+ const col=rand()>.3?[.18,.35,.28]:[.33,.44,.28];
+ if(SOFT)props.cone(x,h*.22,z,r,h*.88,col,4);else{props.cone(x,h*.22,z,r,h*.64,col);props.cone(x,h*.47,z,r*.76,h*.53,col.map(v=>v*1.12));props.cone(x,h*.7,z,r*.49,h*.4,col.map(v=>v*1.23));}
+}
+for(let i=0;i<370;i++){const x=rand()*160-80,z=rand()*160-80;if(pathDist(x,z)<2||distance({x,z},OLD_SURVEY)<2||ECHO_SITES.some(e=>distance({x,z},e)<2))continue;const y=groundY(x,z);if(i%3===0){props.cone(x,y,z,.3+rand()*.45,.3+rand()*.5,[.37,.45,.39],5,.12);}else{const c=i%4===0?[.72,.68,.37]:[.31,.5,.32];props.cone(x,y,z,.13,.32,c,4);}}
+for(const s of [...seals,...memories,...ECHO_SITES]){
+ const y=groundY(s.x,s.z);if(ECHO_SITES.includes(s)){props.cone(s.x,y,s.z,.7,1.7,[.34,.32,.23],8,.46);props.disc(s.x,y+1.71,s.z,.39,[.13,.23,.19]);props.ring(s.x,y+1.72,s.z,.46,[.49,.47,.31],32,.08);obstacles.push({x:s.x,z:s.z,r:.8});continue;}props.cone(s.x,y,s.z,1.6,.22,[.37,.43,.36],8,1.5);props.cone(s.x,y+.22,s.z,.52,1.6,[.36,.51,.47],5,.34);props.cone(s.x,y+1.82,s.z,.34,.45,[.58,.72,.63],5);
+ obstacles.push({x:s.x,z:s.z,r:.75});
+}
+props.disc(0,.08,11,3,[.35,.43,.36]);props.ring(0,.1,11,2.7,[.74,.73,.48],64,.12);
+for(const x of[-2.6,2.6]){props.cone(x,.15,11,.5,3.5,[.38,.47,.4],6,.35);props.cone(x,3.65,11,.48,.8,[.66,.75,.51],6);obstacles.push({x,z:11,r:.5});}
+props.cone(OLD_SURVEY.x,groundY(OLD_SURVEY.x,OLD_SURVEY.z),OLD_SURVEY.z,.9,.4,[.4,.47,.39],6,.8);obstacles.push({...OLD_SURVEY,r:.7});
+const roadGeo=new Geometry();for(const[a,b]of roads){const dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz),nx=-dz/len*1.45,nz=dx/len*1.45;for(let t=0;t<len;t+=2){const t2=Math.min(len,t+2),point=(t,side)=>{const x=a[0]+dx*t/len+nx*side,z=a[1]+dz*t/len+nz*side;return[x,groundY(x,z)+.08,z];};roadGeo.quad(point(t,-1),point(t,1),point(t2,1),point(t2,-1),[.43,.48,.32]);}}const roadMesh=R.upload(roadGeo);
+const worldMesh=R.upload(ground),propMesh=R.upload(props),gridMesh=R.upload(gridGeo);
+// A quiet environmental clue: no marker, no label, no objective counter.
+const brokenGeo=new Geometry();brokenGeo.cone(fracture.x,groundY(fracture.x,fracture.z),fracture.z,.62,.9,[.37,.45,.39],5,.4);
+brokenGeo.quad([8.82,.92,-5.37],[8.88,.92,-5.37],[9.1,.92,-4.73],[9.04,.92,-4.73],[.22,.34,.31]);
+const brokenMesh=R.upload(brokenGeo);obstacles.push({...fracture,r:.35});
+function sprite(kind,variant=0,frame=0,back=false){
+ return R.texture(kind+variant+'-'+frame+'-'+back,(c)=>{
+ const ellipse=(x,y,rx,ry,color)=>{c.fillStyle=color;c.beginPath();c.ellipse(x,y,rx,ry,0,0,TAU);c.fill();};
+ if(kind==='hero'||kind==='npc'){
+ const npc=kind==='npc',step=frame?4:-4;
+ // Each cached canvas is a genuine transparent 2D sprite, billboarded in 3D.
+ ellipse(64,116,25,7,'#153b3580');c.fillStyle='#23343b';c.fillRect(45,93,13,23+step*.4);c.fillRect(69,93,13,23-step*.4);
+ c.fillStyle=npc?(variant?'#a38d68':'#bdb58c'):'#9db4a0';c.beginPath();c.moveTo(45,54);c.lineTo(83,54);c.lineTo(92,101);c.lineTo(37,101);c.closePath();c.fill();
+ c.fillStyle=npc?'#5b8684':'#3e7071';c.beginPath();c.moveTo(48,56);c.lineTo(80,56);c.lineTo(85,96);c.lineTo(63,104);c.lineTo(39,96);c.fill();
+ c.fillStyle='#c9af84';c.fillRect(33,67,11,23);c.fillRect(84,66,10,22);
+ ellipse(64,39,24,26,'#243c42');ellipse(64,43,18,20,'#ecd3a2');
+ c.fillStyle=npc?'#d3d6b8':'#263f46';c.beginPath();c.moveTo(40,34);c.lineTo(45,17);c.lineTo(72,12);c.lineTo(88,29);c.lineTo(80,45);c.lineTo(70,30);c.lineTo(61,40);c.lineTo(54,32);c.lineTo(44,46);c.fill();
+ if(!back){c.fillStyle='#283e3e';c.fillRect(54,44,4,5);c.fillRect(71,44,4,5);}
+ else{ellipse(64,37,21,23,npc?'#c9cfb3':'#263f46');}
+ c.fillStyle='#e1ce83';c.fillRect(46,59,36,6);
+ if(!npc){c.save();c.translate(92,70);c.rotate(-.4);c.fillStyle='#d4e5c8';c.fillRect(-3,-21,6,39);c.fillStyle='#b8a56f';c.fillRect(-10,17,20,5);c.fillStyle='#5d5145';c.fillRect(-3,22,6,11);c.restore();}
+ else{c.fillStyle='#755f40';c.fillRect(99,32,5,78);ellipse(101,29,9,12,'#d9e6ad');}
+ }else if(kind==='slime'){
+ const colors=[['#315862','#759b96'],['#5c4e72','#aa88b0'],['#686d47','#a6b57b']][variant%3];
+ ellipse(64,113,39,9,'#163d3580');ellipse(64,80+frame*2,38,30-frame*2,colors[0]);ellipse(61,73+frame*2,31,27-frame*2,colors[1]);ellipse(47,64,9,4,'#e2ebcd66');c.fillStyle='#233b3e';c.fillRect(47,79,6,8);c.fillRect(75,79,6,8);c.fillStyle='#ddc7a0';c.fillRect(58,94,12,3);
+ c.fillStyle='#cc8cc3';c.beginPath();c.moveTo(76,52);c.lineTo(88,22);c.lineTo(98,53);c.fill();
+ }else if(kind==='boss'){
+ ellipse(64,119,43,7,'#143a3a80');c.fillStyle='#304d52';c.fillRect(32,85,19,31);c.fillRect(77,85,19,31);
+ ellipse(64,69,38,39,'#5e7c72');ellipse(64,65,29,31,'#87a78f');c.fillStyle='#c5d7b0';c.fillRect(36,49,56,10);c.fillStyle='#e7cc8c';c.fillRect(45,52,8,5);c.fillRect(77,52,8,5);
+ c.fillStyle='#364d49';c.fillRect(15,61,18,36);c.fillRect(96,61,18,36);
+ for(const [x,y]of[[30,34],[95,30],[60,22]]){c.fillStyle='#91b89a';c.beginPath();c.moveTo(x-10,y+20);c.lineTo(x,y-18);c.lineTo(x+9,y+20);c.fill();}
+ ellipse(65,78,8,10,'#ecd18c');
+ }else if(kind==='glow'){const g=c.createRadialGradient(64,64,0,64,64,60);g.addColorStop(0,'#fff8ccee');g.addColorStop(.15,'#e7eeb399');g.addColorStop(1,'#c9edab00');c.fillStyle=g;c.fillRect(0,0,128,128);}
+ });
+}
+const heroSprites=[sprite('hero',0,0,false),sprite('hero',0,1,false),sprite('hero',0,0,true),sprite('hero',0,1,true)],npcTex=sprite('npc'),scoutTex=sprite('npc',1),bossTex=sprite('boss'),glowTex=sprite('glow');
+const slimeTextures=Array.from({length:3},(_,i)=>[sprite('slime',i,0),sprite('slime',i,1)]);
+function label(text,color='#e8e5bd'){return R.texture('label'+text,(c,w,h)=>{c.font='500 22px "Malgun Gothic",sans-serif';c.textAlign='center';c.shadowColor='#0b2529';c.shadowBlur=5;c.fillStyle=color;c.fillText(text,w/2,34);},512,64);}
+const labels={scout:label(SCOUT.name),survey:label(OLD_SURVEY.name),echoes:ECHO_SITES.map(e=>label(e.name)),npc:label('루미 · 기록자'),portal:label('별의 관문'),boss:label(BOSS.name,'#f0d39b'),seals:seals.map(s=>label(s.name)),memories:memories.map(s=>label(s.name))};
+const enemies=[];
+for(let i=0;i<3;i++)for(let j=0;j<3;j++){const a=j/3*TAU;enemies.push({id:i*3+j,x:seals[i].x+Math.cos(a)*4,z:seals[i].z+Math.sin(a)*4,home:{x:seals[i].x+Math.cos(a)*4,z:seals[i].z+Math.sin(a)*4},hp:48,max:48,type:i,wind:0,cd:.5,jitter:j,hit:0});}
+const boss={id:99,x:13,z:-69,home:{x:13,z:-69},hp:300,max:300,type:3,wind:0,cd:2,hit:0};enemies.push(boss);
+for(let i=0;i<5;i++){const x=(rand()-.5)*22,z=-8-rand()*12;enemies.push({id:20+i,x,z,home:{x,z},hp:36,max:36,type:0,wind:0,cd:1,jitter:i,hit:0});}
+function burst(x,z,color,n=14){for(let i=0;i<n;i++){const a=rand()*TAU,s=1+rand()*3;particles.push({x,z,y:.6,vx:Math.cos(a)*s,vz:Math.sin(a)*s,vy:2+rand()*2,life:.5+rand()*.6,color});}}
+function damageEnemy(e,amount){if(e.hp<=0)return;e.hp=Math.max(0,e.hp-amount);e.hit=.17;burst(e.x,e.z,[.85,.79,.49],7);sound(180+rand()*100,.07,'triangle');if(!e.hp){player.xp+=e.type===3?100:15;player.hp=Math.min(100,player.hp+8);burst(e.x,e.z,[.65,.84,.6],20);if(e===boss){state.boss=true;toast('수호자의 명령이 멈췄다. 다가가 E로 기억을 확인하세요.');}else toast('기억의 빛 +15 · 생명력 +8');save();}}
+function takeDamage(n){if(player.inv>0)return;player.hp-=n;player.inv=.85;sound(100,.2,'sawtooth',.025);burst(player.x,player.z,[.83,.4,.35],10);if(player.hp<=0){player.x=0;player.z=7;player.hp=100;player.dashTime=0;player.inv=1.5;keys.clear();boss.hp=state.boss?0:boss.max;for(const e of enemies){e.x=e.home.x;e.z=e.home.z;e.wind=0;e.sequence=false;e.pulse=0;e.cd=1;}toast('관문이 당신을 불러냈다. 기억은 사라지지 않았다.');save();}}
+function action(name){
+ if(name==='interact'){interact();return;}if(!started||paused||study||dialog||contextLost)return;
+ if(name==='attack'&&player.attack<=0){player.attack=.38;const a=Math.atan2(player.face.z,player.face.x);effects.push({kind:'slash',x:player.x,z:player.z,angle:a,life:.2,max:.2});for(const e of enemies)if(e.hp>0&&(e!==boss||state.seals.every(Boolean))&&inSector(player,e,player.face))damageEnemy(e,20+Math.floor(player.xp/60)*2);sound(650,.07,'triangle');}
+ if(name==='dash'&&player.dash<=0){player.dash=1.6;player.dashTime=.2;player.inv=Math.max(player.inv,.25);sound(300,.12,'sine');}
+ if(name==='skill'&&player.skill<=0){player.skill=5;effects.push({kind:'wave',x:player.x,z:player.z,life:.55,max:.55});for(const e of enemies)if(e.hp>0&&(e!==boss||state.seals.every(Boolean))&&distance(player,e)<=6)damageEnemy(e,36);sound(750,.4,'sine');}
+}
+function nearest(){const all=[{...npc,kind:'npc',name:'루미'},{...SCOUT,kind:'scout',name:SCOUT.name},{...OLD_SURVEY,kind:'survey',name:OLD_SURVEY.name},...ECHO_SITES.map((s,i)=>({...s,kind:'echo',i})),{...portal,kind:'portal',name:'별의 관문'},...seals.map((s,i)=>({...s,kind:'seal',i})),...memories.map((s,i)=>({...s,kind:'memory',i})),{x:13,z:-69,kind:'boss',name:'수호자의 기억'}];if(distance(player,fracture)<1.3)all.push({...fracture,kind:'fracture',name:'갈라진 연결부'});return all.sort((a,b)=>distance(player,a)-distance(player,b)).find(o=>distance(player,o)<3.8);}
+function interact(){
+ if(!started||paused||study||contextLost)return;if(dialog){advance();return;}const o=nearest();if(!o)return;
+ if(o.kind==='npc'){
+ if(state.quest>0&&state.memories.some(Boolean)&&!state.bond){showDialog('루미 · 남겨진 대화',['기록을 봤군요. 당신은 제가 명령을 따르는 기록 장치라고 생각하나요?\n처음에는 저도 그렇게 생각했어요.','하지만 오늘은 숲의 소리보다 당신 발소리가 먼저 들렸어요.\n당신이 돌아오지 않을까 봐, 기록을 세 번이나 잘못 썼거든요.','당신은 목적지를 묻는 대신, 루미가 어디로 가고 싶은지 묻는다.\n“아직 모르겠어요. 같이 찾아도 되나요?”\n명령 목록에 없던 대답이 기록된다.'],()=>{state.bond=true;save();toast('루미와의 대화가 기억에 남았다.');});return;}
+ if(state.quest===0)showDialog('루미 · 숲의 기록자',['깨어났군요. 이곳은 유온. 한때 스스로 숨 쉬던 별이었어요.\n지금은 수호 장치가 숲의 생명들을 공격하고 있어요.','길을 따라 세 제단을 찾아 주세요. 주변의 뒤틀린 생명을 진정시킨 뒤, 제단에 손을 대면 됩니다.\nJ 검격 · K/Space 회피 · L 별의 파동','이상하네요. 당신에게 처음 부탁하는 일인데……\n오래전에 같은 대답을 들은 것 같아요.'],()=>{state.quest=1;toast('세 제단을 정화하세요. 지도에서 금빛 마름모를 찾으세요.');});
+ else showDialog('루미',[state.complete?'당신은 숲을 살렸어요. 하지만 다른 별들은 아직 이전의 명령 아래 잠들어 있어요.':state.seals.every(Boolean)?'북쪽, 오래된 수호자가 눈을 떴어요.\n먼저 공격 신호를 보고 피하세요. 커다란 원이 차오르면 충격파가 옵니다.':'세 제단은 길을 따라 이어져 있어요.\n숲 바깥의 기록도 살펴보세요. 제단과는 다른 진실이 남아 있을지 몰라요.']);
+ }
+ if(o.kind==='survey'){state.surveyRecord=true;showDialog(OLD_SURVEY.name,[OLD_SURVEY.text],save);}
+ if(o.kind==='scout'){
+ if(!state.sidequest){
+ if(canOfferSurvey(state))showDialog(SCOUT.name,['표석에는 진동이 없다고 적혀 있는데, 제단을 복구한 뒤 세 번 울렸다고요?\n그 관측은 기존 순찰 기록에 없어요.','북쪽 문지기와 같은 박자일 수 있어요. 남쪽과 동쪽 진동목을 함께 비교하면 확인할 수 있겠어요.'],offerSurvey);
+ else showDialog(SCOUT.name,['전 숲의 장치를 수리해요. 지금은 젖은 도구를 말리는 중이고요.','귀환의 정원에는 옛 탐사 표석이 있어요. 오래전부터 그 기록을 기준으로 숲을 돌봐 왔죠.']);
+ }else if(state.echoes.every(Boolean))showDialog(SCOUT.name,['세 번 이어지는 파동이었군요. 마지막이 가장 멀리 닿고, 그 뒤에 뿌리가 느슨해져요.',BOSS.intelligence,'옛 이름이 “삼박의 문지기, 오르문”이래요.\n이 관측은 발견 기록에서 다시 읽을 수 있어요.'],()=>{state.sidequest=2;state.intel=true;save();toast('관측을 정리했다 · 오르문의 삼박');});
+ else showDialog(SCOUT.name,['북서쪽 길가와 동쪽 길가의 진동목을 조사해 주세요.']);
+ }
+ if(o.kind==='echo'){
+ if(!state.sidequest){if(o.i===0&&state.seals[0]){state.anomaly=true;showDialog(o.name,[state.surveyRecord?'나무 안쪽이 세 번 울린다. 바람도 없는데 뿌리가 움직인다.\n탐사 표석에는 “잔류 진동 없음”이라고 적혀 있었다.':'나무 안쪽이 세 번 울린다. 바람도 없는데 뿌리가 움직인다.\n원래 이런 나무였을까.'],save);}else showDialog(o.name,['작은 진동이 느껴지지만 일정한 박자로 이어지지는 않는다.']);return;}
+ state.echoes[o.i]=true;showDialog(o.name,[ECHO_SITES[o.i].observation],()=>{save();if(state.echoes.every(Boolean))toast('두 관측이 모였다. 이온에게 돌아가 보자.');});
+ }
+ if(o.kind==='fracture'){
+ if(!state.memories.every(Boolean)){showDialog('낡은 돌조각',['표면에 가느다란 틈이 있다. 오래된 돌이 갈라진 흔적처럼 보인다.\n틈 안쪽에는 빛이 닿지 않는다.']);return;}
+ showDialog('갈라진 연결부',['기록석에 적힌 배선 방향이 떠오른다.\n돌처럼 보였던 것은, 바깥의 응답을 받도록 만들어진 낡은 연결부였다.','손끝으로 틈의 방향을 바꾸자 가느다란 신호가 돌아온다.\n명령을 보내는 선 옆에, 대답을 받을 선이 남아 있었다.'],()=>{state.fracture=true;save();toast('갈라진 연결부를 기억에 남겼다.');});
+ }
+ if(o.kind==='seal'){
+ if(!state.quest){toast('먼저 귀환의 정원에서 루미와 대화하세요.');return;}
+ if(state.seals[o.i]){toast('이미 정화한 제단입니다.');return;}
+ if(enemies.some(e=>e.id>=o.i*3&&e.id<o.i*3+3&&e.hp>0)){toast('제단을 지키는 뒤틀린 생명 3체를 먼저 진정시키세요.');return;}
+ state.seals[o.i]=true;player.hp=100;burst(o.x,o.z,[.85,.85,.55],36);sound(880,.5);save();
+ showDialog(o.name,[['제단이 빛난다. 낯선 언어가 머릿속에서 문장으로 바뀐다.\n[명령권자 귀환 확인. 제1 연결 복구.]','바람이 돌아온다. 잎사귀가 흔들리며 사람의 목소리처럼 속삭인다.\n“이번에는…… 우리에게 물어봐 줄 건가요?”','세 제단의 빛이 북쪽으로 향한다.\n[보존 명령 재개 준비. 수호자 활성화.]\n복구한 것은 숲일까. 누군가의 명령일까.'][o.i]],()=>{if(state.seals.every(Boolean))toast('북쪽의 오래된 수호자를 찾아가세요.');});
+ }
+ if(o.kind==='memory'){state.memories[o.i]=true;showDialog(o.name,[memories[o.i].text]);save();}
+ if(o.kind==='boss'){
+ if(!state.seals.every(Boolean)){toast('세 제단의 연결이 끊겨 있다. 수호자는 잠들어 있다.');return;}
+ if(!state.boss){toast('수호자의 공격 신호를 보고 회피하세요.');return;}
+ showDialog('수호자의 마지막 기록',['[보존 명령 제0001호. 발령자: 당신.]\n[외부 간섭을 차단한다. 거주민의 이탈을 허용하지 않는다.]','수호자는 숲을 지키고 있었다. 당신이 명령한 방식으로.\n과거의 이유는 아직 알 수 없다. 하지만 지금의 선택은 당신에게 있다.'],finalChoice);
+ }
+ if(o.kind==='portal'){player.hp=100;if(!state.complete)showDialog('별의 관문',['관문이 희미한 온기를 전한다. 생명력이 회복되었다.\n멀리 세 별의 신호가 들린다. 지금은 유온의 목소리에 귀를 기울이자.']);else showDialog('네 개의 별',[PLANETS.map((p,i)=>'0'+(i+1)+' '+p.name+' · '+p.subtitle).join('\n'),'v0.2 시제품은 여기까지입니다.\n다른 행성은 아직 제작되지 않았습니다. 유온를 더 탐험하거나 원리 보기에서 곡률과 판정을 비교해 보세요.']);}
+}
+function setStudy(v){study=v;keys.clear();$('study').classList.toggle('hidden',!v);}
+function togglePause(){if(!started||dialog||study)return;paused=!paused;keys.clear();$('pause').textContent=paused?'계속하기':'일시정지';if(paused)toast('일시정지 · 버튼 또는 Esc로 계속');}
+function start(load=false){
+ if(started)return;
+ if(!load){let exists=false;try{exists=!!localStorage.getItem(SAVE);}catch{}if(exists&&!confirm('새 여정을 시작하면 자동 저장을 바꿉니다. 계속할까요?'))return;}
+ if(load&&!restore()){toast('저장된 기억을 읽지 못했습니다. 진행 파일을 가져오거나 새 여정을 시작하세요.');return;}
+ started=true;$('overlay').classList.add('hidden');save();sound(440,.2);updateHUD();$('world').focus();
+}
+$('start').onclick=()=>start();$('continue').onclick=()=>start(true);try{if(localStorage.getItem(SAVE))$('continue').classList.remove('hidden');}catch{}
+$('learn').onclick=()=>setStudy(!study);$('closeStudy').onclick=()=>setStudy(false);$('pause').onclick=togglePause;$('dialogNext').onclick=advance;
+$('brand').onclick=e=>{e.preventDefault();setStudy(!study);};
+$('curve').oninput=e=>{curve=Number(e.target.value);$('curveValue').textContent=curve.toFixed(3);};
+$('debug').onchange=e=>debug=e.target.checked;$('grid').onchange=e=>grid=e.target.checked;
+$('journal').onclick=()=>{if(dialog||study)return;showDialog('발견 기록',journal.length?journal.map(e=>e.name+'\n\n'+e.lines.join('\n\n')):['아직 발견한 기록이 없습니다.'],undefined,{record:false});};
+$('exportSave').onclick=()=>download('RECOMMAND-save.json',JSON.stringify(snapshot(state,player,enemies,journal),null,2),'application/json');
+$('importSave').onclick=()=>$('saveFile').click();
+$('saveFile').onchange=async e=>{
+ const f=e.target.files?.[0];if(!f)return;
+ try{
+ if(f.size>500000)throw Error('파일이 너무 큽니다.');const data=decode(await f.text(),enemies);
+ const accept=()=>{applySave(data);started=true;paused=true;$('overlay').classList.add('hidden');$('pause').textContent='계속하기';save();updateHUD();$('saveStatus').textContent='가져왔습니다. 원리 보기를 닫고 계속하기를 누르세요.';$('importDecision')?.remove();};
+ $('importDecision')?.remove();
+ if(started){const box=document.createElement('div');box.id='importDecision';const text=document.createElement('p');text.textContent='가져온 진행으로 교체할까요? 현재 자동 저장은 백업됩니다.';const yes=document.createElement('button');yes.textContent='교체하여 가져오기';yes.onclick=accept;const no=document.createElement('button');no.textContent='취소';no.onclick=()=>box.remove();box.append(text,yes,no);$('saveStatus').after(box);}
+ else accept();
+ }catch(err){$('saveStatus').textContent='가져오기 실패: '+err.message;}
+ finally{e.target.value='';}
+};
+
+function download(name,data,type){const url=URL.createObjectURL(new Blob([data],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
+$('reset').onclick=()=>{if(confirm('저장된 탐험 진행을 초기화할까요?')){try{localStorage.removeItem(SAVE+'.backup');localStorage.removeItem(SAVE);}catch{}location.reload();}};
+for(const b of document.querySelectorAll('[data-action]'))b.addEventListener('click',()=>{action(b.dataset.action);if(started&&!dialog&&!study)$('world').focus();});
+for(const b of document.querySelectorAll('[data-key]')){b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(b.dataset.key);};b.onpointerup=b.onpointercancel=b.onlostpointercapture=()=>keys.delete(b.dataset.key);}
+addEventListener('keydown',e=>{
+ const k=e.key.toLowerCase();if(k==='f1'){e.preventDefault();setStudy(!study);return;}
+ if(e.target instanceof HTMLInputElement||e.target?.isContentEditable)return;
+ if(k==='escape'){e.preventDefault();if(study)setStudy(false);else if(dialog&&!dialog.choice)advance();else if(!dialog)togglePause();return;}
+ if(e.repeat)return;
+ if(dialog&&k==='tab'){e.preventDefault();const buttons=dialog.choice?[...$('choices').children]:[$('dialogNext')],i=buttons.indexOf(document.activeElement);buttons[(i+(e.shiftKey?-1:1)+buttons.length)%buttons.length].focus();return;}
+ if(['BUTTON','A'].includes(e.target?.tagName)&&['enter',' '].includes(k))return;
+ if(dialog){if(['e','enter'].includes(k)){e.preventDefault();advance();}return;}if(study||!started)return;
+ if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();keys.add(k);
+ if(k==='e')interact();if(k==='j')action('attack');if(k==='k'||k===' ')action('dash');if(k==='l')action('skill');
+ if(k==='v')$('debug').checked=debug=!debug;
+ if(k==='c'){curve=curve>0?0:.012;$('curve').value=curve;$('curveValue').textContent=curve.toFixed(3);}
+ if(k==='m'){mapBig=!mapBig;$('minimap').style.width=mapBig?'min(70vw,420px)':'';$('minimap').style.height=mapBig?'min(70vw,420px)':'';}
+});
+addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));addEventListener('blur',()=>{keys.clear();if(started&&!paused&&!study&&!dialog)togglePause();save();});document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();if(started&&!paused&&!study&&!dialog)togglePause();save();}});
+addEventListener('pagehide',save);
+function tick(dt){
+ time+=dt;if(toastTime>0){toastTime-=dt;if(toastTime<=0)$('toast').style.opacity=0;}
+ if(!started||paused||study||dialog||contextLost)return;
+ for(const k of['attack','dash','skill','inv','dashTime'])player[k]=Math.max(0,player[k]-dt);
+ let dx=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0),dz=(keys.has('s')||keys.has('arrowdown')?1:0)-(keys.has('w')||keys.has('arrowup')?1:0),dir=normalize(dx,dz);
+ if(dx||dz){player.face=dir;player.walk+=dt*9;}
+ if(player.dashTime>0){dir=player.face;burst(player.x,player.z,[.55,.76,.73],1);}
+ const speed=player.dashTime>0?22:6.2,m=resolveMove(player,dir.x*speed*dt,dir.z*speed*dt,obstacles);player.x=m.x;player.z=m.z;
+ if(keys.has('j'))action('attack');
+ for(const e of enemies){
+ if(e.hp<=0)continue;e.hit=Math.max(0,e.hit-dt);if(e===boss&&!state.seals.every(Boolean))continue;
+ e.cd=Math.max(0,e.cd-dt);const d=distance(player,e),isBoss=e===boss,range=isBoss?BOSS.engageRange:1.6;
+ if(isBoss){
+ if(advancePulseSequence(e,dt,radius=>{effects.push({kind:'enemy',x:e.x,z:e.z,life:.3,max:.3,r:radius});if(distance(player,e)<=radius)takeDamage(BOSS.damage);}))continue;
+ if(e.cd>0)continue;if(d<range){beginPulseSequence(e);continue;}
+ }else{
+ if(e.wind>0){e.wind-=dt;if(e.wind<=0){effects.push({kind:'enemy',x:e.x,z:e.z,life:.3,max:.3,r:range});if(distance(player,e)<=range)takeDamage(10);e.cd=1.5;}continue;}
+ if(d<range&&e.cd<=0){e.wind=.48;continue;}
+ }
+ const chase=d<(isBoss?18:10)&&distance(player,e.home)<(isBoss?25:15);
+ const target=chase?player:e.home,n=normalize(target.x-e.x,target.z-e.z);
+ if(distance(target,e)>(chase?range*.85:.25)){const pos=resolveMove(e,n.x*(isBoss?2.2:2.8)*dt,n.z*(isBoss?2.2:2.8)*dt,obstacles);e.x=pos.x;e.z=pos.z;}
+ }
+ for(let i=effects.length-1;i>=0;i--)if((effects[i].life-=dt)<=0)effects.splice(i,1);
+ for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.x+=p.vx*dt;p.z+=p.vz*dt;p.y+=p.vy*dt;p.vy-=8*dt;if(p.life<=0)particles.splice(i,1);}
+ if(time-lastSave>5){save();lastSave=time;}updateHUD();
+}
+function updateHUD(){
+ $('world').dataset.playerX=player.x.toFixed(3);$('world').dataset.playerZ=player.z.toFixed(3);
+ $('backend').textContent=R.backend==='software'?'호환 모드 · CPU 3D':'WebGL · GPU 3D';
+ $('sideQuest').classList.toggle('hidden',!state.sidequest);$('sideQuestText').textContent=state.intel?'오르문의 관측을 발견 기록에 남겼다.':'진동목을 조사하고 이온에게 돌아가자. ('+state.echoes.filter(Boolean).length+'/2)';
+ $('bossInfo').classList.toggle('hidden',!(boss.hp>0&&state.seals.every(Boolean)&&distance(player,boss)<23));$('bossName').textContent=BOSS.name;$('bossHealth').style.width=boss.hp/boss.max*100+'%';
+
+ $('health').style.width=player.hp+'%';$('hpText').textContent=Math.ceil(player.hp)+' / 100';$('level').textContent='Lv. '+(1+Math.floor(player.xp/60));$('xp').style.width=(player.xp%60)/60*100+'%';
+ $('cdAttack').style.width=player.attack/.38*100+'%';$('cdDash').style.width=player.dash/1.6*100+'%';$('cdSkill').style.width=player.skill/5*100+'%';
+ const count=state.seals.filter(Boolean).length;
+ $('questTitle').textContent=state.complete?(state.ending==='rewrite'?'함께 쓰는 명령':'유온의 조용한 밤'):state.boss?'수호자의 기억':count===3?'오래된 명령의 수호자':state.quest?'세 제단의 빛':'숲의 신호를 따라서';
+ $('questText').textContent=state.complete?'귀환의 관문에서 다음 별의 신호를 확인하세요.':state.boss?'쓰러진 수호자에게 다가가 E로 조사하세요.':count===3?'북쪽의 수호자를 진정시키세요. 붉은 원을 피하세요.':state.quest?'길을 따라 제단을 찾아 주변의 적을 물리친 뒤 E로 정화하세요. ('+count+'/3)':'기록자 루미에게 다가가 E로 대화하세요.';
+ [...$('sealProgress').children].forEach((e,i)=>e.classList.toggle('done',state.seals[i]));
+ const o=nearest();$('interact').style.display=o&&(o.kind!=='fracture'||state.fracture)?'block':'none';$('interact').textContent=o?'E · '+o.name+' '+(['npc','scout'].includes(o.kind)?'대화':'조사'):'';
+ $('location').textContent=player.z<-58?'명령의 잔해':player.z<-28?'잊힌 관측림':player.z<-10?'뒤틀린 뿌리길':'귀환의 정원';
+}
+function draw(){
+ const camX=started?player.x:0,camZ=started?player.z:-1;R.begin(camX,camZ,curve);R.mesh(worldMesh);R.mesh(roadMesh);if(grid)R.mesh(gridMesh);R.mesh(propMesh);R.mesh(brokenMesh);
+ const g=new Geometry(),visible=e=>Math.abs(e.x-camX)<48&&Math.abs(e.z-camZ)<58;
+ shadow(g,player.x,player.z,.72);shadow(g,npc.x,npc.z,.7);
+ for(const e of enemies)if(e.hp>0&&visible(e)){shadow(g,e.x,e.z,e===boss?1.8:.8);if(e.wind>0){const r=e===boss?BOSS.pulseRadii[e.pulse||0]:1.6,d=e===boss?(e.pulse?BOSS.gap:BOSS.windup):.48;g.ring(e.x,groundY(e.x,e.z)+.23,e.z,r,[.83,.39,.28],48,.12+clamp(1-e.wind/d,0,1)*.5);}if(debug)g.ring(e.x,.35,e.z,e===boss?1.4:.55,[.9,.4,.4],32,.07);}
+ for(let i=0;i<3;i++){const s=seals[i],c=state.seals[i]?[.85,.82,.46]:[.45,.65,.56];g.ring(s.x,.35,s.z,2.1,c,48,.1);if(state.seals[i])g.ring(s.x,.38,s.z,2.35,c,48,.035);}
+ for(const e of effects){const t=1-e.life/e.max;if(e.kind==='slash'){const a=e.angle;g.ring(e.x,.5,e.z,3.1,[.96,.91,.65],24,.12+e.life*.8,a-Math.acos(.25),a+Math.acos(.25));}else if(e.kind==='wave'){g.ring(e.x,.35,e.z,Math.max(.1,t*6),[.62,.91,.82],64,.2);}else g.ring(e.x,.3,e.z,e.r,[.85,.45,.3],48,.18);}
+ if(debug){g.ring(player.x,.3,player.z,.42,[.55,.9,.9],32,.06);const a=Math.atan2(player.face.z,player.face.x);g.ring(player.x,.38,player.z,3.1,[.9,.8,.4],32,.045,a-Math.acos(.25),a+Math.acos(.25));}
+ for(const p of particles)g.cone(p.x,Math.max(.1,p.y)+groundY(p.x,p.z),p.z,.045,.1,p.color,3);
+ R.drawDynamic(g);
+ if(state.memories.every(Boolean)&&Math.sin(time*.8)>.98)R.sprite(glowTex,fracture.x,.87,fracture.z,.15,.15,.35);
+ const draws=[];
+ draws.push(()=>R.sprite(scoutTex,SCOUT.x,groundY(SCOUT.x,SCOUT.z),SCOUT.z,1.9,2.5));draws.push(()=>R.sprite(labels.scout,SCOUT.x,3.1,SCOUT.z,5.5,.65));
+ if(distance(player,OLD_SURVEY)<7)draws.push(()=>R.sprite(labels.survey,OLD_SURVEY.x,1.3,OLD_SURVEY.z,4.5,.55));
+ if(state.sidequest===1)for(let i=0;i<2;i++){const s=ECHO_SITES[i];if(visible(s))draws.push(()=>R.sprite(labels.echoes[i],s.x,3,s.z,4.5,.6));}
+ draws.push(()=>R.sprite(npcTex,npc.x,groundY(npc.x,npc.z),npc.z,1.9,2.5));
+ draws.push(()=>R.sprite(labels.npc,npc.x,3.1,npc.z,5,.62));
+ draws.push(()=>R.sprite(labels.portal,0,4.4,11,5,.62));
+ for(let i=0;i<3;i++){const s=seals[i];if(!visible(s))continue;draws.push(()=>{R.sprite(glowTex,s.x,1.5+Math.sin(time*2)*.15,s.z,3,3,state.seals[i]?.85:.32);R.sprite(labels.seals[i],s.x,3.3,s.z,5,.62);});}
+ for(let i=0;i<2;i++){const s=memories[i];if(visible(s))draws.push(()=>{R.sprite(glowTex,s.x,1.5,s.z,1.6,1.6,.5);R.sprite(labels.memories[i],s.x,3,s.z,5,.62);});}
+ for(const e of enemies){if(e.hp<=0||!visible(e))continue;const isBoss=e===boss,w=isBoss?4.8:2.2,h=isBoss?5.2:2;draws.push(()=>{R.sprite(isBoss?bossTex:slimeTextures[e.type][Math.floor(time*4+(e.jitter||0))%2],e.x,groundY(e.x,e.z)+Math.sin(time*4)*.06,e.z,w,h,e.hit>0?.45:1);if(isBoss)R.sprite(labels.boss,e.x,6.1,e.z,6,.75);if(e.hp<e.max||e.wind>0){const tex=R.texture('hp'+e.id+'-'+Math.ceil(e.hp/10),c=>{c.fillStyle='#143632';c.fillRect(10,45,108,12);c.fillStyle=isBoss?'#dfb271':'#bfd495';c.fillRect(12,47,104*e.hp/e.max,8);});R.sprite(tex,e.x,h+.4,e.z,isBoss?4:2.6,.65);}});}
+ const frame=(Math.floor(player.walk)%2)+(player.face.z<-.2?2:0);
+ draws.push(()=>R.sprite(heroSprites[frame],player.x,groundY(player.x,player.z),player.z,1.9,2.6,player.inv>0&&Math.floor(time*16)%2?.45:1));
+ // Alpha cutoff writes depth, so opaque sprite pixels occlude correctly with 3D trees.
+ for(const d of draws)d();
+ for(let i=0;i<26;i++){const x=camX+Math.sin(i*19.7+time*.09)*25,z=camZ+Math.cos(i*13.1+time*.08)*28;R.sprite(glowTex,x,1.5+Math.sin(time*.5+i),z,.25,.25,.55);}
+ if(state.complete)R.sprite(glowTex,0,1,11,5,6,.8);
+ R.finish();drawMap();
+}
+function drawMap(){
+ const c=$('minimap').getContext('2d');c.clearRect(0,0,200,200);c.save();c.beginPath();c.arc(100,100,97,0,TAU);c.clip();c.fillStyle='#153a38';c.fillRect(0,0,200,200);
+ const xy=(x,z)=>[100+x*.82,100+z*.82];
+ c.strokeStyle='#79927466';c.lineWidth=3;for(const[a,b]of roads){c.beginPath();c.moveTo(...xy(...a));c.lineTo(...xy(...b));c.stroke();}
+ c.font='9px sans-serif';c.textAlign='center';c.fillStyle='#c7cfa8';c.fillText('N',100,17);
+ for(let i=0;i<3;i++){const[x,y]=xy(seals[i].x,seals[i].z);c.fillStyle=state.seals[i]?'#d5e3a0':'#d8bd79';c.save();c.translate(x,y);c.rotate(Math.PI/4);c.fillRect(-3,-3,6,6);c.restore();}
+ for(let i=0;i<2;i++){const[x,y]=xy(memories[i].x,memories[i].z);c.fillStyle=state.memories[i]?'#859f91':'#9cdbd5';c.fillRect(x-2,y-2,4,4);}
+ for(const e of enemies)if(e.hp>0){const[x,y]=xy(e.x,e.z);c.fillStyle=e===boss?'#e0aa7a':'#bd8177';c.beginPath();c.arc(x,y,e===boss?4:1.7,0,TAU);c.fill();}
+ let[x,y]=xy(npc.x,npc.z);c.fillStyle='#e6dfaf';c.beginPath();c.arc(x,y,3,0,TAU);c.fill();
+ [x,y]=xy(player.x,player.z);c.save();c.translate(x,y);c.rotate(-Math.atan2(player.face.x,player.face.z));c.fillStyle='#f4e7b0';c.beginPath();c.moveTo(0,6);c.lineTo(-4,-4);c.lineTo(4,-4);c.fill();c.restore();c.restore();
+}
+let previous=performance.now(),accumulator=0,frames=0,lastFPS=performance.now(),fps=0,renderMs=0;
+function loop(now){accumulator+=clamp((now-previous)/1000,0,.15);previous=now;let steps=0;while(accumulator>=1/60&&steps<8){tick(1/60);accumulator-=1/60;steps++;}if(steps===8)accumulator=0;if(!contextLost){const before=performance.now();draw();renderMs=performance.now()-before;}frames++;if(now-lastFPS>1000){fps=Math.round(frames*1000/(now-lastFPS));frames=0;lastFPS=now;}$('fps').textContent=fps+' FPS · '+renderMs.toFixed(1)+' ms/render';requestAnimationFrame(loop);}requestAnimationFrame(loop);
+$('world').addEventListener('webglcontextlost',e=>{e.preventDefault();contextLost=true;paused=true;save();showDialog('그래픽 연결 끊김',['진행을 저장했습니다. 계속을 누르면 게임을 다시 엽니다. 시작 화면에서 기억 이어가기를 선택하세요.'],()=>location.reload(),{record:false});});
+// Read-only observability for QA. No gameplay cheats or mutable state exposed.
+window.recommand={snapshot:()=>JSON.parse(JSON.stringify({player,state,started,paused,study,dialog:dialog?{name:dialog.name,index:dialog.index}:null,enemies:enemies.map(({id,x,z,hp,wind})=>({id,x,z,hp,wind})),curve,drawCalls:R.calls,backend:R.backend,fps,storageWarning,contextLost}))};
+
+</script></body></html>
