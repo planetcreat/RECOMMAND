@@ -7,6 +7,8 @@ function bundle(entry,modules,css,output){
  source=source.replace("img.src='./assets/combat-atlas.png';",()=>"img.src="+JSON.stringify(atlas)+';');
  for(const name of ['actors-atlas','environment-atlas']){const data='data:image/png;base64,'+fs.readFileSync('dist/assets/'+name+'.png').toString('base64');source=source.replace('./assets/'+name+'.png',()=>data);}
  if(entry==='index.html')source=source.replace("location.href='swaehae.html'","location.href='SWAEHAE.html'");
+ source=source.replace("location.href='mumyeong.html'","location.href='MUMYEONG.html'");
+ source=source.replace("else location.href=(chapter==='yuon'?'index':chapter)+'.html';","else location.href=({yuon:'RECOMMAND',swaehae:'SWAEHAE',mumyeong:'MUMYEONG',hwanseong:'HWANSEONG'})[chapter]+'.html';");
  new vm.Script(source);
  html=html.replace('<script src="boot.js"></script>',()=>'<script>'+read('dist/boot.js')+'</script>');
  html=html.replace('<link rel="stylesheet" href="'+css+'">',()=>'<style>'+read('dist/'+css)+'</style>');
@@ -18,4 +20,5 @@ function bundle(entry,modules,css,output){
 }
 bundle('index.html',['math.js','story.js','content.js','save.js','engine.js','software.js','environment.js','vfx.js','art.js','boss-models.js','game.js'],'style.css','RECOMMAND.html');
 bundle('swaehae.html',['math.js','engine.js','software.js','vfx.js','art.js','boss-models.js','tide.js','belrok.js','swaehae.js'],'chapter.css','SWAEHAE.html');
+for(const chapter of ['mumyeong','hwanseong'])bundle(chapter+'.html',['math.js','engine.js','software.js','vfx.js','art.js','tide.js','late-story.js','late-state.js','late-combat.js','late-models.js','late-game.js'],'late.css',chapter.toUpperCase()+'.html');
 

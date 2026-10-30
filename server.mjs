@@ -2,6 +2,6 @@ import http from 'node:http';import fs from 'node:fs';import path from 'node:pat
 const root=path.join(path.dirname(fileURLToPath(import.meta.url)),'dist');
 const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.md':'text/plain; charset=utf-8','.png':'image/png','.zip':'application/zip'};
 const server=http.createServer((req,res)=>{let p;try{p=decodeURIComponent(new URL(req.url,'http://localhost').pathname);}catch{res.writeHead(400).end();return;}
-const f=path.resolve(root,'.'+(p==='/'?'/index.html':p));if(!f.startsWith(root+path.sep)){res.writeHead(403).end();return;}fs.readFile(f,(err,data)=>{if(err){res.writeHead(404).end('Not found');return;}res.writeHead(200,{'Content-Type':types[path.extname(f)]||'application/octet-stream','Cache-Control':'no-store'});res.end(data);});});
+const f=p==='/play'?path.join(root,'../release/PLAY-RECOMMAND.html'):path.resolve(root,'.'+(p==='/'?'/index.html':p));if(p!=='/play'&&!f.startsWith(root+path.sep)){res.writeHead(403).end();return;}fs.readFile(f,(err,data)=>{if(err){res.writeHead(404).end('Not found');return;}res.writeHead(200,{'Content-Type':types[path.extname(f)]||'application/octet-stream','Cache-Control':'no-store'});res.end(data);});});
 server.listen(4173,'127.0.0.1',()=>console.log('Local: http://127.0.0.1:4173'));
 
