@@ -8,6 +8,7 @@ function bundle(entry,modules,css,output){
  for(const name of ['actors-atlas','environment-atlas']){const data='data:image/png;base64,'+fs.readFileSync('dist/assets/'+name+'.png').toString('base64');source=source.replace('./assets/'+name+'.png',()=>data);}
  if(entry==='index.html')source=source.replace("location.href='swaehae.html'","location.href='SWAEHAE.html'");
  new vm.Script(source);
+ html=html.replace('<script src="boot.js"></script>',()=>'<script>'+read('dist/boot.js')+'</script>');
  html=html.replace('<link rel="stylesheet" href="'+css+'">',()=>'<style>'+read('dist/'+css)+'</style>');
  html=html.replace(/<script type="module" src="[^"]+"><\/script>/,()=>'<script type="module">'+source.replace(/<\/script/gi,'<\\/script')+'</script>');
  html=html.replace('href="index.html"','href="RECOMMAND.html"');
