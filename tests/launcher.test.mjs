@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import fs f
 import {boot} from './harness.mjs';
 test('single-file launcher parses, switches both embedded chapters and reports ready/errors',()=>{
  const html=fs.readFileSync(new URL('../release/PLAY-RECOMMAND.html',import.meta.url),'utf8'),code=html.match(/<script>([\s\S]*?)<\/script>/)[1];new vm.Script(code);
- const elements={gameFrame:{contentWindow:{},focus(){this.focused=true;}},launcherStatus:{},welcome:{}},events={},buttons=['yuon','swaehae'].map(chapter=>({dataset:{chapter}}));
+ const elements={gameFrame:{contentWindow:{},focus(){this.focused=true;}},launcherStatus:{},welcome:{}},events={},buttons=['yuon','swaehae','mumyeong','hwanseong'].map(chapter=>({dataset:{chapter}}));
  const box={document:{getElementById:id=>elements[id],querySelectorAll:()=>buttons},window:{addEventListener:(k,fn)=>events[k]=fn},setTimeout:()=>1,clearTimeout(){}};vm.createContext(box);vm.runInContext(code,box);
  buttons[0].onclick();let child=elements.gameFrame.srcdoc;assert(child.includes('parent.postMessage'));assert(!child.includes("location.href='SWAEHAE.html'"));assert(!/<script[^>]+src=|<link[^>]+href=/i.test(child));
  for(const m of child.matchAll(/<script(?: type="module")?>([\s\S]*?)<\/script>/g))new vm.Script(m[1]);
@@ -11,7 +11,8 @@ test('single-file launcher parses, switches both embedded chapters and reports r
  for(const m of child.matchAll(/<script(?: type="module")?>([\s\S]*?)<\/script>/g))new vm.Script(m[1]);
  events.message({source:elements.gameFrame.contentWindow,data:{type:'recommand-child-ready',chapter:'swaehae'}});assert.equal(elements.launcherStatus.hidden,true);
  events.message({source:elements.gameFrame.contentWindow,data:{type:'recommand-child-error',chapter:'swaehae',message:'test error'}});assert.equal(elements.launcherStatus.hidden,false);assert.match(elements.launcherStatus.textContent,/test error/);
- assert.equal((child.match(/data:image\/png;base64,/g)||[]).length,3);
+ for(const chapter of ['mumyeong','hwanseong']){events.message({source:elements.gameFrame.contentWindow,data:{type:'recommand-switch',chapter}});const next=elements.gameFrame.srcdoc;assert(next.includes('data-planet=\"'+chapter+'\"'));assert(!next.includes('__RECOMMAND_ASSET_'));assert.equal((next.match(/data:image\/png;base64,/g)||[]).length,3);for(const m of next.matchAll(/<script(?: type=\"module\")?>([\s\S]*?)<\/script>/g))new vm.Script(m[1]);}
+ assert.equal((html.match(/data:image\/png;base64,/g)||[]).length,3);
 });
 test('boot guard shows load errors and clears the error panel when startup succeeds',()=>{
  const listeners={},ids={},root={dataset:{}},body={append(e){ids[e.id]=e;}};const document={documentElement:root,body,querySelector:()=>null,getElementById:id=>ids[id],createElement:()=>({style:{},setAttribute(){},append(...nodes){for(const n of nodes)if(n.id)ids[n.id]=n;},remove(){delete ids[this.id];}})};
