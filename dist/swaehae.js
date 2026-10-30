@@ -136,3 +136,5 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['BUTTON','A'].inc
 let seaPrevious=performance.now(),seaAccumulator=0;function seaLoop(now){seaAccumulator+=clamp((now-seaPrevious)/1000,0,.15);seaPrevious=now;let n=0;while(seaAccumulator>=1/60&&n++<8){seaTick(1/60);seaAccumulator-=1/60;}if(n>=8)seaAccumulator=0;seaDraw();requestAnimationFrame(seaLoop);}requestAnimationFrame(seaLoop);
 if(!seaState.arrival)seaTalk('쇄해 · 닫힌 길의 바다',SWAEHAE_SCENES.arrival,()=>{seaState.arrival=true;saveSea();});
 window.recommandSea={snapshot:()=>JSON.parse(JSON.stringify({state:seaState,player:seaPlayer,paused:seaPaused,tide:tideState(seaState.gates),vfxReady:seaVFX.ready,backend:seaRenderer.backend}))};
+
+if(typeof window.dispatchEvent==='function')window.dispatchEvent(new Event('recommand-ready'));

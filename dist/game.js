@@ -33,9 +33,11 @@ function applySave(data){
  for(const e of enemies){Object.assign(e,data.enemies.find(v=>v.id===e.id));e.wind=0;e.sequence=false;e.pulse=0;e.cd=1;e.hit=0;if(obstacles.some(o=>distance(e,o)<=o.r+.42)){e.x=e.home.x;e.z=e.home.z;}}
  if(obstacles.some(o=>distance(player,o)<=o.r+.42)){player.x=0;player.z=7;}
 }
+let restoreFailure='';
 function restore(){
- for(const key of [SAVE,SAVE+'.backup']){try{const raw=localStorage.getItem(key);if(!raw)continue;const data=decode(raw,enemies);applySave(data);if(key.endsWith('.backup'))toast('이전 자동 저장으로 복구했습니다.');return true;}catch{}}
- return false;
+ const problems=[];
+ for(const key of [SAVE,SAVE+'.backup']){try{const raw=localStorage.getItem(key);if(!raw)continue;const data=decode(raw,enemies);applySave(data);if(key.endsWith('.backup'))toast('이전 자동 저장으로 복구했습니다.');restoreFailure='';return true;}catch(e){problems.push(e.message||'저장소 접근 불가');}}
+ restoreFailure=problems.length?'기록 확인: '+problems[0]:'이 브라우저나 주소에는 저장된 기록이 없습니다.';return false;
 }
 function showDialog(name,lines,after,{record=true}={}){
  keys.clear();$('choices')?.remove();$('dialogNext').classList.remove('hidden');dialog={name,lines,index:0,after};$('speaker').textContent=name;$('dialogText').textContent=lines[0];$('dialog').classList.remove('hidden');
@@ -203,7 +205,7 @@ function togglePause(){if(!started||dialog||study)return;paused=!paused;keys.cle
 function start(load=false){
  if(started)return;
  if(!load){let exists=false;try{exists=!!localStorage.getItem(SAVE);}catch{}if(exists&&!confirm('새 여정을 시작하면 자동 저장을 바꿉니다. 계속할까요?'))return;}
- if(load&&!restore()){toast('저장된 기억을 읽지 못했습니다. 진행 파일을 가져오거나 새 여정을 시작하세요.');return;}
+ if(load&&!restore()){toast('저장된 기억을 읽지 못했습니다. '+restoreFailure+' 원리 보기에서 진행 파일을 가져오거나 새 여정을 시작하세요.');return;}
  started=true;$('overlay').classList.add('hidden');save();sound(440,.2);updateHUD();$('world').focus();
 }
 $('start').onclick=()=>start();$('continue').onclick=()=>start(true);try{if(localStorage.getItem(SAVE))$('continue').classList.remove('hidden');}catch{}
@@ -340,3 +342,5 @@ $('world').addEventListener('webglcontextlost',e=>{e.preventDefault();contextLos
 // Read-only observability for QA. No gameplay cheats or mutable state exposed.
 window.recommand={snapshot:()=>JSON.parse(JSON.stringify({player,state,started,paused,study,dialog:dialog?{name:dialog.name,index:dialog.index}:null,enemies:enemies.map(({id,x,z,hp,wind})=>({id,x,z,hp,wind})),curve,drawCalls:R.calls,backend:R.backend,fps,vfxReady:combatVFX.ready,vfxFailed:!!combatVFX.failed,storageWarning,contextLost}))};
 
+
+if(typeof window.dispatchEvent==='function')window.dispatchEvent(new Event('recommand-ready'));
