@@ -31,6 +31,25 @@ function inSector(origin,target,facing,range=3.1,minDot=.25){const dx=target.x-o
 function bendHeight(x,y,z,cx,cz,k){return y-k*((x-cx)**2+(z-cz)**2);}
 function resolveMove(p,dx,dz,obstacles,bound=79){const out={x:p.x,z:p.z},steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dz))/.16));const free=(x,z)=>obstacles.every(o=>Math.hypot(x-o.x,z-o.z)>o.r+.42);for(let i=0;i<steps;i++){const nx=clamp(out.x+dx/steps,-bound,bound);if(free(nx,out.z))out.x=nx;const nz=clamp(out.z+dz/steps,-bound,bound);if(free(out.x,nz))out.z=nz;}return out;}
 function seeded(seed=9273){return()=>{seed=(Math.imul(seed,1664525)+1013904223)|0;return(seed>>>0)/4294967296;};}
+
+// Presentation only: interpolate fixed simulation steps; never mutate collision or save data.
+class MotionPresenter{
+ constructor(p){this.previous={x:p.x,z:p.z};this.camera={x:p.x,z:p.z};this.phase=0;this.gait=0;this.back=p.face?.z<-.2;this.clock=0;}
+ capture(p){this.previous={x:p.x,z:p.z};}
+ reset(p){this.previous={x:p.x,z:p.z};Object.assign(this.camera,{x:p.x,z:p.z});this.gait=0;}
+ sample(p,alpha=1,dt=1/60,{frozen=false,dashing=false}={}){
+  dt=clamp(Number.isFinite(dt)?dt:0,0,.15);alpha=clamp(Number.isFinite(alpha)?alpha:1,0,1);
+  if(distance(this.previous,p)>8||distance(this.camera,p)>16)this.reset(p);
+  const x=frozen?p.x:this.previous.x+(p.x-this.previous.x)*alpha,z=frozen?p.z:this.previous.z+(p.z-this.previous.z)*alpha;
+  const speed=frozen?0:distance(p,this.previous)*60;
+  this.gait+=(clamp(speed/6.2,0,1)-this.gait)*(1-Math.exp(-18*dt));
+  if(!frozen){this.clock+=dt;this.phase+=speed*dt*1.45;}
+  if(p.face?.z<-.28)this.back=true;else if(p.face?.z>.12)this.back=false;
+  const follow=1-Math.exp(-12*dt);this.camera.x+=(x-this.camera.x)*follow;this.camera.z+=(z-this.camera.z)*follow;
+  const stride=Math.sin(this.phase*2),idle=Math.sin(this.clock*1.8);
+  return{x,z,cameraX:this.camera.x,cameraZ:this.camera.z,frame:(this.gait>.12?Math.floor(this.phase)%2:0)+(this.back?2:0),bob:this.gait*Math.abs(stride)*.045+(1-this.gait)*idle*.012,width:1+(dashing?.055:Math.cos(this.phase*2)*this.gait*.009),height:1-(dashing?.04:Math.abs(stride)*this.gait*.012),gait:this.gait};
+ }
+}
 function perspective(fov,aspect,near,far){const f=1/Math.tan(fov/2),nf=1/(near-far);return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0]);}
 function lookAt(eye,target){let z=[eye[0]-target[0],eye[1]-target[1],eye[2]-target[2]],n=Math.hypot(...z);z=z.map(v=>v/n);let x=[z[2],0,-z[0]];n=Math.hypot(...x);x=x.map(v=>v/n);const y=[z[1]*x[2]-z[2]*x[1],z[2]*x[0]-z[0]*x[2],z[0]*x[1]-z[1]*x[0]];return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-x.reduce((s,v,i)=>s+v*eye[i],0),-y.reduce((s,v,i)=>s+v*eye[i],0),-z.reduce((s,v,i)=>s+v*eye[i],0),1]);}
 
@@ -356,7 +375,7 @@ const lateLoad=loadLate(localStorage,latePlanet);
 let lateState=lateLoad.state||newLateState(latePlanet),lateStarted=false,latePaused=false,lateDialogue=null,lateOverlay=false,lateArena=null,lateClock=0,lateAutosave=0,lateToastClock=0,lateHUDClock=0,lateSaveError=false;
 let latePracticeMode=false,lateTrialReturn=null,lateImportPending=null;
 const latePlayer={x:lateState.player.x,z:lateState.player.z,hp:lateState.player.hp,face:{x:0,z:-1},walk:0,dash:0,dashing:0,inv:0,slash:0,wave:0};
-const lateCamera={x:latePlayer.x,z:latePlayer.z};
+const lateMotion=new MotionPresenter(latePlayer);const lateCamera=lateMotion.camera;
 function lateSet(id,text){const e=lateEl(id);if(e.textContent!==String(text))e.textContent=String(text);}
 function lateToast(text){lateSet('lateToast',text);lateEl('lateToast').hidden=false;lateToastClock=5;}
 function lateJourney(){return journeySummary(key=>{try{return localStorage.getItem(key);}catch{return null;}});}
@@ -513,6 +532,7 @@ function lateAttack(kind){
 }
 function lateDash(){if(!lateStarted||latePaused||lateDialogue||lateOverlay)return;if(lateArena){dashLateBoss(lateArena);return;}if(latePlayer.dash>0)return;latePlayer.dash=1.15;latePlayer.dashing=.19;latePlayer.inv=.3;}
 function lateTick(dt){
+ lateMotion.capture(latePlayer);
  lateClock+=dt;if(lateToastClock>0){lateToastClock-=dt;if(lateToastClock<=0)lateEl('lateToast').hidden=true;}
  if(!lateStarted||latePaused||lateDialogue||lateOverlay)return;
  for(const key of['dash','dashing','inv','slash','wave'])latePlayer[key]=Math.max(0,latePlayer[key]-dt);
@@ -623,15 +643,12 @@ function lateArenaDraw(){
  lateRenderer.drawDynamic(makeLateBossModel(isSnow?'mumyeong':'hwanseong',0,0,-64,lateClock,b,lateSoft));
  if((b.pattern==='snow'||b.pattern==='echo')&&b.phase==='warn')for(const h of b.hazards.filter(h=>!h.real))lateRenderer.sprite(lateArt.actor('elder',lateFallback),h.x,.5,h.z,2.4,3.3,.25);
 }
-function lateDraw(){
- const dx=latePlayer.x-lateCamera.x,dz=latePlayer.z-lateCamera.z;
- // Rendering follows a separate camera; simulation and collision use the unmodified player position.
- lateCamera.x+=dx*.12;lateCamera.z+=dz*.12;
+function lateDraw(alpha=1,dt=1/60){
+ const pose=lateMotion.sample(latePlayer,alpha,dt,{frozen:!lateStarted||latePaused||!!lateDialogue||lateOverlay,dashing:(lateArena?.dashing||latePlayer.dashing)>0});
  lateRenderer.begin(lateCamera.x,lateCamera.z,.011);lateRenderer.mesh(lateTerrainMesh);
  if(lateArena)lateArenaDraw();else{lateRenderer.mesh(lateArchitectureMesh);lateGroundDetails();}
- const walking=lateKeys.size>0&&!lateDialogue&&!latePaused&&!lateOverlay,back=latePlayer.face.z<-.2,frame=(walking?Math.floor(latePlayer.walk)%2:0)+(back?2:0),bob=walking?Math.sin(latePlayer.walk*2)*.035:Math.sin(lateClock*1.8)*.012;
  const inv=lateArena?.inv||latePlayer.inv;
- lateRenderer.sprite(lateArt.actor(['hero0','hero1','heroBack0','heroBack1'][frame],lateFallback),latePlayer.x,bob,latePlayer.z,1.9,2.65,inv>0&&Math.sin(lateClock*35)>0?.5:1);
+ lateRenderer.sprite(lateArt.actor(['hero0','hero1','heroBack0','heroBack1'][pose.frame],lateFallback),pose.x,pose.bob,pose.z,1.9*pose.width,2.65*pose.height,inv>0&&Math.sin(lateClock*35)>0?.5:1);
  lateVFX.draw(lateEffects,[],lateClock);lateRenderer.finish();
 }
 function lateMapDraw(){
@@ -719,7 +736,7 @@ let latePrevious=performance.now(),lateAccumulator=0;
 function lateLoop(now){
  const dt=clamp((now-latePrevious)/1000,0,.15);latePrevious=now;lateAccumulator+=dt;let n=0;
  while(lateAccumulator>=1/60&&n++<9){lateTick(1/60);lateAccumulator-=1/60;}
- if(n>=9)lateAccumulator=0;lateDraw();
+ if(n>=9)lateAccumulator=0;lateDraw(lateAccumulator*60,dt);
  if((lateHUDClock+=dt)>=.1){lateHUDClock=0;lateUpdateHUD();}
  requestAnimationFrame(lateLoop);
 }
