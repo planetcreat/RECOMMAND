@@ -148,7 +148,7 @@ function sprite(kind,variant=0,frame=0,back=false){
 const heroSprites=[sprite('hero',0,0,false),sprite('hero',0,1,false),sprite('hero',0,0,true),sprite('hero',0,1,true)],npcTex=sprite('npc'),scoutTex=sprite('npc',1),bossTex=sprite('boss'),glowTex=sprite('glow');
 const slimeTextures=Array.from({length:3},(_,i)=>[sprite('slime',i,0),sprite('slime',i,1)]);
 function label(text,color='#e8e5bd'){return R.texture('label'+text,(c,w,h)=>{c.font='500 22px "Malgun Gothic",sans-serif';c.textAlign='center';c.shadowColor='#0b2529';c.shadowBlur=5;c.fillStyle=color;c.fillText(text,w/2,34);},512,64);}
-const labels={scout:label(SCOUT.name),survey:label(OLD_SURVEY.name),echoes:ECHO_SITES.map(e=>label(e.name)),npc:label('루미 · 기록자'),portal:label('별의 관문'),boss:label(BOSS.name,'#f0d39b'),seals:seals.map(s=>label(s.name)),memories:memories.map(s=>label(s.name))};
+const labels={remains:label('수호자의 기억'),scout:label(SCOUT.name),survey:label(OLD_SURVEY.name),echoes:ECHO_SITES.map(e=>label(e.name)),npc:label('루미 · 기록자'),portal:label('별의 관문'),boss:label(BOSS.name,'#f0d39b'),seals:seals.map(s=>label(s.name)),memories:memories.map(s=>label(s.name))};
 const enemies=[];
 for(let i=0;i<3;i++)for(let j=0;j<3;j++){const a=j/3*TAU;enemies.push({id:i*3+j,x:seals[i].x+Math.cos(a)*4,z:seals[i].z+Math.sin(a)*4,home:{x:seals[i].x+Math.cos(a)*4,z:seals[i].z+Math.sin(a)*4},hp:48,max:48,type:i,wind:0,cd:.5,jitter:j,hit:0});}
 const boss={id:99,x:13,z:-69,home:{x:13,z:-69},hp:300,max:300,type:3,wind:0,cd:2,hit:0};enemies.push(boss);
@@ -162,7 +162,7 @@ function action(name){
  if(name==='dash'&&player.dash<=0){player.dash=1.6;player.dashTime=.2;player.inv=Math.max(player.inv,.25);sound(300,.12,'sine');}
  if(name==='skill'&&player.skill<=0){player.skill=5;effects.push({kind:'wave',x:player.x,z:player.z,life:.75,max:.75});for(const e of enemies)if(e.hp>0&&(e!==boss||state.seals.every(Boolean))&&distance(player,e)<=6)damageEnemy(e,36);sound(750,.4,'sine');}
 }
-function nearest(){const all=[{...npc,kind:'npc',name:'루미'},{...SCOUT,kind:'scout',name:SCOUT.name},{...OLD_SURVEY,kind:'survey',name:OLD_SURVEY.name},...ECHO_SITES.map((s,i)=>({...s,kind:'echo',i})),{...portal,kind:'portal',name:'별의 관문'},...seals.map((s,i)=>({...s,kind:'seal',i})),...memories.map((s,i)=>({...s,kind:'memory',i})),{x:13,z:-69,kind:'boss',name:'수호자의 기억'}];if(distance(player,fracture)<1.3)all.push({...fracture,kind:'fracture',name:'갈라진 연결부'});return all.sort((a,b)=>distance(player,a)-distance(player,b)).find(o=>distance(player,o)<3.8);}
+function nearest(){const all=[{...npc,kind:'npc',name:'루미'},{...SCOUT,kind:'scout',name:SCOUT.name},{...OLD_SURVEY,kind:'survey',name:OLD_SURVEY.name},...ECHO_SITES.map((s,i)=>({...s,kind:'echo',i})),{...portal,kind:'portal',name:'별의 관문'},...seals.map((s,i)=>({...s,kind:'seal',i})),...memories.map((s,i)=>({...s,kind:'memory',i})),{x:boss.x,z:boss.z,kind:'boss',name:'수호자의 기억'}];if(distance(player,fracture)<1.3)all.push({...fracture,kind:'fracture',name:'갈라진 연결부'});return all.sort((a,b)=>distance(player,a)-distance(player,b)).find(o=>distance(player,o)<3.8);}
 function interact(){
  if(!started||paused||study||contextLost)return;if(dialog){advance();return;}const o=nearest();if(!o)return;
  if(o.kind==='npc'){
@@ -296,6 +296,7 @@ function draw(alpha=1,dt=1/60){
  const pose=playerMotion.sample(player,alpha,dt,{frozen:!started||paused||study||!!dialog,dashing:player.dashTime>0});
  const camX=started?pose.cameraX:0,camZ=started?pose.cameraZ:-1;R.begin(camX,camZ,curve);R.mesh(worldMesh);R.mesh(roadMesh);if(grid)R.mesh(gridMesh);R.mesh(propMesh);if(!worldArt.propReady){R.mesh(treeMesh);R.mesh(portalMesh);}R.mesh(brokenMesh);
  const g=new Geometry(),visible=e=>Math.abs(e.x-camX)<48&&Math.abs(e.z-camZ)<58;
+ if(state.boss&&visible(boss))g.ring(boss.x,groundY(boss.x,boss.z)+.12,boss.z,1.35,[.85,.82,.46],48,.08);
  shadow(g,pose.x,pose.z,.72);shadow(g,npc.x,npc.z,.7);
  for(const e of enemies)if(e.hp>0&&visible(e)){shadow(g,e.x,e.z,e===boss?1.8:.8);if(e.wind>0){const r=e===boss?BOSS.pulseRadii[e.pulse||0]:1.6,d=e===boss?(e.pulse?BOSS.gap:BOSS.windup):.48;g.ring(e.x,groundY(e.x,e.z)+.23,e.z,r,[.83,.39,.28],48,.12+clamp(1-e.wind/d,0,1)*.5);}if(debug)g.ring(e.x,.35,e.z,e===boss?1.4:.55,[.9,.4,.4],32,.07);}
  for(let i=0;i<3;i++){const s=seals[i],c=state.seals[i]?[.85,.82,.46]:[.45,.65,.56];g.ring(s.x,.35,s.z,2.1,c,48,.1);if(state.seals[i])g.ring(s.x,.38,s.z,2.35,c,48,.035);}
@@ -320,6 +321,7 @@ function draw(alpha=1,dt=1/60){
  for(let i=0;i<3;i++){const s=seals[i];if(!visible(s))continue;draws.push(()=>{R.sprite(glowTex,s.x,1.5+Math.sin(time*2)*.15,s.z,3,3,state.seals[i]?.85:.32);R.sprite(labels.seals[i],s.x,3.3,s.z,5,.62);});}
  for(let i=0;i<2;i++){const s=memories[i];if(visible(s))draws.push(()=>{R.sprite(glowTex,s.x,1.5,s.z,1.6,1.6,.5);R.sprite(labels.memories[i],s.x,3,s.z,5,.62);});}
  for(const e of enemies){if(e.hp<=0||!visible(e))continue;const isBoss=e===boss,w=isBoss?4.8:2.2,h=isBoss?5.2:2;draws.push(()=>{if(isBoss)R.drawDynamic(makeBossModel('ormun',e.x,groundY(e.x,e.z),e.z,time,e,SOFT));else R.sprite(worldArt.actor('slime'+e.type+(Math.floor(time*2+(e.jitter||0))%2?'b':''),slimeTextures[e.type][Math.floor(time*4+(e.jitter||0))%2]),e.x,groundY(e.x,e.z)+Math.sin(time*4)*.06,e.z,w,h,e.hit>0?.45:1);if(isBoss)R.sprite(labels.boss,e.x,6.1,e.z,6,.75);if(e.hp<e.max||e.wind>0){const tex=R.texture('hp'+e.id+'-'+Math.ceil(e.hp/10),c=>{c.fillStyle='#143632';c.fillRect(10,45,108,12);c.fillStyle=isBoss?'#dfb271':'#bfd495';c.fillRect(12,47,104*e.hp/e.max,8);});R.sprite(tex,e.x,h+.4,e.z,isBoss?4:2.6,.65);}});}
+ if(state.boss&&visible(boss))draws.push(()=>{R.sprite(glowTex,boss.x,groundY(boss.x,boss.z)+1.2+Math.sin(time*1.5)*.1,boss.z,2.3,2.3,.75);R.sprite(labels.remains,boss.x,groundY(boss.x,boss.z)+3,boss.z,5,.65);});
  const frame=pose.frame;
  draws.push(()=>R.sprite(worldArt.actor(['hero0','hero1','heroBack0','heroBack1'][frame],heroSprites[frame]),pose.x,groundY(pose.x,pose.z)+pose.bob,pose.z,1.9*pose.width,2.6*pose.height,player.inv>0&&Math.floor(time*16)%2?.45:1));
  // Alpha cutoff writes depth, so opaque sprite pixels occlude correctly with 3D trees.

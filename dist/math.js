@@ -4,6 +4,10 @@ export const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export function normalize(x,z){const n=Math.hypot(x,z);return n?{x:x/n,z:z/n}:{x:0,z:0};}
 export function inSector(origin,target,facing,range=3.1,minDot=.25){const dx=target.x-origin.x,dz=target.z-origin.z,n=Math.hypot(dx,dz);return n<=range&&(n<1e-6||(dx*facing.x+dz*facing.z)/n>=minDot);}
 export function bendHeight(x,y,z,cx,cz,k){return y-k*((x-cx)**2+(z-cz)**2);}
+// Visual gravity follows the normal of the bent ground; logical x/z stays flat.
+export function surfaceNormal(dx,dz,k){const x=2*k*dx,z=2*k*dz,n=Math.hypot(x,1,z);return[x/n,1/n,z/n];}
+export function surfaceMeshPoint(x,y,z,cx,cz,k){const dx=x-cx,dz=z-cz,n=surfaceNormal(dx,dz,k);return[x+n[0]*y,-k*(dx*dx+dz*dz)+n[1]*y,z+n[2]*y];}
+export function surfaceSpriteAxes(x,z,cx,cz,k){const up=surfaceNormal(x-cx,z-cz,k),right=[up[1]*.78-up[2]*.625,-up[0]*.78,up[0]*.625],n=Math.hypot(...right);return{up,right:n>1e-6?right.map(v=>v/n):[1,0,0]};}
 export function resolveMove(p,dx,dz,obstacles,bound=79){const out={x:p.x,z:p.z},steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dz))/.16));const free=(x,z)=>obstacles.every(o=>Math.hypot(x-o.x,z-o.z)>o.r+.42);for(let i=0;i<steps;i++){const nx=clamp(out.x+dx/steps,-bound,bound);if(free(nx,out.z))out.x=nx;const nz=clamp(out.z+dz/steps,-bound,bound);if(free(out.x,nz))out.z=nz;}return out;}
 export function seeded(seed=9273){return()=>{seed=(Math.imul(seed,1664525)+1013904223)|0;return(seed>>>0)/4294967296;};}
 

@@ -10,7 +10,7 @@ export class WorldArt{
  },256,256);}target.push(...next);this[kind==='actors'?'actorReady':'propReady']=true;}catch{this.failed.push(kind);}};img.onerror=()=>this.failed.push(kind);img.src=src;}
  actor(key,fallback){return this.actorReady?this.actors[ART_KEYS[key]]??fallback:fallback;}
  prop(key){return this.propReady?this.props[PROP_KEYS[key]]:null;}
- drawProp(key,x,y,z,size){const tex=this.prop(key);if(tex)this.r.sprite(tex,x,y,z,size,size);}
+ drawProp(key,x,y,z,size){const tex=this.prop(key);if(tex)this.r.sprite(tex,x,y,z,size,size/.78,1,true);}
 }
 export function visualTerrain(x,z,planet='garden'){
  const n=Math.sin(x*.63+Math.sin(z*.22))*Math.cos(z*.39)+.35*Math.sin(x*1.7+z*1.3),b=Math.sin(x*.11+z*.15);

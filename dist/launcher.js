@@ -1,0 +1,25 @@
+import {PROLOGUE,BRIEFINGS,BRIEFING_KEY,readBriefingSeen,pendingBriefing} from './briefing.js';
+// chapters, assets and names are embedded by build-launcher.mjs.
+const frame=document.getElementById('gameFrame'),status=document.getElementById('launcherStatus'),modal=document.getElementById('briefing');
+const seen=readBriefingSeen(k=>localStorage.getItem(k));let selected=null,loadTimer,pages=[],pageIndex=0,pendingChapter=null,replaying=false,voiceOn=false;
+function setStatus(message){status.hidden=false;document.getElementById('loadMessage').textContent=message;}
+function loadChapter(name){selected=name;clearTimeout(loadTimer);setStatus('행성을 여는 중입니다…');document.getElementById('welcome').hidden=true;frame.hidden=false;frame.srcdoc=chapters[name].replace(/__RECOMMAND_ASSET_(\d+)__/g,(_,i)=>assets[Number(i)]);document.title=names[name]+' · RE:COMMAND 0.6.2';loadTimer=setTimeout(()=>setStatus('시작이 지연되고 있습니다. Chrome 또는 Edge에서 실행하거나 다시 열기를 눌러 주세요.'),15000);}
+function openChapter(name){if(!Object.hasOwn(chapters,name))return;const next=pendingBriefing(name,seen);if(next.length){showBriefing(next,name,false);return;}loadChapter(name);}
+function cancelVoice(){try{window.speechSynthesis?.cancel();}catch{}}
+function koreanVoice(){try{return window.speechSynthesis?.getVoices().find(v=>/^ko(?:-|_)?/i.test(v.lang));}catch{return null;}}
+function voiceAvailability(){const available=typeof window.SpeechSynthesisUtterance==='function'&&!!koreanVoice();document.getElementById('briefVoice').disabled=!available;document.getElementById('voiceStatus').textContent=available?'선택하면 한국어 음성으로 안내합니다.':'이 브라우저에 한국어 음성이 없어 글로 안내합니다.';if(!available){voiceOn=false;document.getElementById('briefVoice').textContent='음성 듣기';}return available;}
+function narrate(){cancelVoice();if(!voiceOn||!voiceAvailability()||!modal.open)return;try{const p=pages[pageIndex],u=new SpeechSynthesisUtterance(p.title+'. '+p.body+' '+p.goal);u.lang='ko-KR';u.voice=koreanVoice();u.rate=.95;u.onstart=()=>{document.getElementById('voiceStatus').textContent='한국어 음성으로 안내를 읽는 중입니다.';};u.onend=()=>{if(modal.open&&voiceOn)document.getElementById('voiceStatus').textContent='음성 안내를 마쳤습니다.';};u.onerror=e=>{if(!['canceled','interrupted'].includes(e.error))document.getElementById('voiceStatus').textContent='음성을 재생하지 못했습니다. 글로 계속할 수 있습니다.';};window.speechSynthesis.speak(u);}catch{document.getElementById('voiceStatus').textContent='음성 없이 글로 계속할 수 있습니다.';}}
+function renderBriefing(){const p=pages[pageIndex];document.getElementById('briefTag').textContent=p.tag;document.getElementById('briefTitle').textContent=p.title;document.getElementById('briefBody').textContent=p.body;document.getElementById('briefGoal').textContent=p.goal;document.getElementById('briefCount').textContent=(pageIndex+1)+' / '+pages.length;document.getElementById('briefBack').disabled=pageIndex===0;document.getElementById('briefNext').textContent=pageIndex===pages.length-1?(replaying?'안내 닫기':names[pendingChapter]+(pendingChapter==='swaehae'?'로':'으로')+' 출발'):'다음';document.getElementById('briefTitle').focus();narrate();}
+function showBriefing(next,chapter,replay){cancelVoice();pages=next;pageIndex=0;pendingChapter=chapter;replaying=replay;modal.dataset.chapter=chapter||'yuon';voiceAvailability();modal.showModal();renderBriefing();}
+function finishBriefing(){cancelVoice();modal.close();if(!replaying){seen.intro=true;seen[pendingChapter]=true;try{localStorage.setItem(BRIEFING_KEY,JSON.stringify(seen));}catch{}loadChapter(pendingChapter);}else document.getElementById('journeyHelp').focus();}
+document.getElementById('briefNext').onclick=()=>{if(pageIndex===pages.length-1)finishBriefing();else{pageIndex++;renderBriefing();}};
+document.getElementById('briefBack').onclick=()=>{if(pageIndex){pageIndex--;renderBriefing();}};
+document.getElementById('briefSkip').onclick=finishBriefing;
+document.getElementById('briefVoice').onclick=()=>{voiceOn=!voiceOn;document.getElementById('briefVoice').textContent=voiceOn?'음성 끄기':'음성 듣기';narrate();};
+modal.addEventListener('cancel',e=>{e.preventDefault();finishBriefing();});
+document.getElementById('journeyHelp').onclick=()=>showBriefing([...PROLOGUE,...(BRIEFINGS[selected]||[])],selected||'yuon',true);
+document.getElementById('loadRetry').onclick=()=>{if(selected)loadChapter(selected);};
+for(const button of document.querySelectorAll('[data-chapter]')){button.onclick=()=>openChapter(button.dataset.chapter);button.disabled=false;}
+document.getElementById('journeyHelp').disabled=false;
+window.addEventListener('message',e=>{if(e.source!==frame.contentWindow||!e.data)return;if(e.data.type==='recommand-switch'){openChapter(e.data.chapter);return;}if(e.data.chapter!==selected)return;if(e.data.type==='recommand-child-ready'){clearTimeout(loadTimer);status.hidden=true;frame.focus();}if(e.data.type==='recommand-child-error'){clearTimeout(loadTimer);setStatus('불러오기 실패: '+e.data.message);}});
+window.addEventListener('pagehide',cancelVoice);document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelVoice();});window.speechSynthesis?.addEventListener('voiceschanged',voiceAvailability);
