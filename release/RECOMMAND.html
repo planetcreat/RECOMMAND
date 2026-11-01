@@ -7,7 +7,7 @@
 @media(max-width:760px){.side-quest{right:15px;top:275px;width:165px;padding:10px}.side-quest p{font-size:9px}.side-quest h2{font-size:11px}#bossInfo{top:198px;width:45vw;left:27%}#bossInfo h2{font-size:10px}.header-actions{flex-wrap:wrap;max-width:230px;gap:5px}header{align-items:flex-start}.header-actions button{font-size:9px;padding:6px}.planet,.objective{top:105px}#location{top:83px}}
 </style></head>
 <body><canvas id="world" tabindex="0" aria-label="행성 탐험 게임"></canvas><div id="vignette"></div>
-<header><a class="brand" href="#" id="brand">RE:COMMAND <span>리커맨드</span></a><div class="header-actions"><span class="version">PLAYABLE STUDY · 0.6.1</span><button id="learn">원리 보기 <kbd>F1</kbd></button><button id="journal">발견 기록</button><button id="pause">일시정지</button></div></header>
+<header><a class="brand" href="#" id="brand">RE:COMMAND <span>리커맨드</span></a><div class="header-actions"><span class="version">PLAYABLE STUDY · 0.6.2</span><button id="learn">원리 보기 <kbd>F1</kbd></button><button id="journal">발견 기록</button><button id="pause">일시정지</button></div></header>
 <main id="hud"><section class="planet"><div class="eyebrow">PLANET 01 / 04</div><h1>유온 <span>Yuon</span></h1><p>남겨진 숨의 정원</p><div class="planet-dots"><i class="active"></i><i></i><i></i><i></i></div></section>
 <section class="objective"><div class="eyebrow">현재의 여정</div><h2 id="questTitle">숲의 신호를 따라서</h2><p id="questText">기록자 루미에게 다가가 E로 대화하세요.</p><div id="sealProgress"><span></span><span></span><span></span></div></section>
 <section id="sideQuest" class="side-quest hidden"><div class="eyebrow">발견한 의뢰</div><h2>기록에 없던 울림</h2><p id="sideQuestText"></p></section><section id="bossInfo" class="hidden"><h2 id="bossName"></h2><div class="boss-bar"><i id="bossHealth"></i></div></section><section class="vitals"><div class="portrait">✦</div><div><div class="player-label">이름 없는 여행자 <span id="level">Lv. 1</span></div><div class="bar"><i id="health"></i><span id="hpText">100 / 100</span></div><div class="xp"><i id="xp"></i></div></div></section>
@@ -35,6 +35,10 @@ const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 function normalize(x,z){const n=Math.hypot(x,z);return n?{x:x/n,z:z/n}:{x:0,z:0};}
 function inSector(origin,target,facing,range=3.1,minDot=.25){const dx=target.x-origin.x,dz=target.z-origin.z,n=Math.hypot(dx,dz);return n<=range&&(n<1e-6||(dx*facing.x+dz*facing.z)/n>=minDot);}
 function bendHeight(x,y,z,cx,cz,k){return y-k*((x-cx)**2+(z-cz)**2);}
+// Visual gravity follows the normal of the bent ground; logical x/z stays flat.
+function surfaceNormal(dx,dz,k){const x=2*k*dx,z=2*k*dz,n=Math.hypot(x,1,z);return[x/n,1/n,z/n];}
+function surfaceMeshPoint(x,y,z,cx,cz,k){const dx=x-cx,dz=z-cz,n=surfaceNormal(dx,dz,k);return[x+n[0]*y,-k*(dx*dx+dz*dz)+n[1]*y,z+n[2]*y];}
+function surfaceSpriteAxes(x,z,cx,cz,k){const up=surfaceNormal(x-cx,z-cz,k),right=[up[1]*.78-up[2]*.625,-up[0]*.78,up[0]*.625],n=Math.hypot(...right);return{up,right:n>1e-6?right.map(v=>v/n):[1,0,0]};}
 function resolveMove(p,dx,dz,obstacles,bound=79){const out={x:p.x,z:p.z},steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dz))/.16));const free=(x,z)=>obstacles.every(o=>Math.hypot(x-o.x,z-o.z)>o.r+.42);for(let i=0;i<steps;i++){const nx=clamp(out.x+dx/steps,-bound,bound);if(free(nx,out.z))out.x=nx;const nz=clamp(out.z+dz/steps,-bound,bound);if(free(out.x,nz))out.z=nz;}return out;}
 function seeded(seed=9273){return()=>{seed=(Math.imul(seed,1664525)+1013904223)|0;return(seed>>>0)/4294967296;};}
 
@@ -102,9 +106,10 @@ function decode(raw,defs){
 
 
 // Raw WebGL: the game has no third-party runtime dependencies.
-const meshVS=`attribute vec3 aPos;attribute vec3 aColor;uniform mat4 uView,uProj;uniform vec2 uCenter;uniform float uCurve;varying vec3 vColor;varying float vDepth;void main(){vec3 p=aPos;vec2 d=p.xz-uCenter;p.y-=uCurve*dot(d,d);vec4 view=uView*vec4(p,1.);gl_Position=uProj*view;vDepth=-view.z;vColor=aColor;}`;
+const surfaceGLSL=`vec3 groundNormal(vec2 d){return normalize(vec3(2.*uCurve*d.x,1.,2.*uCurve*d.y));}`;
+const meshVS=`attribute vec3 aPos;attribute vec3 aColor;uniform mat4 uView,uProj;uniform vec2 uCenter;uniform float uCurve;varying vec3 vColor;varying float vDepth;${surfaceGLSL}void main(){vec2 d=aPos.xz-uCenter;vec3 n=groundNormal(d);vec3 p=vec3(aPos.x,-uCurve*dot(d,d),aPos.z)+n*aPos.y;vec4 view=uView*vec4(p,1.);gl_Position=uProj*view;vDepth=-view.z;vColor=aColor;}`;
 const meshFS=`precision mediump float;uniform float uMeshAlpha;varying vec3 vColor;varying float vDepth;void main(){float fog=smoothstep(36.,100.,vDepth);gl_FragColor=vec4(mix(vColor,vec3(.34,.49,.51),fog),uMeshAlpha);}`;
-const spriteVS=`attribute vec2 aPos;uniform mat4 uView,uProj;uniform vec2 uCenter;uniform float uCurve;uniform vec3 uAnchor;uniform vec2 uSize;varying vec2 vUV;varying float vDepth;void main(){vec3 p=uAnchor;vec2 d=p.xz-uCenter;p.y-=uCurve*dot(d,d);p+=vec3(aPos.x*uSize.x,aPos.y*uSize.y*.78,-aPos.y*uSize.y*.625);vec4 view=uView*vec4(p,1.);gl_Position=uProj*view;vDepth=-view.z;vUV=vec2(aPos.x+.5,1.-aPos.y);}`;
+const spriteVS=`attribute vec2 aPos;uniform mat4 uView,uProj;uniform vec2 uCenter;uniform float uCurve;uniform vec3 uAnchor;uniform vec2 uSize;uniform float uSurface;varying vec2 vUV;varying float vDepth;${surfaceGLSL}void main(){vec3 p=uAnchor;vec2 d=p.xz-uCenter;p.y-=uCurve*dot(d,d);vec3 up=vec3(0.,.78,-.625),right=vec3(1.,0.,0.);if(uSurface>.5){up=groundNormal(d);right=cross(up,vec3(0.,.625,.78));right=length(right)>0.000001?normalize(right):vec3(1.,0.,0.);}p+=right*aPos.x*uSize.x+up*aPos.y*uSize.y;vec4 view=uView*vec4(p,1.);gl_Position=uProj*view;vDepth=-view.z;vUV=vec2(aPos.x+.5,1.-aPos.y);}`;
 const spriteFS=`precision mediump float;uniform sampler2D uTex;uniform float uAlpha;varying vec2 vUV;varying float vDepth;void main(){vec4 c=texture2D(uTex,vUV);if(c.a<.08)discard;c.rgb=mix(c.rgb,vec3(.34,.49,.51),smoothstep(36.,100.,vDepth));gl_FragColor=vec4(c.rgb,c.a*uAlpha);}`;
 const effectVS=`attribute vec3 aPos;attribute vec2 aUV;uniform mat4 uView,uProj;uniform vec2 uCenter;uniform float uCurve;varying vec2 vUV;void main(){vec3 p=aPos;vec2 d=p.xz-uCenter;p.y-=uCurve*dot(d,d);gl_Position=uProj*uView*vec4(p,1.);vUV=aUV;}`;
 const effectFS=`precision mediump float;uniform sampler2D uTex;uniform float uAlpha;varying vec2 vUV;void main(){vec4 c=texture2D(uTex,vUV);if(c.a<.015)discard;gl_FragColor=vec4(c.rgb,c.a*uAlpha);}`;
@@ -128,8 +133,8 @@ class Renderer{
  mesh(mesh,mode){const g=this.gl,p=this.meshProgram;this.common(p);this.uniform(p,'uMeshAlpha',mesh.alpha??1);g.bindBuffer(g.ARRAY_BUFFER,mesh.buffer);for(const[name,n,offset]of[['aPos',3,0],['aColor',3,12]]){const l=g.getAttribLocation(p,name);g.enableVertexAttribArray(l);g.vertexAttribPointer(l,n,g.FLOAT,false,24,offset);}if(mesh.additive){g.depthMask(false);g.blendFunc(g.SRC_ALPHA,g.ONE);}g.drawArrays(mode||g.TRIANGLES,0,mesh.count);if(mesh.additive){g.depthMask(true);g.blendFunc(g.SRC_ALPHA,g.ONE_MINUS_SRC_ALPHA);}this.calls++;}
  drawDynamic(geometry){const g=this.gl;g.bindBuffer(g.ARRAY_BUFFER,this.dynamic);g.bufferData(g.ARRAY_BUFFER,new Float32Array(geometry.data),g.DYNAMIC_DRAW);this.mesh({buffer:this.dynamic,count:geometry.data.length/6,alpha:geometry.alpha,additive:geometry.additive});}
  texture(key,draw,w=128,h=128){if(this.textures.has(key))return this.textures.get(key);const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;draw(canvas.getContext('2d'),w,h);const g=this.gl,t=g.createTexture();g.bindTexture(g.TEXTURE_2D,t);g.texImage2D(g.TEXTURE_2D,0,g.RGBA,g.RGBA,g.UNSIGNED_BYTE,canvas);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_MIN_FILTER,g.LINEAR);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_MAG_FILTER,g.NEAREST);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_WRAP_S,g.CLAMP_TO_EDGE);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_WRAP_T,g.CLAMP_TO_EDGE);this.textures.set(key,t);return t;}
- sprite(tex,x,y,z,w,h,alpha=1){if(alpha<1){const by=y-this.curve*((x-this.center[0])**2+(z-this.center[1])**2),v=this.view;this.transparent.push({args:[tex,x,y,z,w,h,alpha],depth:-(v[2]*x+v[6]*by+v[10]*z+v[14])});return;}this.drawSprite(tex,x,y,z,w,h,alpha);}
- drawSprite(tex,x,y,z,w,h,alpha){const g=this.gl,p=this.spriteProgram;this.common(p);this.uniform(p,'uAnchor',[x,y,z]);this.uniform(p,'uSize',[w,h]);this.uniform(p,'uAlpha',alpha);g.bindBuffer(g.ARRAY_BUFFER,this.quad);g.disableVertexAttribArray(1);g.enableVertexAttribArray(0);g.vertexAttribPointer(0,2,g.FLOAT,false,0,0);g.activeTexture(g.TEXTURE0);g.bindTexture(g.TEXTURE_2D,tex);g.uniform1i(g.getUniformLocation(p,'uTex'),0);g.drawArrays(g.TRIANGLES,0,6);this.calls++;}
+ sprite(tex,x,y,z,w,h,alpha=1,surface=false){if(alpha<1){const by=y-this.curve*((x-this.center[0])**2+(z-this.center[1])**2),v=this.view;this.transparent.push({args:[tex,x,y,z,w,h,alpha,surface],depth:-(v[2]*x+v[6]*by+v[10]*z+v[14])});return;}this.drawSprite(tex,x,y,z,w,h,alpha,surface);}
+ drawSprite(tex,x,y,z,w,h,alpha,surface=false){const g=this.gl,p=this.spriteProgram;this.common(p);this.uniform(p,'uAnchor',[x,y,z]);this.uniform(p,'uSize',[w,h]);this.uniform(p,'uSurface',surface?1:0);this.uniform(p,'uAlpha',alpha);g.bindBuffer(g.ARRAY_BUFFER,this.quad);g.disableVertexAttribArray(1);g.enableVertexAttribArray(0);g.vertexAttribPointer(0,2,g.FLOAT,false,0,0);g.activeTexture(g.TEXTURE0);g.bindTexture(g.TEXTURE_2D,tex);g.uniform1i(g.getUniformLocation(p,'uTex'),0);g.drawArrays(g.TRIANGLES,0,6);this.calls++;}
  // Effects use world-space vertices: floor, upright and tilted surfaces all share real depth.
  effect(tex,points,alpha=1,additive=true){const v=this.view,p=points.reduce((a,b)=>a.map((n,i)=>n+b[i]/4),[0,0,0]),by=p[1]-this.curve*((p[0]-this.center[0])**2+(p[2]-this.center[1])**2);this.transparent.push({effect:true,args:[tex,points,alpha,additive],depth:-(v[2]*p[0]+v[6]*by+v[10]*p[2]+v[14])});}
  drawEffect(tex,points,alpha,additive){const g=this.gl;this.effectProgram??=program(g,effectVS,effectFS);this.effectBuffer??=g.createBuffer();const p=this.effectProgram;this.common(p);this.uniform(p,'uAlpha',alpha);const data=effectGrid(points);g.bindBuffer(g.ARRAY_BUFFER,this.effectBuffer);g.bufferData(g.ARRAY_BUFFER,new Float32Array(data),g.DYNAMIC_DRAW);for(const[name,size,offset]of[['aPos',3,0],['aUV',2,12]]){const l=g.getAttribLocation(p,name);g.enableVertexAttribArray(l);g.vertexAttribPointer(l,size,g.FLOAT,false,20,offset);}g.activeTexture(g.TEXTURE0);g.bindTexture(g.TEXTURE_2D,tex);g.uniform1i(g.getUniformLocation(p,'uTex'),0);g.blendFunc(g.SRC_ALPHA,additive?g.ONE:g.ONE_MINUS_SRC_ALPHA);g.drawArrays(g.TRIANGLES,0,data.length/5);g.blendFunc(g.SRC_ALPHA,g.ONE_MINUS_SRC_ALPHA);this.calls++;}
@@ -144,12 +149,14 @@ class SoftwareRenderer{
  upload(g){const chunks=new Map(),a=g.data;for(let i=0;i<a.length;i+=18){const x=(a[i]+a[i+6]+a[i+12])/3,z=(a[i+2]+a[i+8]+a[i+14])/3,cx=Math.floor(x/10),cz=Math.floor(z/10),key=cx+','+cz;if(!chunks.has(key))chunks.set(key,{x:cx*10+5,z:cz*10+5,data:[]});const chunk=chunks.get(key);for(let j=0;j<18;j++)chunk.data.push(a[i+j]);}return{chunks:[...chunks.values()].map(c=>({...c,data:new Float32Array(c.data)}))};}
  texture(key,draw,w=128,h=128){if(this.textures.has(key))return this.textures.get(key);const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);this.textures.set(key,c);return c;}
  begin(x,z,k){const c=this.canvas;const dpr=Math.min(devicePixelRatio||1,1);const w=Math.max(1,Math.floor(innerWidth*dpr)),h=Math.max(1,Math.floor(innerHeight*dpr));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}this.width=w;this.height=h;this.center=[x,z];this.curve=k;this.view=lookAt([x,18,z+22],[x,0,z-1]);this.focal=h/(2*Math.tan(Math.PI/6));this.queue.length=0;this.calls=0;const sky=this.ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#233c50');sky.addColorStop(.5,'#577d82');sky.addColorStop(1,'#7d9890');this.ctx.fillStyle=sky;this.ctx.fillRect(0,0,w,h);}
- project(x,y,z){const v=this.view,by=y-this.curve*((x-this.center[0])**2+(z-this.center[1])**2);const depth=-(v[2]*x+v[6]*by+v[10]*z+v[14]);if(depth<=.3)return null;return{x:this.width/2+(v[0]*x+v[4]*by+v[8]*z+v[12])*this.focal/depth,y:this.height/2-(v[1]*x+v[5]*by+v[9]*z+v[13])*this.focal/depth,depth};}
+ project(x,y,z){return this.projectBent(x,y-this.curve*((x-this.center[0])**2+(z-this.center[1])**2),z);}
+ projectMesh(x,y,z){return this.projectBent(...surfaceMeshPoint(x,y,z,...this.center,this.curve));}
+ projectBent(x,by,z){const v=this.view;const depth=-(v[2]*x+v[6]*by+v[10]*z+v[14]);if(depth<=.3)return null;return{x:this.width/2+(v[0]*x+v[4]*by+v[8]*z+v[12])*this.focal/depth,y:this.height/2-(v[1]*x+v[5]*by+v[9]*z+v[13])*this.focal/depth,depth};}
  mesh(mesh){
  if(mesh.chunks){this.ground??=mesh;for(const chunk of mesh.chunks){if(Math.abs(chunk.x-this.center[0])>42||chunk.z-this.center[1]>30||chunk.z-this.center[1]<-48)continue;this.renderChunk(chunk.data,mesh===this.ground?0:1);}this.calls++;return;}this.renderChunk(mesh.data,1,mesh.alpha??1,mesh.additive);this.calls++;}
  renderChunk(a,layer,alpha=1,additive=false){
  for(let i=0;i<a.length;i+=18){
- const p=this.project(a[i],a[i+1],a[i+2]),q=this.project(a[i+6],a[i+7],a[i+8]),r=this.project(a[i+12],a[i+13],a[i+14]);
+ const p=this.projectMesh(a[i],a[i+1],a[i+2]),q=this.projectMesh(a[i+6],a[i+7],a[i+8]),r=this.projectMesh(a[i+12],a[i+13],a[i+14]);
  if(!p||!q||!r)continue;
  if(Math.max(p.x,q.x,r.x)<0||Math.min(p.x,q.x,r.x)>this.width||Math.max(p.y,q.y,r.y)<0||Math.min(p.y,q.y,r.y)>this.height)continue;
  const depth=(p.depth+q.depth+r.depth)/3,t=Math.max(0,Math.min(1,(depth-36)/64)),fog=t*t*(3-2*t),sky=[.34,.49,.51];
@@ -158,7 +165,15 @@ class SoftwareRenderer{
  }
  }
  drawDynamic(g){this.mesh({data:g.data,alpha:g.alpha,additive:g.additive});}
- sprite(texture,x,y,z,w,h,alpha=1){const p=this.project(x,y,z);if(!p)return;const scale=this.focal/p.depth,pw=w*scale,ph=h*scale;if(p.x+pw<0||p.x-pw>this.width||p.y<0||p.y-ph>this.height)return;this.queue.push({type:1,layer:1,depth:p.depth,texture,x:p.x-pw/2,y:p.y-ph,w:pw,h:ph,alpha});this.calls++;}
+ sprite(texture,x,y,z,w,h,alpha=1,surface=false){if(surface){this.surfaceSprite(texture,x,y,z,w,h,alpha);return;}const p=this.project(x,y,z);if(!p)return;const scale=this.focal/p.depth,pw=w*scale,ph=h*scale;if(p.x+pw<0||p.x-pw>this.width||p.y<0||p.y-ph>this.height)return;this.queue.push({type:1,layer:1,depth:p.depth,texture,x:p.x-pw/2,y:p.y-ph,w:pw,h:ph,alpha});this.calls++;}
+ surfaceSprite(texture,x,y,z,w,h,alpha){
+  const {up,right}=surfaceSpriteAxes(x,z,...this.center,this.curve),by=y-this.curve*((x-this.center[0])**2+(z-this.center[1])**2);
+  const points=[[-.5,0],[.5,0],[.5,1],[-.5,1]].map(([u,v])=>this.projectBent(x+right[0]*u*w+up[0]*v*h,by+right[1]*u*w+up[1]*v*h,z+right[2]*u*w+up[2]*v*h));
+  if(points.some(p=>!p))return;
+  if(points.every(p=>p.x<0)||points.every(p=>p.x>this.width)||points.every(p=>p.y<0)||points.every(p=>p.y>this.height))return;
+  const uv=[[0,texture.height],[texture.width,texture.height],[texture.width,0],[0,0]];
+  for(const ids of[[0,1,2],[0,2,3]])this.queue.push({type:2,layer:1,depth:ids.reduce((n,i)=>n+points[i].depth/3,0),texture,points:ids.map(i=>points[i]),uv:ids.map(i=>uv[i]),alpha,additive:false});this.calls++;
+ }
  effect(texture,points,alpha=1,additive=true){const data=effectGrid(points,4);for(let i=0;i<data.length;i+=15){const p=[0,5,10].map(k=>this.project(data[i+k],data[i+k+1],data[i+k+2]));if(p.some(v=>!v))continue;const uv=[0,5,10].map(k=>[data[i+k+3]*texture.width,data[i+k+4]*texture.height]);this.queue.push({type:2,layer:1,depth:p.reduce((n,v)=>n+v.depth/3,0),texture,points:p,uv,alpha,additive});}this.calls++;}
  drawEffect(e){const c=this.ctx,[a,b,d]=e.points,[s,t,u]=e.uv;const den=s[0]*(t[1]-u[1])+t[0]*(u[1]-s[1])+u[0]*(s[1]-t[1]);if(!den)return;const solve=k=>[(a[k]*(t[1]-u[1])+b[k]*(u[1]-s[1])+d[k]*(s[1]-t[1]))/den,(a[k]*(u[0]-t[0])+b[k]*(s[0]-u[0])+d[k]*(t[0]-s[0]))/den,(a[k]*(t[0]*u[1]-u[0]*t[1])+b[k]*(u[0]*s[1]-s[0]*u[1])+d[k]*(s[0]*t[1]-t[0]*s[1]))/den];const x=solve('x'),y=solve('y');c.save();c.globalAlpha=e.alpha;c.globalCompositeOperation=e.additive?'lighter':'source-over';c.beginPath();c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);c.lineTo(d.x,d.y);c.closePath();c.clip();c.transform(x[0],y[0],x[1],y[1],x[2],y[2]);c.drawImage(e.texture,0,0);c.restore();}
  finish(){const c=this.ctx;this.queue.sort((a,b)=>a.layer-b.layer||b.depth-a.depth);for(const e of this.queue){if(e.type===2)this.drawEffect(e);else if(e.type){c.globalAlpha=e.alpha;c.drawImage(e.texture,e.x,e.y,e.w,e.h);c.globalAlpha=1;}else{c.globalAlpha=e.alpha??1;c.globalCompositeOperation=e.additive?'lighter':'source-over';c.fillStyle=e.color;c.beginPath();c.moveTo(e.p.x,e.p.y);c.lineTo(e.q.x,e.q.y);c.lineTo(e.r.x,e.r.y);c.closePath();c.fill();c.globalAlpha=1;c.globalCompositeOperation='source-over';}}}
@@ -232,7 +247,7 @@ class WorldArt{
  },256,256);}target.push(...next);this[kind==='actors'?'actorReady':'propReady']=true;}catch{this.failed.push(kind);}};img.onerror=()=>this.failed.push(kind);img.src=src;}
  actor(key,fallback){return this.actorReady?this.actors[ART_KEYS[key]]??fallback:fallback;}
  prop(key){return this.propReady?this.props[PROP_KEYS[key]]:null;}
- drawProp(key,x,y,z,size){const tex=this.prop(key);if(tex)this.r.sprite(tex,x,y,z,size,size);}
+ drawProp(key,x,y,z,size){const tex=this.prop(key);if(tex)this.r.sprite(tex,x,y,z,size,size/.78,1,true);}
 }
 function visualTerrain(x,z,planet='garden'){
  const n=Math.sin(x*.63+Math.sin(z*.22))*Math.cos(z*.39)+.35*Math.sin(x*1.7+z*1.3),b=Math.sin(x*.11+z*.15);
@@ -417,7 +432,7 @@ function sprite(kind,variant=0,frame=0,back=false){
 const heroSprites=[sprite('hero',0,0,false),sprite('hero',0,1,false),sprite('hero',0,0,true),sprite('hero',0,1,true)],npcTex=sprite('npc'),scoutTex=sprite('npc',1),bossTex=sprite('boss'),glowTex=sprite('glow');
 const slimeTextures=Array.from({length:3},(_,i)=>[sprite('slime',i,0),sprite('slime',i,1)]);
 function label(text,color='#e8e5bd'){return R.texture('label'+text,(c,w,h)=>{c.font='500 22px "Malgun Gothic",sans-serif';c.textAlign='center';c.shadowColor='#0b2529';c.shadowBlur=5;c.fillStyle=color;c.fillText(text,w/2,34);},512,64);}
-const labels={scout:label(SCOUT.name),survey:label(OLD_SURVEY.name),echoes:ECHO_SITES.map(e=>label(e.name)),npc:label('루미 · 기록자'),portal:label('별의 관문'),boss:label(BOSS.name,'#f0d39b'),seals:seals.map(s=>label(s.name)),memories:memories.map(s=>label(s.name))};
+const labels={remains:label('수호자의 기억'),scout:label(SCOUT.name),survey:label(OLD_SURVEY.name),echoes:ECHO_SITES.map(e=>label(e.name)),npc:label('루미 · 기록자'),portal:label('별의 관문'),boss:label(BOSS.name,'#f0d39b'),seals:seals.map(s=>label(s.name)),memories:memories.map(s=>label(s.name))};
 const enemies=[];
 for(let i=0;i<3;i++)for(let j=0;j<3;j++){const a=j/3*TAU;enemies.push({id:i*3+j,x:seals[i].x+Math.cos(a)*4,z:seals[i].z+Math.sin(a)*4,home:{x:seals[i].x+Math.cos(a)*4,z:seals[i].z+Math.sin(a)*4},hp:48,max:48,type:i,wind:0,cd:.5,jitter:j,hit:0});}
 const boss={id:99,x:13,z:-69,home:{x:13,z:-69},hp:300,max:300,type:3,wind:0,cd:2,hit:0};enemies.push(boss);
@@ -431,7 +446,7 @@ function action(name){
  if(name==='dash'&&player.dash<=0){player.dash=1.6;player.dashTime=.2;player.inv=Math.max(player.inv,.25);sound(300,.12,'sine');}
  if(name==='skill'&&player.skill<=0){player.skill=5;effects.push({kind:'wave',x:player.x,z:player.z,life:.75,max:.75});for(const e of enemies)if(e.hp>0&&(e!==boss||state.seals.every(Boolean))&&distance(player,e)<=6)damageEnemy(e,36);sound(750,.4,'sine');}
 }
-function nearest(){const all=[{...npc,kind:'npc',name:'루미'},{...SCOUT,kind:'scout',name:SCOUT.name},{...OLD_SURVEY,kind:'survey',name:OLD_SURVEY.name},...ECHO_SITES.map((s,i)=>({...s,kind:'echo',i})),{...portal,kind:'portal',name:'별의 관문'},...seals.map((s,i)=>({...s,kind:'seal',i})),...memories.map((s,i)=>({...s,kind:'memory',i})),{x:13,z:-69,kind:'boss',name:'수호자의 기억'}];if(distance(player,fracture)<1.3)all.push({...fracture,kind:'fracture',name:'갈라진 연결부'});return all.sort((a,b)=>distance(player,a)-distance(player,b)).find(o=>distance(player,o)<3.8);}
+function nearest(){const all=[{...npc,kind:'npc',name:'루미'},{...SCOUT,kind:'scout',name:SCOUT.name},{...OLD_SURVEY,kind:'survey',name:OLD_SURVEY.name},...ECHO_SITES.map((s,i)=>({...s,kind:'echo',i})),{...portal,kind:'portal',name:'별의 관문'},...seals.map((s,i)=>({...s,kind:'seal',i})),...memories.map((s,i)=>({...s,kind:'memory',i})),{x:boss.x,z:boss.z,kind:'boss',name:'수호자의 기억'}];if(distance(player,fracture)<1.3)all.push({...fracture,kind:'fracture',name:'갈라진 연결부'});return all.sort((a,b)=>distance(player,a)-distance(player,b)).find(o=>distance(player,o)<3.8);}
 function interact(){
  if(!started||paused||study||contextLost)return;if(dialog){advance();return;}const o=nearest();if(!o)return;
  if(o.kind==='npc'){
@@ -565,6 +580,7 @@ function draw(alpha=1,dt=1/60){
  const pose=playerMotion.sample(player,alpha,dt,{frozen:!started||paused||study||!!dialog,dashing:player.dashTime>0});
  const camX=started?pose.cameraX:0,camZ=started?pose.cameraZ:-1;R.begin(camX,camZ,curve);R.mesh(worldMesh);R.mesh(roadMesh);if(grid)R.mesh(gridMesh);R.mesh(propMesh);if(!worldArt.propReady){R.mesh(treeMesh);R.mesh(portalMesh);}R.mesh(brokenMesh);
  const g=new Geometry(),visible=e=>Math.abs(e.x-camX)<48&&Math.abs(e.z-camZ)<58;
+ if(state.boss&&visible(boss))g.ring(boss.x,groundY(boss.x,boss.z)+.12,boss.z,1.35,[.85,.82,.46],48,.08);
  shadow(g,pose.x,pose.z,.72);shadow(g,npc.x,npc.z,.7);
  for(const e of enemies)if(e.hp>0&&visible(e)){shadow(g,e.x,e.z,e===boss?1.8:.8);if(e.wind>0){const r=e===boss?BOSS.pulseRadii[e.pulse||0]:1.6,d=e===boss?(e.pulse?BOSS.gap:BOSS.windup):.48;g.ring(e.x,groundY(e.x,e.z)+.23,e.z,r,[.83,.39,.28],48,.12+clamp(1-e.wind/d,0,1)*.5);}if(debug)g.ring(e.x,.35,e.z,e===boss?1.4:.55,[.9,.4,.4],32,.07);}
  for(let i=0;i<3;i++){const s=seals[i],c=state.seals[i]?[.85,.82,.46]:[.45,.65,.56];g.ring(s.x,.35,s.z,2.1,c,48,.1);if(state.seals[i])g.ring(s.x,.38,s.z,2.35,c,48,.035);}
@@ -589,6 +605,7 @@ function draw(alpha=1,dt=1/60){
  for(let i=0;i<3;i++){const s=seals[i];if(!visible(s))continue;draws.push(()=>{R.sprite(glowTex,s.x,1.5+Math.sin(time*2)*.15,s.z,3,3,state.seals[i]?.85:.32);R.sprite(labels.seals[i],s.x,3.3,s.z,5,.62);});}
  for(let i=0;i<2;i++){const s=memories[i];if(visible(s))draws.push(()=>{R.sprite(glowTex,s.x,1.5,s.z,1.6,1.6,.5);R.sprite(labels.memories[i],s.x,3,s.z,5,.62);});}
  for(const e of enemies){if(e.hp<=0||!visible(e))continue;const isBoss=e===boss,w=isBoss?4.8:2.2,h=isBoss?5.2:2;draws.push(()=>{if(isBoss)R.drawDynamic(makeBossModel('ormun',e.x,groundY(e.x,e.z),e.z,time,e,SOFT));else R.sprite(worldArt.actor('slime'+e.type+(Math.floor(time*2+(e.jitter||0))%2?'b':''),slimeTextures[e.type][Math.floor(time*4+(e.jitter||0))%2]),e.x,groundY(e.x,e.z)+Math.sin(time*4)*.06,e.z,w,h,e.hit>0?.45:1);if(isBoss)R.sprite(labels.boss,e.x,6.1,e.z,6,.75);if(e.hp<e.max||e.wind>0){const tex=R.texture('hp'+e.id+'-'+Math.ceil(e.hp/10),c=>{c.fillStyle='#143632';c.fillRect(10,45,108,12);c.fillStyle=isBoss?'#dfb271':'#bfd495';c.fillRect(12,47,104*e.hp/e.max,8);});R.sprite(tex,e.x,h+.4,e.z,isBoss?4:2.6,.65);}});}
+ if(state.boss&&visible(boss))draws.push(()=>{R.sprite(glowTex,boss.x,groundY(boss.x,boss.z)+1.2+Math.sin(time*1.5)*.1,boss.z,2.3,2.3,.75);R.sprite(labels.remains,boss.x,groundY(boss.x,boss.z)+3,boss.z,5,.65);});
  const frame=pose.frame;
  draws.push(()=>R.sprite(worldArt.actor(['hero0','hero1','heroBack0','heroBack1'][frame],heroSprites[frame]),pose.x,groundY(pose.x,pose.z)+pose.bob,pose.z,1.9*pose.width,2.6*pose.height,player.inv>0&&Math.floor(time*16)%2?.45:1));
  // Alpha cutoff writes depth, so opaque sprite pixels occlude correctly with 3D trees.

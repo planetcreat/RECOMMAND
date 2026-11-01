@@ -28,6 +28,10 @@ const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 function normalize(x,z){const n=Math.hypot(x,z);return n?{x:x/n,z:z/n}:{x:0,z:0};}
 function inSector(origin,target,facing,range=3.1,minDot=.25){const dx=target.x-origin.x,dz=target.z-origin.z,n=Math.hypot(dx,dz);return n<=range&&(n<1e-6||(dx*facing.x+dz*facing.z)/n>=minDot);}
 function bendHeight(x,y,z,cx,cz,k){return y-k*((x-cx)**2+(z-cz)**2);}
+// Visual gravity follows the normal of the bent ground; logical x/z stays flat.
+function surfaceNormal(dx,dz,k){const x=2*k*dx,z=2*k*dz,n=Math.hypot(x,1,z);return[x/n,1/n,z/n];}
+function surfaceMeshPoint(x,y,z,cx,cz,k){const dx=x-cx,dz=z-cz,n=surfaceNormal(dx,dz,k);return[x+n[0]*y,-k*(dx*dx+dz*dz)+n[1]*y,z+n[2]*y];}
+function surfaceSpriteAxes(x,z,cx,cz,k){const up=surfaceNormal(x-cx,z-cz,k),right=[up[1]*.78-up[2]*.625,-up[0]*.78,up[0]*.625],n=Math.hypot(...right);return{up,right:n>1e-6?right.map(v=>v/n):[1,0,0]};}
 function resolveMove(p,dx,dz,obstacles,bound=79){const out={x:p.x,z:p.z},steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dz))/.16));const free=(x,z)=>obstacles.every(o=>Math.hypot(x-o.x,z-o.z)>o.r+.42);for(let i=0;i<steps;i++){const nx=clamp(out.x+dx/steps,-bound,bound);if(free(nx,out.z))out.x=nx;const nz=clamp(out.z+dz/steps,-bound,bound);if(free(out.x,nz))out.z=nz;}return out;}
 function seeded(seed=9273){return()=>{seed=(Math.imul(seed,1664525)+1013904223)|0;return(seed>>>0)/4294967296;};}
 
@@ -54,9 +58,10 @@ function lookAt(eye,target){let z=[eye[0]-target[0],eye[1]-target[1],eye[2]-targ
 
 
 // Raw WebGL: the game has no third-party runtime dependencies.
-const meshVS=`attribute vec3 aPos;attribute vec3 aColor;uniform mat4 uView,uProj;uniform vec2 uCenter;uniform float uCurve;varying vec3 vColor;varying float vDepth;void main(){vec3 p=aPos;vec2 d=p.xz-uCenter;p.y-=uCurve*dot(d,d);vec4 view=uView*vec4(p,1.);gl_Position=uProj*view;vDepth=-view.z;vColor=aColor;}`;
+const surfaceGLSL=`vec3 groundNormal(vec2 d){return normalize(vec3(2.*uCurve*d.x,1.,2.*uCurve*d.y));}`;
+const meshVS=`attribute vec3 aPos;attribute vec3 aColor;uniform mat4 uView,uProj;uniform vec2 uCenter;uniform float uCurve;varying vec3 vColor;varying float vDepth;${surfaceGLSL}void main(){vec2 d=aPos.xz-uCenter;vec3 n=groundNormal(d);vec3 p=vec3(aPos.x,-uCurve*dot(d,d),aPos.z)+n*aPos.y;vec4 view=uView*vec4(p,1.);gl_Position=uProj*view;vDepth=-view.z;vColor=aColor;}`;
 const meshFS=`precision mediump float;uniform float uMeshAlpha;varying vec3 vColor;varying float vDepth;void main(){float fog=smoothstep(36.,100.,vDepth);gl_FragColor=vec4(mix(vColor,vec3(.34,.49,.51),fog),uMeshAlpha);}`;
-const spriteVS=`attribute vec2 aPos;uniform mat4 uView,uProj;uniform vec2 uCenter;uniform float uCurve;uniform vec3 uAnchor;uniform vec2 uSize;varying vec2 vUV;varying float vDepth;void main(){vec3 p=uAnchor;vec2 d=p.xz-uCenter;p.y-=uCurve*dot(d,d);p+=vec3(aPos.x*uSize.x,aPos.y*uSize.y*.78,-aPos.y*uSize.y*.625);vec4 view=uView*vec4(p,1.);gl_Position=uProj*view;vDepth=-view.z;vUV=vec2(aPos.x+.5,1.-aPos.y);}`;
+const spriteVS=`attribute vec2 aPos;uniform mat4 uView,uProj;uniform vec2 uCenter;uniform float uCurve;uniform vec3 uAnchor;uniform vec2 uSize;uniform float uSurface;varying vec2 vUV;varying float vDepth;${surfaceGLSL}void main(){vec3 p=uAnchor;vec2 d=p.xz-uCenter;p.y-=uCurve*dot(d,d);vec3 up=vec3(0.,.78,-.625),right=vec3(1.,0.,0.);if(uSurface>.5){up=groundNormal(d);right=cross(up,vec3(0.,.625,.78));right=length(right)>0.000001?normalize(right):vec3(1.,0.,0.);}p+=right*aPos.x*uSize.x+up*aPos.y*uSize.y;vec4 view=uView*vec4(p,1.);gl_Position=uProj*view;vDepth=-view.z;vUV=vec2(aPos.x+.5,1.-aPos.y);}`;
 const spriteFS=`precision mediump float;uniform sampler2D uTex;uniform float uAlpha;varying vec2 vUV;varying float vDepth;void main(){vec4 c=texture2D(uTex,vUV);if(c.a<.08)discard;c.rgb=mix(c.rgb,vec3(.34,.49,.51),smoothstep(36.,100.,vDepth));gl_FragColor=vec4(c.rgb,c.a*uAlpha);}`;
 const effectVS=`attribute vec3 aPos;attribute vec2 aUV;uniform mat4 uView,uProj;uniform vec2 uCenter;uniform float uCurve;varying vec2 vUV;void main(){vec3 p=aPos;vec2 d=p.xz-uCenter;p.y-=uCurve*dot(d,d);gl_Position=uProj*uView*vec4(p,1.);vUV=aUV;}`;
 const effectFS=`precision mediump float;uniform sampler2D uTex;uniform float uAlpha;varying vec2 vUV;void main(){vec4 c=texture2D(uTex,vUV);if(c.a<.015)discard;gl_FragColor=vec4(c.rgb,c.a*uAlpha);}`;
@@ -80,8 +85,8 @@ class Renderer{
  mesh(mesh,mode){const g=this.gl,p=this.meshProgram;this.common(p);this.uniform(p,'uMeshAlpha',mesh.alpha??1);g.bindBuffer(g.ARRAY_BUFFER,mesh.buffer);for(const[name,n,offset]of[['aPos',3,0],['aColor',3,12]]){const l=g.getAttribLocation(p,name);g.enableVertexAttribArray(l);g.vertexAttribPointer(l,n,g.FLOAT,false,24,offset);}if(mesh.additive){g.depthMask(false);g.blendFunc(g.SRC_ALPHA,g.ONE);}g.drawArrays(mode||g.TRIANGLES,0,mesh.count);if(mesh.additive){g.depthMask(true);g.blendFunc(g.SRC_ALPHA,g.ONE_MINUS_SRC_ALPHA);}this.calls++;}
  drawDynamic(geometry){const g=this.gl;g.bindBuffer(g.ARRAY_BUFFER,this.dynamic);g.bufferData(g.ARRAY_BUFFER,new Float32Array(geometry.data),g.DYNAMIC_DRAW);this.mesh({buffer:this.dynamic,count:geometry.data.length/6,alpha:geometry.alpha,additive:geometry.additive});}
  texture(key,draw,w=128,h=128){if(this.textures.has(key))return this.textures.get(key);const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;draw(canvas.getContext('2d'),w,h);const g=this.gl,t=g.createTexture();g.bindTexture(g.TEXTURE_2D,t);g.texImage2D(g.TEXTURE_2D,0,g.RGBA,g.RGBA,g.UNSIGNED_BYTE,canvas);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_MIN_FILTER,g.LINEAR);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_MAG_FILTER,g.NEAREST);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_WRAP_S,g.CLAMP_TO_EDGE);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_WRAP_T,g.CLAMP_TO_EDGE);this.textures.set(key,t);return t;}
- sprite(tex,x,y,z,w,h,alpha=1){if(alpha<1){const by=y-this.curve*((x-this.center[0])**2+(z-this.center[1])**2),v=this.view;this.transparent.push({args:[tex,x,y,z,w,h,alpha],depth:-(v[2]*x+v[6]*by+v[10]*z+v[14])});return;}this.drawSprite(tex,x,y,z,w,h,alpha);}
- drawSprite(tex,x,y,z,w,h,alpha){const g=this.gl,p=this.spriteProgram;this.common(p);this.uniform(p,'uAnchor',[x,y,z]);this.uniform(p,'uSize',[w,h]);this.uniform(p,'uAlpha',alpha);g.bindBuffer(g.ARRAY_BUFFER,this.quad);g.disableVertexAttribArray(1);g.enableVertexAttribArray(0);g.vertexAttribPointer(0,2,g.FLOAT,false,0,0);g.activeTexture(g.TEXTURE0);g.bindTexture(g.TEXTURE_2D,tex);g.uniform1i(g.getUniformLocation(p,'uTex'),0);g.drawArrays(g.TRIANGLES,0,6);this.calls++;}
+ sprite(tex,x,y,z,w,h,alpha=1,surface=false){if(alpha<1){const by=y-this.curve*((x-this.center[0])**2+(z-this.center[1])**2),v=this.view;this.transparent.push({args:[tex,x,y,z,w,h,alpha,surface],depth:-(v[2]*x+v[6]*by+v[10]*z+v[14])});return;}this.drawSprite(tex,x,y,z,w,h,alpha,surface);}
+ drawSprite(tex,x,y,z,w,h,alpha,surface=false){const g=this.gl,p=this.spriteProgram;this.common(p);this.uniform(p,'uAnchor',[x,y,z]);this.uniform(p,'uSize',[w,h]);this.uniform(p,'uSurface',surface?1:0);this.uniform(p,'uAlpha',alpha);g.bindBuffer(g.ARRAY_BUFFER,this.quad);g.disableVertexAttribArray(1);g.enableVertexAttribArray(0);g.vertexAttribPointer(0,2,g.FLOAT,false,0,0);g.activeTexture(g.TEXTURE0);g.bindTexture(g.TEXTURE_2D,tex);g.uniform1i(g.getUniformLocation(p,'uTex'),0);g.drawArrays(g.TRIANGLES,0,6);this.calls++;}
  // Effects use world-space vertices: floor, upright and tilted surfaces all share real depth.
  effect(tex,points,alpha=1,additive=true){const v=this.view,p=points.reduce((a,b)=>a.map((n,i)=>n+b[i]/4),[0,0,0]),by=p[1]-this.curve*((p[0]-this.center[0])**2+(p[2]-this.center[1])**2);this.transparent.push({effect:true,args:[tex,points,alpha,additive],depth:-(v[2]*p[0]+v[6]*by+v[10]*p[2]+v[14])});}
  drawEffect(tex,points,alpha,additive){const g=this.gl;this.effectProgram??=program(g,effectVS,effectFS);this.effectBuffer??=g.createBuffer();const p=this.effectProgram;this.common(p);this.uniform(p,'uAlpha',alpha);const data=effectGrid(points);g.bindBuffer(g.ARRAY_BUFFER,this.effectBuffer);g.bufferData(g.ARRAY_BUFFER,new Float32Array(data),g.DYNAMIC_DRAW);for(const[name,size,offset]of[['aPos',3,0],['aUV',2,12]]){const l=g.getAttribLocation(p,name);g.enableVertexAttribArray(l);g.vertexAttribPointer(l,size,g.FLOAT,false,20,offset);}g.activeTexture(g.TEXTURE0);g.bindTexture(g.TEXTURE_2D,tex);g.uniform1i(g.getUniformLocation(p,'uTex'),0);g.blendFunc(g.SRC_ALPHA,additive?g.ONE:g.ONE_MINUS_SRC_ALPHA);g.drawArrays(g.TRIANGLES,0,data.length/5);g.blendFunc(g.SRC_ALPHA,g.ONE_MINUS_SRC_ALPHA);this.calls++;}
@@ -96,12 +101,14 @@ class SoftwareRenderer{
  upload(g){const chunks=new Map(),a=g.data;for(let i=0;i<a.length;i+=18){const x=(a[i]+a[i+6]+a[i+12])/3,z=(a[i+2]+a[i+8]+a[i+14])/3,cx=Math.floor(x/10),cz=Math.floor(z/10),key=cx+','+cz;if(!chunks.has(key))chunks.set(key,{x:cx*10+5,z:cz*10+5,data:[]});const chunk=chunks.get(key);for(let j=0;j<18;j++)chunk.data.push(a[i+j]);}return{chunks:[...chunks.values()].map(c=>({...c,data:new Float32Array(c.data)}))};}
  texture(key,draw,w=128,h=128){if(this.textures.has(key))return this.textures.get(key);const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);this.textures.set(key,c);return c;}
  begin(x,z,k){const c=this.canvas;const dpr=Math.min(devicePixelRatio||1,1);const w=Math.max(1,Math.floor(innerWidth*dpr)),h=Math.max(1,Math.floor(innerHeight*dpr));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}this.width=w;this.height=h;this.center=[x,z];this.curve=k;this.view=lookAt([x,18,z+22],[x,0,z-1]);this.focal=h/(2*Math.tan(Math.PI/6));this.queue.length=0;this.calls=0;const sky=this.ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#233c50');sky.addColorStop(.5,'#577d82');sky.addColorStop(1,'#7d9890');this.ctx.fillStyle=sky;this.ctx.fillRect(0,0,w,h);}
- project(x,y,z){const v=this.view,by=y-this.curve*((x-this.center[0])**2+(z-this.center[1])**2);const depth=-(v[2]*x+v[6]*by+v[10]*z+v[14]);if(depth<=.3)return null;return{x:this.width/2+(v[0]*x+v[4]*by+v[8]*z+v[12])*this.focal/depth,y:this.height/2-(v[1]*x+v[5]*by+v[9]*z+v[13])*this.focal/depth,depth};}
+ project(x,y,z){return this.projectBent(x,y-this.curve*((x-this.center[0])**2+(z-this.center[1])**2),z);}
+ projectMesh(x,y,z){return this.projectBent(...surfaceMeshPoint(x,y,z,...this.center,this.curve));}
+ projectBent(x,by,z){const v=this.view;const depth=-(v[2]*x+v[6]*by+v[10]*z+v[14]);if(depth<=.3)return null;return{x:this.width/2+(v[0]*x+v[4]*by+v[8]*z+v[12])*this.focal/depth,y:this.height/2-(v[1]*x+v[5]*by+v[9]*z+v[13])*this.focal/depth,depth};}
  mesh(mesh){
  if(mesh.chunks){this.ground??=mesh;for(const chunk of mesh.chunks){if(Math.abs(chunk.x-this.center[0])>42||chunk.z-this.center[1]>30||chunk.z-this.center[1]<-48)continue;this.renderChunk(chunk.data,mesh===this.ground?0:1);}this.calls++;return;}this.renderChunk(mesh.data,1,mesh.alpha??1,mesh.additive);this.calls++;}
  renderChunk(a,layer,alpha=1,additive=false){
  for(let i=0;i<a.length;i+=18){
- const p=this.project(a[i],a[i+1],a[i+2]),q=this.project(a[i+6],a[i+7],a[i+8]),r=this.project(a[i+12],a[i+13],a[i+14]);
+ const p=this.projectMesh(a[i],a[i+1],a[i+2]),q=this.projectMesh(a[i+6],a[i+7],a[i+8]),r=this.projectMesh(a[i+12],a[i+13],a[i+14]);
  if(!p||!q||!r)continue;
  if(Math.max(p.x,q.x,r.x)<0||Math.min(p.x,q.x,r.x)>this.width||Math.max(p.y,q.y,r.y)<0||Math.min(p.y,q.y,r.y)>this.height)continue;
  const depth=(p.depth+q.depth+r.depth)/3,t=Math.max(0,Math.min(1,(depth-36)/64)),fog=t*t*(3-2*t),sky=[.34,.49,.51];
@@ -110,7 +117,15 @@ class SoftwareRenderer{
  }
  }
  drawDynamic(g){this.mesh({data:g.data,alpha:g.alpha,additive:g.additive});}
- sprite(texture,x,y,z,w,h,alpha=1){const p=this.project(x,y,z);if(!p)return;const scale=this.focal/p.depth,pw=w*scale,ph=h*scale;if(p.x+pw<0||p.x-pw>this.width||p.y<0||p.y-ph>this.height)return;this.queue.push({type:1,layer:1,depth:p.depth,texture,x:p.x-pw/2,y:p.y-ph,w:pw,h:ph,alpha});this.calls++;}
+ sprite(texture,x,y,z,w,h,alpha=1,surface=false){if(surface){this.surfaceSprite(texture,x,y,z,w,h,alpha);return;}const p=this.project(x,y,z);if(!p)return;const scale=this.focal/p.depth,pw=w*scale,ph=h*scale;if(p.x+pw<0||p.x-pw>this.width||p.y<0||p.y-ph>this.height)return;this.queue.push({type:1,layer:1,depth:p.depth,texture,x:p.x-pw/2,y:p.y-ph,w:pw,h:ph,alpha});this.calls++;}
+ surfaceSprite(texture,x,y,z,w,h,alpha){
+  const {up,right}=surfaceSpriteAxes(x,z,...this.center,this.curve),by=y-this.curve*((x-this.center[0])**2+(z-this.center[1])**2);
+  const points=[[-.5,0],[.5,0],[.5,1],[-.5,1]].map(([u,v])=>this.projectBent(x+right[0]*u*w+up[0]*v*h,by+right[1]*u*w+up[1]*v*h,z+right[2]*u*w+up[2]*v*h));
+  if(points.some(p=>!p))return;
+  if(points.every(p=>p.x<0)||points.every(p=>p.x>this.width)||points.every(p=>p.y<0)||points.every(p=>p.y>this.height))return;
+  const uv=[[0,texture.height],[texture.width,texture.height],[texture.width,0],[0,0]];
+  for(const ids of[[0,1,2],[0,2,3]])this.queue.push({type:2,layer:1,depth:ids.reduce((n,i)=>n+points[i].depth/3,0),texture,points:ids.map(i=>points[i]),uv:ids.map(i=>uv[i]),alpha,additive:false});this.calls++;
+ }
  effect(texture,points,alpha=1,additive=true){const data=effectGrid(points,4);for(let i=0;i<data.length;i+=15){const p=[0,5,10].map(k=>this.project(data[i+k],data[i+k+1],data[i+k+2]));if(p.some(v=>!v))continue;const uv=[0,5,10].map(k=>[data[i+k+3]*texture.width,data[i+k+4]*texture.height]);this.queue.push({type:2,layer:1,depth:p.reduce((n,v)=>n+v.depth/3,0),texture,points:p,uv,alpha,additive});}this.calls++;}
  drawEffect(e){const c=this.ctx,[a,b,d]=e.points,[s,t,u]=e.uv;const den=s[0]*(t[1]-u[1])+t[0]*(u[1]-s[1])+u[0]*(s[1]-t[1]);if(!den)return;const solve=k=>[(a[k]*(t[1]-u[1])+b[k]*(u[1]-s[1])+d[k]*(s[1]-t[1]))/den,(a[k]*(u[0]-t[0])+b[k]*(s[0]-u[0])+d[k]*(t[0]-s[0]))/den,(a[k]*(t[0]*u[1]-u[0]*t[1])+b[k]*(u[0]*s[1]-s[0]*u[1])+d[k]*(s[0]*t[1]-t[0]*s[1]))/den];const x=solve('x'),y=solve('y');c.save();c.globalAlpha=e.alpha;c.globalCompositeOperation=e.additive?'lighter':'source-over';c.beginPath();c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);c.lineTo(d.x,d.y);c.closePath();c.clip();c.transform(x[0],y[0],x[1],y[1],x[2],y[2]);c.drawImage(e.texture,0,0);c.restore();}
  finish(){const c=this.ctx;this.queue.sort((a,b)=>a.layer-b.layer||b.depth-a.depth);for(const e of this.queue){if(e.type===2)this.drawEffect(e);else if(e.type){c.globalAlpha=e.alpha;c.drawImage(e.texture,e.x,e.y,e.w,e.h);c.globalAlpha=1;}else{c.globalAlpha=e.alpha??1;c.globalCompositeOperation=e.additive?'lighter':'source-over';c.fillStyle=e.color;c.beginPath();c.moveTo(e.p.x,e.p.y);c.lineTo(e.q.x,e.q.y);c.lineTo(e.r.x,e.r.y);c.closePath();c.fill();c.globalAlpha=1;c.globalCompositeOperation='source-over';}}}
@@ -162,7 +177,7 @@ class WorldArt{
  },256,256);}target.push(...next);this[kind==='actors'?'actorReady':'propReady']=true;}catch{this.failed.push(kind);}};img.onerror=()=>this.failed.push(kind);img.src=src;}
  actor(key,fallback){return this.actorReady?this.actors[ART_KEYS[key]]??fallback:fallback;}
  prop(key){return this.propReady?this.props[PROP_KEYS[key]]:null;}
- drawProp(key,x,y,z,size){const tex=this.prop(key);if(tex)this.r.sprite(tex,x,y,z,size,size);}
+ drawProp(key,x,y,z,size){const tex=this.prop(key);if(tex)this.r.sprite(tex,x,y,z,size,size/.78,1,true);}
 }
 function visualTerrain(x,z,planet='garden'){
  const n=Math.sin(x*.63+Math.sin(z*.22))*Math.cos(z*.39)+.35*Math.sin(x*1.7+z*1.3),b=Math.sin(x*.11+z*.15);
