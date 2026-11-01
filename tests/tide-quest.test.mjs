@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {TIDE_INITIAL,decodeTide,boatAction,tickBoat,boatPosition,BOAT_SECONDS} from '../dist/tide.js';
+import {BELROK_CLUE} from '../dist/belrok.js';
 const initial=()=>structuredClone(TIDE_INITIAL);
 const ready=()=>({...initial(),introduced:true,observations:[true,true,true]});
 test('legacy tide saves migrate without losing main progress or aliasing defaults',()=>{
@@ -42,6 +43,17 @@ function chapterBoot(saved){
  const close=()=>{let n=0;while(box.qa.dialog()&&n++<30)box.qa.advance();};
  return {a:box.qa,els,storage,close,blur:()=>events.blur(),visit:(x,z)=>{box.qa.player.x=x;box.qa.player.z=z;box.qa.interact();}};
 }
+
+test('boss strategy stays behind the completed hidden quest in both arrival and NPC dialogue',()=>{
+ const s={...ready(),arrival:true,gates:[true,true]};
+ const normal=chapterBoot(s);normal.visit(0,-32);
+ const arrival=normal.a.dialog().lines.join('\n');
+ for(const answer of['과압 방출 때 공격','정비 통로','정비 장치','가슴에서 물이','좁은 홈'])assert(!arrival.includes(answer),'unearned boss intelligence: '+answer);
+ const town=chapterBoot(s);town.visit(4,3);assert(!town.a.dialog().lines.join('\n').includes('좁은 홈'));
+ const earned={...s,boat:{met:true,stage:'complete',elapsed:14}};
+ const informed=chapterBoot(earned);informed.visit(0,-32);assert(informed.a.dialog().lines.includes(BELROK_CLUE)||informed.a.dialog().lines.some(l=>l.endsWith(BELROK_CLUE)));
+ const informedTown=chapterBoot(earned);informedTown.visit(4,3);assert(informedTown.a.dialog().lines.includes(BELROK_CLUE));
+});
 test('real chapter: discover, repair, launch, pause, reload, return and claim once',()=>{
  const h=chapterBoot({...ready(),arrival:true}),s=h.a.state;
  h.visit(-8.5,-12);assert.equal(h.a.dialog(),null); // hidden before Do-ha
