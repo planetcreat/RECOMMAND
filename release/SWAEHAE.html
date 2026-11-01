@@ -246,7 +246,7 @@ const SWAEHAE_SCENES={
  arrival:['발밑의 관문은 모래가 아니라, 바닷물이 말라붙은 계단 위에 열렸다.\n멀리 배들이 묶여 있다. 돛은 모두 육지 쪽을 향한다.','[제방 안전 확인. 외부 항로 봉쇄 유지.]\n사람을 반기는 말보다, 오래된 안내 방송이 먼저 들렸다.','루미: “유온에서는 숲이 말을 못 했어요. 여기는 사람들이 말하고 있는데…… 문은 듣지 않네요.”'],
  naru:['나루: “파도가 길을 삼킨 날, 명령권자가 제방을 닫았어요. 그 덕분에 살아남았죠.”','주인공: “그 뒤로 한 번도 열지 않았나요?”\n나루: “닫아야 한다는 명령은 남았는데, 언제 열어도 되는지는 없었거든요.”','나루: “명령을 가진 사람이라면 열 수 있겠죠. 하지만 먼저 저 물을 봐요. 문만 연다고 길이 돌아오지는 않아요.”\n서쪽은 저류지, 동쪽은 배수로다. 두 수문과 중앙 수압계를 직접 살펴보자.'],
  child:['도하: “이 배는 바다에 띄우려고 만든 거예요. 어른들은 책장으로 쓰면 튼튼하겠대요.”','주인공: “어디로 가고 싶은데?”\n도하: “저도 아직 몰라요. 그래도 배가 어느 쪽으로 가는지는, 물에 놓아 봐야 알잖아요.”','루미는 기록장에 목적지를 쓰려다 멈춘다. 대신 ‘배를 띄워 보고 싶다’고 적는다.'],
- foregate:['중앙 보행교가 내려앉으며 수문 안쪽의 원형 방이 드러났다.\n벽에 걸린 문장은 파도에 닳아 있었다. [안전은 정지된 상태로 유지한다.]','문지기의 가슴에서 물이 바깥으로 한 번 밀려났다. 돌아온 물은 같은 홈을 따라 안으로 빨려 들었다.\n옆의 작은 정비 통로만, 흐름이 바뀔 때 잠깐 조용해졌다.','루미: “같은 물인데, 나갈 때와 돌아올 때가 다르네요.”\n주인공은 명령 장치에서 손을 뗐다. 이번에는 먼저, 물이 돌아오는 길을 보았다.','문지기의 수압계가 붉게 기울어진다.\n[외부 항로 봉쇄. 접근하는 압력을 배출한다.]']
+ foregate:['중앙 보행교가 내려앉으며 수문 안쪽의 원형 방이 드러났다.\n벽에 걸린 문장은 파도에 닳아 있었다. [안전은 정지된 상태로 유지한다.]','녹슨 문틀에는 오래된 출항 통지서가 붙어 있다.\n허가를 기다리는 날짜는 적혀 있지만, 기다림이 끝나는 날은 비어 있다.','루미: “이 문 앞에서 얼마나 오래 기다렸을까요.”\n주인공은 닳아 버린 통지서에서 손을 뗀다. 방 안에서 낮은 울림이 돌아온다.','문지기의 수압계가 붉게 기울어진다.\n[외부 항로 봉쇄. 접근하는 압력을 배출한다.]']
 };
 
 // Deterministic combat model. Visuals consume these same circular hazard coordinates.
@@ -328,7 +328,7 @@ function seaInteract(){if(seaPaused)return;if(seaDialog){seaAdvance();return;}
   if(distance(seaPlayer,BELROK.entry)<4){seaArena=false;seaPlayer.x=0;seaPlayer.z=-29;seaEffects.length=0;}return;
  }
  const o=seaNearest();if(!o)return;
- if(o.kind==='naru'){if(!seaState.introduced)seaTalk(o.name,SWAEHAE_SCENES.naru,()=>{seaState.introduced=true;saveSea();});else seaTalk(o.name,[seaState.boss.rewritten?'나루: “돌아올 길은 열어 두었어요. 언제 출항할지는 우리가 정할게요.”':seaState.boat.stage==='complete'?BELROK_CLUE:seaState.foregate?'“물을 내보내는 것과, 길을 열어 두는 건 다르죠. 문 너머에서도 그걸 잊지 말아요.”':tideIntel(seaState)?'“밀려날 때는 넓은 길이 위험하고, 돌아올 때는 좁은 홈이 위험해져요. 흐름이 바뀌는 순간 정비 통로를 살펴보세요.”':'“저류지만 열 때, 배수로만 열 때, 둘 다 열 때. 수압계에 직접 남긴 관측이 있나요? 같은 파도도 돌아오는 길은 달라요.”']);}
+ if(o.kind==='naru'){if(!seaState.introduced)seaTalk(o.name,SWAEHAE_SCENES.naru,()=>{seaState.introduced=true;saveSea();});else seaTalk(o.name,[seaState.boss.rewritten?'나루: “돌아올 길은 열어 두었어요. 언제 출항할지는 우리가 정할게요.”':seaState.boat.stage==='complete'?BELROK_CLUE:seaState.foregate?'“물을 내보내는 것과, 길을 열어 두는 건 다르죠. 문 너머에서도 그걸 잊지 말아요.”':tideIntel(seaState)?'“직접 물을 살펴봤군요. 항구에서 기다리는 사람들에게도 저마다의 사정이 있어요. 수압계에는 남지 않는 이야기도 있겠죠.”':'“저류지만 열 때, 배수로만 열 때, 둘 다 열 때. 수압계에 직접 남긴 관측이 있나요? 같은 파도도 돌아오는 길은 달라요.”']);}
  if(o.kind==='child'){
   if(seaState.boat.stage==='returned')seaTalk('돌아오는 배',[
    '종이배가 도하의 손끝으로 돌아왔다. 접힌 돛에는 낯선 물때가 묻어 있지만, 배는 아직 물 위에 떠 있다.',
@@ -353,7 +353,7 @@ function seaInteract(){if(seaPaused)return;if(seaDialog){seaAdvance();return;}
  if(o.kind==='foregate'){if(!seaState.introduced)return;if(tideState(seaState.gates)!=='circulation'){seaTalk(o.name,['보행교가 들려 있다. 한쪽에 고인 수압 때문에 내릴 수 없다.\n저류지와 배수로를 함께 열어 물이 순환하게 해야 한다.']);return;}
   if(seaState.boss.rewritten){seaTalk('귀환 항로의 수호자',['벨로크: [귀환 항로 보호 중. 출항 여부는 주민에게 위임.]','문지기는 더 이상 항구를 가두지 않는다.']);return;}
   const enter=()=>{seaState.foregate=true;saveSea();seaArena=true;seaEffects.length=0;if(seaState.boss.defeated){seaBoss.active=false;seaBoss.hp=0;seaBoss.hero=100;seaBoss.phase='won';seaPlayer.x=0;seaPlayer.z=-50;}else startBelrok(seaBoss,seaPlayer);seaPlayer.face={x:0,z:-1};};
-  seaTalk('역류의 문지기 · 벨로크',[...SWAEHAE_SCENES.foregate,...(seaState.boat.stage==='complete'?['물길의 기억이 겹친다. 종이배가 돌아왔던 홈과 같은 갈라진 원이다.\n'+BELROK_CLUE]:[]),'전장 진입 · 토출과 회수의 원을 피하고 과압 방출 때 공격하자.\nJ 검격 · L 파동 · K / Space 회피 · E 정비 장치'],enter);
+  seaTalk('역류의 문지기 · 벨로크',[...SWAEHAE_SCENES.foregate,...(seaState.boat.stage==='complete'?['물길의 기억이 겹친다. 종이배가 돌아왔던 홈과 같은 갈라진 원이다.\n'+BELROK_CLUE]:[]),'문지기가 고개를 든다. 방 안의 오래된 명령이 다시 울린다.\nJ 검격 · L 파동 · K / Space 회피'],enter);
  }
 }
 const seaGround=new Geometry(),seaProps=new Geometry(),seaBase=new Geometry();
