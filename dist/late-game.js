@@ -2,7 +2,7 @@ import {Renderer,Geometry} from './engine.js';
 import {SoftwareRenderer} from './software.js';
 import {WorldArt} from './art.js';
 import {CombatVFX} from './vfx.js';
-import {clamp,distance,normalize,resolveMove} from './math.js';
+import {clamp,distance,normalize,resolveMove,MotionPresenter} from './math.js';
 import {LATE_PLANETS,RELAY_TEXT} from './late-story.js';
 import {LATE_KEYS,newLateState,decodeLate,noteEvidence,reconstruct,canEnterLateBoss,canWitness,journeySummary,canShare,loadLate,writeLate} from './late-state.js';
 import {LATE_BOSS_CENTER,LATE_DEVICE,createLateBoss,tickLateBoss,hitLateBoss,dashLateBoss,divertLateBoss,latePhaseText} from './late-combat.js';
@@ -20,7 +20,7 @@ const lateLoad=loadLate(localStorage,latePlanet);
 let lateState=lateLoad.state||newLateState(latePlanet),lateStarted=false,latePaused=false,lateDialogue=null,lateOverlay=false,lateArena=null,lateClock=0,lateAutosave=0,lateToastClock=0,lateHUDClock=0,lateSaveError=false;
 let latePracticeMode=false,lateTrialReturn=null,lateImportPending=null;
 const latePlayer={x:lateState.player.x,z:lateState.player.z,hp:lateState.player.hp,face:{x:0,z:-1},walk:0,dash:0,dashing:0,inv:0,slash:0,wave:0};
-const lateCamera={x:latePlayer.x,z:latePlayer.z};
+const lateMotion=new MotionPresenter(latePlayer);const lateCamera=lateMotion.camera;
 function lateSet(id,text){const e=lateEl(id);if(e.textContent!==String(text))e.textContent=String(text);}
 function lateToast(text){lateSet('lateToast',text);lateEl('lateToast').hidden=false;lateToastClock=5;}
 function lateJourney(){return journeySummary(key=>{try{return localStorage.getItem(key);}catch{return null;}});}
@@ -177,6 +177,7 @@ function lateAttack(kind){
 }
 function lateDash(){if(!lateStarted||latePaused||lateDialogue||lateOverlay)return;if(lateArena){dashLateBoss(lateArena);return;}if(latePlayer.dash>0)return;latePlayer.dash=1.15;latePlayer.dashing=.19;latePlayer.inv=.3;}
 function lateTick(dt){
+ lateMotion.capture(latePlayer);
  lateClock+=dt;if(lateToastClock>0){lateToastClock-=dt;if(lateToastClock<=0)lateEl('lateToast').hidden=true;}
  if(!lateStarted||latePaused||lateDialogue||lateOverlay)return;
  for(const key of['dash','dashing','inv','slash','wave'])latePlayer[key]=Math.max(0,latePlayer[key]-dt);
@@ -287,15 +288,12 @@ function lateArenaDraw(){
  lateRenderer.drawDynamic(makeLateBossModel(isSnow?'mumyeong':'hwanseong',0,0,-64,lateClock,b,lateSoft));
  if((b.pattern==='snow'||b.pattern==='echo')&&b.phase==='warn')for(const h of b.hazards.filter(h=>!h.real))lateRenderer.sprite(lateArt.actor('elder',lateFallback),h.x,.5,h.z,2.4,3.3,.25);
 }
-function lateDraw(){
- const dx=latePlayer.x-lateCamera.x,dz=latePlayer.z-lateCamera.z;
- // Rendering follows a separate camera; simulation and collision use the unmodified player position.
- lateCamera.x+=dx*.12;lateCamera.z+=dz*.12;
+function lateDraw(alpha=1,dt=1/60){
+ const pose=lateMotion.sample(latePlayer,alpha,dt,{frozen:!lateStarted||latePaused||!!lateDialogue||lateOverlay,dashing:(lateArena?.dashing||latePlayer.dashing)>0});
  lateRenderer.begin(lateCamera.x,lateCamera.z,.011);lateRenderer.mesh(lateTerrainMesh);
  if(lateArena)lateArenaDraw();else{lateRenderer.mesh(lateArchitectureMesh);lateGroundDetails();}
- const walking=lateKeys.size>0&&!lateDialogue&&!latePaused&&!lateOverlay,back=latePlayer.face.z<-.2,frame=(walking?Math.floor(latePlayer.walk)%2:0)+(back?2:0),bob=walking?Math.sin(latePlayer.walk*2)*.035:Math.sin(lateClock*1.8)*.012;
  const inv=lateArena?.inv||latePlayer.inv;
- lateRenderer.sprite(lateArt.actor(['hero0','hero1','heroBack0','heroBack1'][frame],lateFallback),latePlayer.x,bob,latePlayer.z,1.9,2.65,inv>0&&Math.sin(lateClock*35)>0?.5:1);
+ lateRenderer.sprite(lateArt.actor(['hero0','hero1','heroBack0','heroBack1'][pose.frame],lateFallback),pose.x,pose.bob,pose.z,1.9*pose.width,2.65*pose.height,inv>0&&Math.sin(lateClock*35)>0?.5:1);
  lateVFX.draw(lateEffects,[],lateClock);lateRenderer.finish();
 }
 function lateMapDraw(){
@@ -383,7 +381,7 @@ let latePrevious=performance.now(),lateAccumulator=0;
 function lateLoop(now){
  const dt=clamp((now-latePrevious)/1000,0,.15);latePrevious=now;lateAccumulator+=dt;let n=0;
  while(lateAccumulator>=1/60&&n++<9){lateTick(1/60);lateAccumulator-=1/60;}
- if(n>=9)lateAccumulator=0;lateDraw();
+ if(n>=9)lateAccumulator=0;lateDraw(lateAccumulator*60,dt);
  if((lateHUDClock+=dt)>=.1){lateHUDClock=0;lateUpdateHUD();}
  requestAnimationFrame(lateLoop);
 }
