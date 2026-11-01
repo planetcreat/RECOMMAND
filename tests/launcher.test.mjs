@@ -1,16 +1,15 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';
-import {boot} from './harness.mjs';
+import {boot} from './harness.mjs';import {launcherHarness} from './launcher-harness.mjs';
 test('single-file launcher parses, switches both embedded chapters and reports ready/errors',()=>{
  const html=fs.readFileSync(new URL('../release/PLAY-RECOMMAND.html',import.meta.url),'utf8'),code=html.match(/<script>([\s\S]*?)<\/script>/)[1];new vm.Script(code);
- const elements={gameFrame:{contentWindow:{},focus(){this.focused=true;}},launcherStatus:{},welcome:{}},events={},buttons=['yuon','swaehae','mumyeong','hwanseong'].map(chapter=>({dataset:{chapter}}));
- const box={document:{getElementById:id=>elements[id],querySelectorAll:()=>buttons},window:{addEventListener:(k,fn)=>events[k]=fn},setTimeout:()=>1,clearTimeout(){}};vm.createContext(box);vm.runInContext(code,box);
+ const {elements,events,buttons}=launcherHarness({seenAll:true});
  buttons[0].onclick();let child=elements.gameFrame.srcdoc;assert(child.includes('parent.postMessage'));assert(!child.includes("location.href='SWAEHAE.html'"));assert(!/<script[^>]+src=|<link[^>]+href=/i.test(child));
  for(const m of child.matchAll(/<script(?: type="module")?>([\s\S]*?)<\/script>/g))new vm.Script(m[1]);
  events.message({source:{},data:{type:'recommand-switch',chapter:'swaehae'}});assert.equal(elements.gameFrame.srcdoc,child);
  events.message({source:elements.gameFrame.contentWindow,data:{type:'recommand-switch',chapter:'swaehae'}});child=elements.gameFrame.srcdoc;assert(child.includes('data-return-yuon'));assert(!/<script[^>]+src=|<link[^>]+href=/i.test(child));
  for(const m of child.matchAll(/<script(?: type="module")?>([\s\S]*?)<\/script>/g))new vm.Script(m[1]);
  events.message({source:elements.gameFrame.contentWindow,data:{type:'recommand-child-ready',chapter:'swaehae'}});assert.equal(elements.launcherStatus.hidden,true);
- events.message({source:elements.gameFrame.contentWindow,data:{type:'recommand-child-error',chapter:'swaehae',message:'test error'}});assert.equal(elements.launcherStatus.hidden,false);assert.match(elements.launcherStatus.textContent,/test error/);
+ events.message({source:elements.gameFrame.contentWindow,data:{type:'recommand-child-error',chapter:'swaehae',message:'test error'}});assert.equal(elements.launcherStatus.hidden,false);assert.match(elements.loadMessage.textContent,/test error/);
  for(const chapter of ['mumyeong','hwanseong']){events.message({source:elements.gameFrame.contentWindow,data:{type:'recommand-switch',chapter}});const next=elements.gameFrame.srcdoc;assert(next.includes('data-planet=\"'+chapter+'\"'));assert(!next.includes('__RECOMMAND_ASSET_'));assert.equal((next.match(/data:image\/png;base64,/g)||[]).length,3);for(const m of next.matchAll(/<script(?: type=\"module\")?>([\s\S]*?)<\/script>/g))new vm.Script(m[1]);}
  assert.equal((html.match(/data:image\/png;base64,/g)||[]).length,3);
 });
