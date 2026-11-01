@@ -3,7 +3,7 @@ import {PROLOGUE,BRIEFINGS,BRIEFING_KEY,readBriefingSeen,pendingBriefing} from '
 const frame=document.getElementById('gameFrame'),status=document.getElementById('launcherStatus'),modal=document.getElementById('briefing');
 const seen=readBriefingSeen(k=>localStorage.getItem(k));let selected=null,loadTimer,pages=[],pageIndex=0,pendingChapter=null,replaying=false,voiceOn=false;
 function setStatus(message){status.hidden=false;document.getElementById('loadMessage').textContent=message;}
-function loadChapter(name){selected=name;clearTimeout(loadTimer);setStatus('행성을 여는 중입니다…');document.getElementById('welcome').hidden=true;frame.hidden=false;frame.srcdoc=chapters[name].replace(/__RECOMMAND_ASSET_(\d+)__/g,(_,i)=>assets[Number(i)]);document.title=names[name]+' · RE:COMMAND 0.6.2';loadTimer=setTimeout(()=>setStatus('시작이 지연되고 있습니다. Chrome 또는 Edge에서 실행하거나 다시 열기를 눌러 주세요.'),15000);}
+function loadChapter(name){selected=name;clearTimeout(loadTimer);setStatus('행성을 여는 중입니다…');document.getElementById('welcome').hidden=true;frame.hidden=false;frame.srcdoc=chapters[name].replace(/__RECOMMAND_ASSET_(\d+)__/g,(_,i)=>assets[Number(i)]);document.title=names[name]+' · RE:COMMAND '+version;loadTimer=setTimeout(()=>setStatus('시작이 지연되고 있습니다. Chrome 또는 Edge에서 실행하거나 다시 열기를 눌러 주세요.'),15000);}
 function openChapter(name){if(!Object.hasOwn(chapters,name))return;const next=pendingBriefing(name,seen);if(next.length){showBriefing(next,name,false);return;}loadChapter(name);}
 function cancelVoice(){try{window.speechSynthesis?.cancel();}catch{}}
 function koreanVoice(){try{return window.speechSynthesis?.getVoices().find(v=>/^ko(?:-|_)?/i.test(v.lang));}catch{return null;}}

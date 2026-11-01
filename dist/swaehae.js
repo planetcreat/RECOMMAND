@@ -29,7 +29,7 @@ function seaInteract(){if(seaPaused)return;if(seaDialog){seaAdvance();return;}
   if(distance(seaPlayer,BELROK.entry)<4){seaArena=false;seaPlayer.x=0;seaPlayer.z=-29;seaEffects.length=0;}return;
  }
  const o=seaNearest();if(!o)return;
- if(o.kind==='naru'){if(!seaState.introduced)seaTalk(o.name,SWAEHAE_SCENES.naru,()=>{seaState.introduced=true;saveSea();});else seaTalk(o.name,[seaState.boss.rewritten?'나루: “돌아올 길은 열어 두었어요. 언제 출항할지는 우리가 정할게요.”':seaState.boat.stage==='complete'?BELROK_CLUE:seaState.foregate?'“물을 내보내는 것과, 길을 열어 두는 건 다르죠. 문 너머에서도 그걸 잊지 말아요.”':tideIntel(seaState)?'“밀려날 때는 넓은 길이 위험하고, 돌아올 때는 좁은 홈이 위험해져요. 흐름이 바뀌는 순간 정비 통로를 살펴보세요.”':'“저류지만 열 때, 배수로만 열 때, 둘 다 열 때. 수압계에 직접 남긴 관측이 있나요? 같은 파도도 돌아오는 길은 달라요.”']);}
+ if(o.kind==='naru'){if(!seaState.introduced)seaTalk(o.name,SWAEHAE_SCENES.naru,()=>{seaState.introduced=true;saveSea();});else seaTalk(o.name,[seaState.boss.rewritten?'나루: “돌아올 길은 열어 두었어요. 언제 출항할지는 우리가 정할게요.”':seaState.boat.stage==='complete'?BELROK_CLUE:seaState.foregate?'“물을 내보내는 것과, 길을 열어 두는 건 다르죠. 문 너머에서도 그걸 잊지 말아요.”':tideIntel(seaState)?'“직접 물을 살펴봤군요. 항구에서 기다리는 사람들에게도 저마다의 사정이 있어요. 수압계에는 남지 않는 이야기도 있겠죠.”':'“저류지만 열 때, 배수로만 열 때, 둘 다 열 때. 수압계에 직접 남긴 관측이 있나요? 같은 파도도 돌아오는 길은 달라요.”']);}
  if(o.kind==='child'){
   if(seaState.boat.stage==='returned')seaTalk('돌아오는 배',[
    '종이배가 도하의 손끝으로 돌아왔다. 접힌 돛에는 낯선 물때가 묻어 있지만, 배는 아직 물 위에 떠 있다.',
@@ -54,7 +54,7 @@ function seaInteract(){if(seaPaused)return;if(seaDialog){seaAdvance();return;}
  if(o.kind==='foregate'){if(!seaState.introduced)return;if(tideState(seaState.gates)!=='circulation'){seaTalk(o.name,['보행교가 들려 있다. 한쪽에 고인 수압 때문에 내릴 수 없다.\n저류지와 배수로를 함께 열어 물이 순환하게 해야 한다.']);return;}
   if(seaState.boss.rewritten){seaTalk('귀환 항로의 수호자',['벨로크: [귀환 항로 보호 중. 출항 여부는 주민에게 위임.]','문지기는 더 이상 항구를 가두지 않는다.']);return;}
   const enter=()=>{seaState.foregate=true;saveSea();seaArena=true;seaEffects.length=0;if(seaState.boss.defeated){seaBoss.active=false;seaBoss.hp=0;seaBoss.hero=100;seaBoss.phase='won';seaPlayer.x=0;seaPlayer.z=-50;}else startBelrok(seaBoss,seaPlayer);seaPlayer.face={x:0,z:-1};};
-  seaTalk('역류의 문지기 · 벨로크',[...SWAEHAE_SCENES.foregate,...(seaState.boat.stage==='complete'?['물길의 기억이 겹친다. 종이배가 돌아왔던 홈과 같은 갈라진 원이다.\n'+BELROK_CLUE]:[]),'전장 진입 · 토출과 회수의 원을 피하고 과압 방출 때 공격하자.\nJ 검격 · L 파동 · K / Space 회피 · E 정비 장치'],enter);
+  seaTalk('역류의 문지기 · 벨로크',[...SWAEHAE_SCENES.foregate,...(seaState.boat.stage==='complete'?['물길의 기억이 겹친다. 종이배가 돌아왔던 홈과 같은 갈라진 원이다.\n'+BELROK_CLUE]:[]),'문지기가 고개를 든다. 방 안의 오래된 명령이 다시 울린다.\nJ 검격 · L 파동 · K / Space 회피'],enter);
  }
 }
 const seaGround=new Geometry(),seaProps=new Geometry(),seaBase=new Geometry();
