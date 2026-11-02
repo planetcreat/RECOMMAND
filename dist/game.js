@@ -1,3 +1,5 @@
+import {readTravelerName} from './late-state.js';
+import {installBackupBridge} from './backup-bridge.js';
 import {Renderer,Geometry} from './engine.js';
 import {SoftwareRenderer} from './software.js';
 import {snapshot,decode} from './save.js';
@@ -349,3 +351,7 @@ window.recommand={snapshot:()=>JSON.parse(JSON.stringify({player,state,started,p
 
 
 if(typeof window.dispatchEvent==='function')window.dispatchEvent(new Event('recommand-ready'));
+
+if(window.parent&&window.parent!==window)installBackupBridge({window,parent:window.parent,chapter:'yuon',flush:()=>!started||save(),pause:()=>{const previous=paused;paused=true;keys.clear();return previous;},resume:previous=>{paused=previous;keys.clear();}});
+
+$('travelerName').textContent=readTravelerName(k=>localStorage.getItem(k));

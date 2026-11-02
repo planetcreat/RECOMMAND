@@ -6,7 +6,7 @@
 </style></head>
 <body><canvas id="chapterWorld" tabindex="0" aria-label="쇄해의 제방 항구"></canvas><div class="sea-vignette"></div>
 <header class="chapter-header"><a href="RECOMMAND.html">RE:COMMAND <span>유온으로 돌아가기</span></a><div class="chapter-actions"><button id="seaNextPlanet" class="hidden">무명으로 출발</button><button id="seaPractice" class="hidden">보스 연습</button><button id="chapterJournal">발견 기록</button><button id="chapterPause">일시정지</button></div></header>
-<section class="chapter-title"><p>PLANET 02 / 04 · ACT I</p><h1>쇄해 <small>Swaehae</small></h1><span>닫힌 길의 바다</span></section>
+<section class="chapter-title"><p>PLANET 02 / 04 · ACT I</p><h1>쇄해 <small>Swaehae</small></h1><span>닫힌 길의 바다</span><p id="travelerName">이름 없는 여행자</p></section>
 <section id="harborObjective" class="chapter-objective"><span>돌아오지 않는 물</span><h2 id="chapterObjective">제방지기 나루를 찾아가세요.</h2><p id="tideStatus">두 수문이 닫혀 있다.</p><p id="chapterRecord">수압 관측 0 / 3</p></section>
 <section id="boatQuest" class="boat-quest hidden" aria-label="도하의 부탁"><span id="boatTitle"></span><p id="boatHint"></p><small id="boatProgress"></small></section>
 <section id="bossHud" class="boss-hud hidden" aria-label="벨로크 전투"><span id="bossName"></span><div class="boss-meter"><i id="bossHealth"></i></div><div class="hero-meter"><i id="heroHealth"></i></div><small id="bossNumbers"></small><h2 id="bossPhase"></h2><p id="bossMessage"></p><small id="bossSkills"></small></section>
@@ -22,7 +22,20 @@
  setTimeout(()=>{if(!ready)fail('게임을 불러오는 데 시간이 걸리고 있습니다. 연결을 확인하거나 다운로드한 PLAY-RECOMMAND.html을 브라우저에서 열어 주세요.');},15000);
  if(location.protocol==='file:'&&document.querySelector('script[type="module"][src]'))fail('이 파일은 여러 구성 파일을 사용하는 웹용 실행 파일입니다. release 폴더의 PLAY-RECOMMAND.html 또는 RECOMMAND.html을 열어 주세요.');
 })();
-</script><script type="module">// Pure gameplay math: no renderer dependency. x/z is the logical ground plane.
+</script><script type="module">// Parent launcher asks for a save checkpoint while its modal is open.
+function installBackupBridge({window,parent,chapter,flush,pause,resume}){
+ if(!parent||parent===window)return;
+ let held=null;
+ window.addEventListener('message',e=>{
+  if(e.source!==parent||!e.data)return;
+  if(e.data.type==='recommand-backup-lock'){
+   if(!held)held={previous:pause()};let ok=false;try{ok=flush()===true;}catch{}
+   parent.postMessage({type:'recommand-backup-ready',chapter,request:e.data.request,ok},'*');
+  }else if(e.data.type==='recommand-backup-unlock'&&held){const previous=held.previous;held=null;resume(previous);}
+ });
+}
+
+// Pure gameplay math: no renderer dependency. x/z is the logical ground plane.
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 function normalize(x,z){const n=Math.hypot(x,z);return n?{x:x/n,z:z/n}:{x:0,z:0};}
@@ -249,6 +262,58 @@ const SWAEHAE_SCENES={
  foregate:['중앙 보행교가 내려앉으며 수문 안쪽의 원형 방이 드러났다.\n벽에 걸린 문장은 파도에 닳아 있었다. [안전은 정지된 상태로 유지한다.]','녹슨 문틀에는 오래된 출항 통지서가 붙어 있다.\n허가를 기다리는 날짜는 적혀 있지만, 기다림이 끝나는 날은 비어 있다.','루미: “이 문 앞에서 얼마나 오래 기다렸을까요.”\n주인공은 닳아 버린 통지서에서 손을 뗀다. 방 안에서 낮은 울림이 돌아온다.','문지기의 수압계가 붉게 기울어진다.\n[외부 항로 봉쇄. 접근하는 압력을 배출한다.]']
 };
 
+const LATE_KEYS={mumyeong:'recommand-mumyeong-v1',hwanseong:'recommand-hwanseong-v1'};
+const boolArray=(v,n)=>Array.isArray(v)&&v.length===n&&v.every(x=>typeof x==='boolean');
+function newLateState(planet){if(!LATE_KEYS[planet])throw Error('알 수 없는 행성입니다.');return{format:'RECOMMAND-LATE',v:1,planet,arrived:false,nameRevealed:false,nameAccepted:false,heard:[],compared:[false,false,false],chime:false,asked:false,relays:[false,false,false],invited:[false,false,false],tomorrow:false,lumi:false,boss:false,ending:null,player:{x:0,z:10,hp:100}};}
+function decodeLate(raw,planet){
+ const s=typeof raw==='string'?JSON.parse(raw):raw;
+ if(!s||s.format!=='RECOMMAND-LATE'||s.v!==1||s.planet!==planet||!LATE_KEYS[planet])throw Error('이 행성의 진행 파일이 아닙니다.');
+ for(const key of ['arrived','chime','asked','tomorrow','lumi','boss'])if(typeof s[key]!=='boolean')throw Error('진행 기록이 손상되었습니다.');
+ if(!Array.isArray(s.heard)||s.heard.length>5||new Set(s.heard).size!==s.heard.length||s.heard.some(x=>!['keeper','walker','bell','footprints','archive'].includes(x)))throw Error('증언 기록이 손상되었습니다.');
+ if(!boolArray(s.compared,3)||!boolArray(s.relays,3)||!boolArray(s.invited,3))throw Error('대조·응답 기록이 손상되었습니다.');
+ if(!s.player||!['x','z','hp'].every(k=>typeof s.player[k]==='number'&&Number.isFinite(s.player[k]))||Math.abs(s.player.x)>29||s.player.z< -48||s.player.z>19||s.player.hp<1||s.player.hp>100)throw Error('여행자 기록이 손상되었습니다.');
+ if(planet==='mumyeong'){
+  const needs=[['keeper','walker','bell'],['walker','footprints'],['keeper','archive']];
+  if(s.compared.some((v,i)=>v&&!needs[i].every(x=>s.heard.includes(x)))||s.chime&&!s.compared.every(Boolean)||s.asked&&!s.chime||s.boss&&!s.compared.every(Boolean))throw Error('증언과 재구성의 순서가 일치하지 않습니다.');
+  if(s.ending!==null&&!['restore','witness'].includes(s.ending)||s.ending&&!s.boss||s.ending==='witness'&&!(s.chime&&s.asked))throw Error('무명의 선택 기록이 일치하지 않습니다.');
+ }else if(s.boss&&!s.relays.every(Boolean)||s.invited.some((v,i)=>v&&!s.relays[i])||s.ending!==null&&!['guarded','shared'].includes(s.ending)||s.ending&&!s.boss||s.ending==='shared'&&!(s.invited.every(Boolean)&&s.tomorrow&&s.lumi))throw Error('환성의 응답 기록이 일치하지 않습니다.');
+ if(!s.arrived&&(s.heard.length||s.compared.some(Boolean)||s.relays.some(Boolean)||s.boss))throw Error('도착 이전의 기록이 섞여 있습니다.');
+ for(const key of['nameRevealed','nameAccepted'])if(s[key]!==undefined&&typeof s[key]!=='boolean')throw Error('이름의 기록이 손상되었습니다.');
+ if(s.nameRevealed&&(planet!=='mumyeong'||!s.compared.every(Boolean))||s.nameAccepted&&(!s.nameRevealed||!s.boss))throw Error('이름을 알게 된 순서가 맞지 않습니다.');
+ return structuredClone({...s,nameRevealed:s.nameRevealed??false,nameAccepted:s.nameAccepted??false});
+}
+function revealTravelerName(s){if(s.planet!=='mumyeong'||!s.compared.every(Boolean))return false;s.nameRevealed=true;return true;}
+function acceptTravelerName(s){if(s.planet!=='mumyeong'||!s.boss||!s.nameRevealed)return false;s.nameAccepted=true;return true;}
+function travelerName(s){return s?.planet==='mumyeong'&&s.nameAccepted===true&&s.nameRevealed===true&&s.boss===true&&s.compared?.every(Boolean)?'이든':'이름 없는 여행자';}
+function readTravelerName(read){for(const suffix of['','.backup'])try{const raw=read(LATE_KEYS.mumyeong+suffix);if(raw)return travelerName(decodeLate(raw,'mumyeong'));}catch{}return'이름 없는 여행자';}
+function noteEvidence(s,id){if(s.planet!=='mumyeong'||!['keeper','walker','bell','footprints','archive'].includes(id))return false;if(!s.heard.includes(id))s.heard.push(id);return true;}
+function reconstruct(s,index,answer){
+ const needs=[['keeper','walker','bell'],['walker','footprints'],['keeper','archive']],answers=[0,1,1];
+ if(s.planet!=='mumyeong'||!needs[index]?.every(id=>s.heard.includes(id))||answer!==answers[index])return false;s.compared[index]=true;return true;
+}
+function canEnterLateBoss(s){return s.planet==='mumyeong'?s.compared.every(Boolean):s.relays.every(Boolean);}
+function canWitness(s){return s.planet==='mumyeong'&&s.boss&&s.chime&&s.asked;}
+function parseObject(raw){try{const s=typeof raw==='string'?JSON.parse(raw):raw;return s&&typeof s==='object'?s:null;}catch{return null;}}
+// Read only. A missing/invalid earlier chapter never becomes somebody's consent.
+function journeySummary(read){
+ const u=parseObject(read('recommand-save-v1'));let sea=null,mum=null;
+ try{const r=read('recommand-swaehae-v1');if(r)sea=decodeTide(r);}catch{}
+ try{const r=read(LATE_KEYS.mumyeong);if(r)mum=decodeLate(r,'mumyeong');}catch{}
+ const st=u?.state,validYuon=[1,2].includes(u?.v)&&boolArray(st?.seals,3)&&boolArray(st?.memories,2)&&st.boss===true&&st.complete===true&&st.quest===2&&st.seals.every(Boolean)&&['preserve','rewrite'].includes(st.ending);
+ const garden=!!(validYuon&&st.ending==='rewrite'&&st.bond===true&&st.fracture===true&&st.memories.every(Boolean));
+ return{garden,sea:!!sea?.boss.rewritten,snow:!!(mum?.ending==='witness'),completed:[!!validYuon,!!sea?.boss.rewritten,!!mum?.ending],patterns:{garden:garden?'answer':'boundary',sea:sea?.boat.stage==='complete'?'return':'locked',snow:mum?.compared.every(Boolean)?'trace':'echo'}};
+}
+function canShare(s,journey){return s.planet==='hwanseong'&&s.boss&&s.invited.every(Boolean)&&s.tomorrow&&s.lumi&&journey.garden&&journey.sea&&journey.snow;}
+function loadLate(store,planet){
+ const errors=[];for(const suffix of['','.backup']){try{const raw=store.getItem(LATE_KEYS[planet]+suffix);if(raw)return{state:decodeLate(raw,planet),source:suffix?'backup':'primary',error:null};}catch(e){errors.push(e.message);}}
+ return{state:null,source:null,error:errors.length?errors.join(' / '):null};
+}
+function writeLate(store,state){
+ const next=JSON.stringify(decodeLate(state,state.planet)),key=LATE_KEYS[state.planet],old=store.getItem(key);
+ if(old&&old!==next){let valid=true;try{decodeLate(old,state.planet);}catch{valid=false;}if(valid)store.setItem(key+'.backup',old);else store.setItem(key+'.unreadable',old);}
+ store.setItem(key,next);return true;
+}
+
 // Deterministic combat model. Visuals consume these same circular hazard coordinates.
 const BELROK={x:0,z:-54,hp:360,device:{x:-9,z:-48},entry:{x:0,z:-44},radius:12};
 const BELROK_PHASES={outWarn:['토출 예고',1.8],out:['토출',1.2],returnWarn:['회수 예고 · 역류에 대비',2.8],back:['회수',1.2],lockWarn:['압력 봉쇄 예고',1.5],lock:['압력 봉쇄',1.5],open:['과압 방출 · 가슴 노출',3.4]};
@@ -440,4 +505,8 @@ window.recommandSea={snapshot:()=>JSON.parse(JSON.stringify({state:seaState,play
 if(typeof window.dispatchEvent==='function')window.dispatchEvent(new Event('recommand-ready'));
 
 el('seaNextPlanet').onclick=()=>{saveSea();location.href='MUMYEONG.html';};
+
+if(window.parent&&window.parent!==window)installBackupBridge({window,parent:window.parent,chapter:'swaehae',flush:()=>(()=>{saveSea();return !seaSaveFailed;})(),pause:()=>{const previous=seaPaused;seaPaused=true;seaKeys.clear();return previous;},resume:previous=>{seaPaused=previous;seaKeys.clear();}});
+
+el('travelerName').textContent=readTravelerName(k=>localStorage.getItem(k));
 </script></body></html>

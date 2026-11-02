@@ -1,3 +1,6 @@
+import {NAME_RECORD,NAME_ACCEPTANCE} from './late-story.js';
+import {revealTravelerName,acceptTravelerName,travelerName,readTravelerName} from './late-state.js';
+import {installBackupBridge} from './backup-bridge.js';
 import {Renderer,Geometry} from './engine.js';
 import {SoftwareRenderer} from './software.js';
 import {WorldArt} from './art.js';
@@ -19,6 +22,7 @@ const lateArt=new WorldArt(lateRenderer),lateVFX=new CombatVFX(lateRenderer,()=>
 const lateLoad=loadLate(localStorage,latePlanet);
 let lateState=lateLoad.state||newLateState(latePlanet),lateStarted=false,latePaused=false,lateDialogue=null,lateOverlay=false,lateArena=null,lateClock=0,lateAutosave=0,lateToastClock=0,lateHUDClock=0,lateSaveError=false;
 let latePracticeMode=false,lateTrialReturn=null,lateImportPending=null;
+const latePriorName=readTravelerName(k=>localStorage.getItem(k));
 const latePlayer={x:lateState.player.x,z:lateState.player.z,hp:lateState.player.hp,face:{x:0,z:-1},walk:0,dash:0,dashing:0,inv:0,slash:0,wave:0};
 const lateMotion=new MotionPresenter(latePlayer);const lateCamera=lateMotion.camera;
 function lateSet(id,text){const e=lateEl(id);if(e.textContent!==String(text))e.textContent=String(text);}
@@ -52,8 +56,9 @@ function lateStart(load){
  if(!lateState.arrived)lateTalk(lateConfig.name+' · '+lateConfig.subtitle,lateConfig.arrival,()=>{lateState.arrived=true;lateSave();});
  else{lateEl('lateWorld').focus();if(lateLoad.source==='backup')lateToast('이전 자동 저장으로 복구했습니다. 기존 원본은 진행 보관에서 내보낼 수 있습니다.');}
  lateSave();lateUpdateHUD();
+ if(isSnow&&lateState.boss&&!lateState.nameAccepted)lateNameAcceptance(()=>{});
 }
-function lateTravel(chapter){lateSave();if(window.parent!==window)parent.postMessage({type:'recommand-switch',chapter},'*');else location.href=(chapter==='yuon'?'index':chapter)+'.html';}
+function lateTravel(chapter){if(isSnow&&lateState.boss&&!lateState.nameAccepted){lateNameAcceptance(()=>lateTravel(chapter));return;}lateSave();if(window.parent!==window)parent.postMessage({type:'recommand-switch',chapter},'*');else location.href=(chapter==='yuon'?'index':chapter)+'.html';}
 function lateNearest(){return lateConfig.objects.filter(o=>o.kind!=='secret'&&distance(o,latePlayer)<3.5&&(o.kind!=='portal'||lateState.ending)).sort((a,b)=>distance(a,latePlayer)-distance(b,latePlayer))[0];}
 function lateSecret(){return lateConfig.objects.find(o=>o.kind==='secret'&&distance(o,latePlayer)<1.7);}
 function lateInteract(){
@@ -89,7 +94,7 @@ function lateCompare(i){
  const r=lateConfig.reconstructions[i],missing=r.need.filter(id=>!lateState.heard.includes(id));
  if(missing.length){lateTalk(r.title,['아직 대조할 장면이 충분하지 않다.\n확인할 기록: '+missing.map(id=>lateConfig.evidence[id].title).join(' · ')],lateBoard);return;}
  lateTalk(r.title,[r.question],null,r.choices.map((label,answer)=>({label,action:()=>{
-  const ok=reconstruct(lateState,i,answer);lateSave();lateTalk(ok?'서로 다른 기억을 잇다':'장면을 다시 바라보기',[ok?r.explanation:'그 설명으로는 남아 있는 장면을 모두 설명할 수 없다.\n'+r.explanation],lateBoard);
+  const ok=reconstruct(lateState,i,answer);lateSave();lateTalk(ok?'서로 다른 기억을 잇다':'장면을 다시 바라보기',[ok?r.explanation:'그 설명으로는 남아 있는 장면을 모두 설명할 수 없다.\n'+r.explanation],()=>lateNameReveal(lateBoard));
  }})));
 }
 function lateInteractSecret(o){
@@ -133,6 +138,7 @@ function lateRelayChoice(index){
 }
 function lateEnterTrial(key,index){lateTrialReturn={x:latePlayer.x,z:latePlayer.z,index};lateEnterArena(key);}
 function lateEnterArena(trial=null,practice=false){
+ if(isSnow&&!lateState.nameRevealed&&lateState.compared.every(Boolean)){lateNameReveal(()=>lateEnterArena(trial,practice));return;}
  lateKeys.clear();lateSave();latePracticeMode=practice;lateArena=createLateBoss(latePlanet,lateJourney().patterns,trial);latePlayer.x=0;latePlayer.z=-57;latePlayer.hp=100;latePlayer.face={x:0,z:-1};lateEffects.length=0;lateCamera.x=0;lateCamera.z=-58;lateUpdateHUD();lateEl('lateWorld').focus();
 }
 function lateLeaveArena(){
@@ -140,7 +146,17 @@ function lateLeaveArena(){
  if(trial&&lateTrialReturn){latePlayer.x=lateTrialReturn.x;latePlayer.z=lateTrialReturn.z;}else{latePlayer.x=0;latePlayer.z=-38;}
  lateTrialReturn=null;lateCamera.x=latePlayer.x;lateCamera.z=latePlayer.z;lateUpdateHUD();
 }
+function lateNameReveal(after){
+ if(!isSnow||!lateState.compared.every(Boolean)||lateState.nameRevealed){after?.();return;}
+ lateTalk('기록에 남은 서명',NAME_RECORD,()=>{revealTravelerName(lateState);lateSave();after?.();},null,'A NAME IN THE RECORD');
+}
+function lateNameAcceptance(after){
+ if(!isSnow||!lateState.boss)return;
+ if(lateState.nameAccepted){after?.();return;}
+ lateNameReveal(()=>lateTalk('루미 · 당신을 부르는 말',NAME_ACCEPTANCE,()=>{acceptTravelerName(lateState);lateSave();lateUpdateHUD();after?.();},null,'A NAME, NOT AN ORDER'));
+}
 function lateSnowEnding(){
+ if(!lateState.nameAccepted){lateNameAcceptance(lateSnowEnding);return;}
  const choices=[{label:'주민의 기록을 복원한다',action:()=>lateFinish('restore')}];
  if(canWitness(lateState))choices.push({label:'이름 없이도 서로의 말을 기억한다',primary:true,action:()=>lateFinish('witness')});
  choices.push({label:'아직 이 설원에 더 머무른다',action:()=>{}});
@@ -150,7 +166,7 @@ function lateFinalChoice(){
  const choices=[{label:'공격 명령을 멈추고 응답을 기다린다',action:()=>lateFinish('guarded')}];
  if(canShare(lateState,lateJourney()))choices.push({label:'각자의 내일은, 각자의 선택으로',primary:true,action:()=>lateFinish('shared')});
  choices.push({label:'아직 듣지 못한 목소리에게 돌아간다',action:lateTravelMenu});
- lateTalk('환성 · 최종 명령',['관리핵: “최종 명령을 입력하십시오.”\n루미는 당신의 대답을 대신하지 않고 기다린다.'],null,choices,'FINAL COMMAND');
+ lateTalk('환성 · 최종 명령',['관리핵: “최종 명령을 입력하십시오.”\n'+(latePriorName==='이든'?'루미: “이든. 당신의 대답을 기다릴게요.”':'루미는 당신의 대답을 대신하지 않고 기다린다.')],null,choices,'FINAL COMMAND');
 }
 function lateFinish(ending){
  // Revalidate the optional route at the action, including any changed prior save.
@@ -303,6 +319,7 @@ function lateMapDraw(){
  const[x,y]=point(latePlayer.x,latePlayer.z);c.fillStyle='#fff3c5';c.beginPath();c.arc(x,y,3.3,0,Math.PI*2);c.fill();c.font='10px sans-serif';c.textAlign='center';c.fillStyle='#c8d9dd';c.fillText('N',90,15);
 }
 function lateUpdateHUD(){
+ lateSet('travelerName',isSnow?travelerName(lateState):latePriorName);
  const arena=!!lateArena;lateEl('lateBossHud').hidden=!arena;lateEl('lateObjective').hidden=arena;lateEl('lateMap').hidden=arena;lateEl('lateQuest').hidden=arena||!(isSnow?lateState.chime:lateState.tomorrow);
  lateEl('latePractice').hidden=!lateState.boss||arena;lateSet('latePause',latePaused?'계속하기':'일시정지');
  if(arena){const b=lateArena;lateSet('lateBossName',b.trial?RELAY_TEXT[b.trial].title+' · 반응 시험':lateConfig.boss);lateEl('lateBossHealth').style.width=(b.hp/b.max*100)+'%';lateEl('lateHeroHealth').style.width=b.hero+'%';lateSet('lateBossNumbers',b.trial?'노출 종료까지 생존 · 여행자 '+b.hero+' / 100':b.hp+' / '+b.max+' · 여행자 '+b.hero+' / 100');lateSet('lateBossPhase',latePhaseText(b));lateSet('lateBossMessage',b.trial?'공격할 필요 없이 반응 한 주기를 피하면 시험을 통과합니다.':b.message||'바닥에 자국이 남는 원을 피하고, 명령핵이 열릴 때 공격하세요.');lateSet('lateBossSkills','J 검격 · L 파동 '+(b.wave>0?b.wave.toFixed(1)+'초':'준비')+' · K 회피 '+(b.dash>0?b.dash.toFixed(1)+'초':'준비'));lateSet('latePrompt',distance(latePlayer,LATE_DEVICE)<3.1?'E · 갈라진 원 / 회수 예고 때 우회':'');return;}
@@ -320,6 +337,8 @@ function lateOpenJournal(){
  if(lateDialogue||lateOverlay||!lateStarted)return;lateOverlay=true;lateKeys.clear();const box=lateEl('journalEntries');box.replaceChildren();
  const entries=isSnow?lateState.heard.map(id=>lateConfig.evidence[id]):['garden','sea','snow'].map((key,i)=>({title:RELAY_TEXT[key].title,lines:[lateState.relays[i]?RELAY_TEXT[key].test:'반응 시험을 아직 마치지 않았다.',lateState.invited[i]?(lateJourney()[key]?'주민의 응답 회선이 연결되었다.':'질문을 보내고 응답을 기다리고 있다.'):'기존 관리 회선 유지 중.']}));
  if(isSnow)lateState.compared.forEach((v,i)=>{if(v)entries.push({title:'대조 · '+lateConfig.reconstructions[i].title,lines:[lateConfig.reconstructions[i].explanation]});});
+ if(isSnow&&lateState.nameRevealed)entries.push({title:'기록에 남은 서명',lines:NAME_RECORD});
+ if(isSnow&&lateState.nameAccepted)entries.push({title:'당신을 부르는 말',lines:NAME_ACCEPTANCE});
  if(lateState.chime)entries.push({title:'누구도 부르지 않은 이름',lines:[lateState.asked?'“나를 알아보지 못해도 괜찮아. 오늘의 대답부터 기억해 줄래?”':'작은 종에 이름 대신 돌아왔다는 소리를 남겼다.']});
  if(lateState.tomorrow)entries.push({title:'내일을 위한 빈 의자',lines:['루미: “오늘은 여기 남고 싶어요. 내일은 또 물어봐 줘요.”']});
  if(!entries.length)entries.push({title:'첫 발자국',lines:['아직 직접 들은 증언이 없다. 사람에게 말을 걸고 남아 있는 장면을 조사하자.']});
@@ -386,3 +405,5 @@ function lateLoop(now){
  requestAnimationFrame(lateLoop);
 }
 requestAnimationFrame(lateLoop);window.dispatchEvent(new Event('recommand-ready'));
+
+if(window.parent&&window.parent!==window)installBackupBridge({window,parent:window.parent,chapter:latePlanet,flush:()=>!lateStarted||lateSave(),pause:()=>{const previous=latePaused;latePaused=true;lateKeys.clear();return previous;},resume:previous=>{latePaused=previous;lateKeys.clear();}});

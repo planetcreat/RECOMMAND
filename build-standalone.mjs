@@ -18,7 +18,7 @@ function bundle(entry,modules,css,output){
  if(/<script[^>]+src=|<link[^>]+href=/i.test(html))throw Error('External code remains in '+output);
  fs.mkdirSync('release',{recursive:true});fs.writeFileSync('release/'+output,html);console.log(output+': '+Buffer.byteLength(html)+' bytes');
 }
-bundle('index.html',['math.js','story.js','content.js','save.js','engine.js','software.js','environment.js','vfx.js','art.js','boss-models.js','game.js'],'style.css','RECOMMAND.html');
-bundle('swaehae.html',['math.js','engine.js','software.js','vfx.js','art.js','boss-models.js','tide.js','belrok.js','swaehae.js'],'chapter.css','SWAEHAE.html');
-for(const chapter of ['mumyeong','hwanseong'])bundle(chapter+'.html',['math.js','engine.js','software.js','vfx.js','art.js','tide.js','late-story.js','late-state.js','late-combat.js','late-models.js','late-game.js'],'late.css',chapter.toUpperCase()+'.html');
+bundle('index.html',['backup-bridge.js','math.js','story.js','content.js','save.js','tide.js','late-state.js','engine.js','software.js','environment.js','vfx.js','art.js','boss-models.js','game.js'],'style.css','RECOMMAND.html');
+bundle('swaehae.html',['backup-bridge.js','math.js','engine.js','software.js','vfx.js','art.js','boss-models.js','tide.js','late-state.js','belrok.js','swaehae.js'],'chapter.css','SWAEHAE.html');
+for(const chapter of ['mumyeong','hwanseong'])bundle(chapter+'.html',['backup-bridge.js','math.js','engine.js','software.js','vfx.js','art.js','tide.js','late-story.js','late-state.js','late-combat.js','late-models.js','late-game.js'],'late.css',chapter.toUpperCase()+'.html');
 
