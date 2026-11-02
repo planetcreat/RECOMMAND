@@ -1,3 +1,5 @@
+import {readTravelerName} from './late-state.js';
+import {installBackupBridge} from './backup-bridge.js';
 import {Renderer,Geometry} from './engine.js';
 import {WorldArt,visualTerrain} from './art.js';
 import {makeBossModel} from './boss-models.js';
@@ -141,3 +143,7 @@ window.recommandSea={snapshot:()=>JSON.parse(JSON.stringify({state:seaState,play
 if(typeof window.dispatchEvent==='function')window.dispatchEvent(new Event('recommand-ready'));
 
 el('seaNextPlanet').onclick=()=>{saveSea();location.href='mumyeong.html';};
+
+if(window.parent&&window.parent!==window)installBackupBridge({window,parent:window.parent,chapter:'swaehae',flush:()=>(()=>{saveSea();return !seaSaveFailed;})(),pause:()=>{const previous=seaPaused;seaPaused=true;seaKeys.clear();return previous;},resume:previous=>{seaPaused=previous;seaKeys.clear();}});
+
+el('travelerName').textContent=readTravelerName(k=>localStorage.getItem(k));
