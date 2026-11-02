@@ -1,6 +1,6 @@
 {
   "name": "recommand",
-  "version": "0.6.4-preview.1",
+  "version": "0.6.4-preview.2",
   "private": true,
   "type": "module",
   "scripts": {
