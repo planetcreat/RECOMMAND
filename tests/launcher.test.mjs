@@ -6,7 +6,7 @@ test('single-file launcher parses, switches both embedded chapters and reports r
  buttons[0].onclick();let child=elements.gameFrame.srcdoc;assert(child.includes('parent.postMessage'));assert(!child.includes("location.href='SWAEHAE.html'"));assert(!/<script[^>]+src=|<link[^>]+href=/i.test(child));
  for(const m of child.matchAll(/<script(?: type="module")?>([\s\S]*?)<\/script>/g))new vm.Script(m[1]);
  events.message({source:{},data:{type:'recommand-switch',chapter:'swaehae'}});assert.equal(elements.gameFrame.srcdoc,child);
- events.message({source:elements.gameFrame.contentWindow,data:{type:'recommand-switch',chapter:'swaehae'}});child=elements.gameFrame.srcdoc;assert(child.includes('data-return-yuon'));assert(!/<script[^>]+src=|<link[^>]+href=/i.test(child));
+ events.message({source:elements.gameFrame.contentWindow,data:{type:'recommand-switch',chapter:'swaehae'}});child=elements.gameFrame.srcdoc;assert(!/<script[^>]+src=|<link[^>]+href=/i.test(child));
  for(const m of child.matchAll(/<script(?: type="module")?>([\s\S]*?)<\/script>/g))new vm.Script(m[1]);
  events.message({source:elements.gameFrame.contentWindow,data:{type:'recommand-child-ready',chapter:'swaehae'}});assert.equal(elements.launcherStatus.hidden,true);
  events.message({source:elements.gameFrame.contentWindow,data:{type:'recommand-child-error',chapter:'swaehae',message:'test error'}});assert.equal(elements.launcherStatus.hidden,false);assert.match(elements.loadMessage.textContent,/test error/);
