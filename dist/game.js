@@ -21,10 +21,11 @@ const npc={x:3,z:0},portal={x:0,z:11},fracture={x:9,z:-5};
 const seals=[{x:-19,z:-20,name:'뿌리의 제단'},{x:22,z:-33,name:'바람의 제단'},{x:-14,z:-55,name:'기억의 제단'}];
 const memories=[{x:22,z:-9,name:'쓰러진 기록석',text:'[이전 명령: 생태계 보존을 위해 거주민 접근을 차단한다.]\n차가운 문장 아래, 누군가 같은 필체로 덧붙였다.\n“보호와 감금은 무엇이 다른가?”'},{x:-32,z:-41,name:'낡은 관측기',text:'장치가 당신의 손에 반응한다.\n[명령권자 생체 서명 일치. 재명령 대기.]\n당신은 손을 뗀다. 처음 보는 장치인데, 사용법을 알고 있었다.'}];
 let state={quest:0,seals:[false,false,false],memories:[false,false],bond:false,fracture:false,boss:false,complete:false,ending:null,sidequest:0,echoes:[false,false],intel:false,surveyRecord:false,anomaly:false},started=false,paused=false,study=false,dialog=null,curve=.012,debug=false,grid=false,mapBig=false,time=0,toastTime=0,lastSave=0;
-let journal=[],storageWarning=false,contextLost=false;
+let journal=[],storageWarning=false,contextLost=false,backupCanSave=()=>true;
 let audio;function sound(freq=500,dur=.08,type='sine',gain=.035){try{audio??=new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(40,freq*.6),audio.currentTime+dur);g.gain.setValueAtTime(gain,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+dur);}catch{}}
 function toast(t){$('toast').textContent=t;toastTime=4;$('toast').style.opacity=1;}
 function save(){
+ if(!backupCanSave())return true;
  if(!started)return false;
  try{const next=JSON.stringify(snapshot(state,player,enemies,journal)),previous=localStorage.getItem(SAVE);
  if(previous&&previous!==next){try{decode(previous,enemies);localStorage.setItem(SAVE+'.backup',previous);}catch{}}
@@ -352,6 +353,6 @@ window.recommand={snapshot:()=>JSON.parse(JSON.stringify({player,state,started,p
 
 if(typeof window.dispatchEvent==='function')window.dispatchEvent(new Event('recommand-ready'));
 
-if(window.parent&&window.parent!==window)installBackupBridge({window,parent:window.parent,chapter:'yuon',flush:()=>!started||save(),pause:()=>{const previous=paused;paused=true;keys.clear();return previous;},resume:previous=>{paused=previous;keys.clear();}});
+if(window.parent&&window.parent!==window)backupCanSave=installBackupBridge({window,parent:window.parent,chapter:'yuon',flush:()=>!started||save(),pause:()=>{const previous=paused;paused=true;keys.clear();return previous;},resume:previous=>{paused=previous;keys.clear();}});
 
 $('travelerName').textContent=readTravelerName(k=>localStorage.getItem(k));

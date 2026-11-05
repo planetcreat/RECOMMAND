@@ -20,7 +20,7 @@ catch{const c=document.createElement('canvas');c.id='lateWorld';c.tabIndex=0;c.s
 const lateSoft=lateRenderer.backend==='software';if(lateSoft)Geometry.lowDetail=true;
 const lateArt=new WorldArt(lateRenderer),lateVFX=new CombatVFX(lateRenderer,()=>0),lateKeys=new Set(),lateEffects=[],lateObstacles=[];
 const lateLoad=loadLate(localStorage,latePlanet);
-let lateState=lateLoad.state||newLateState(latePlanet),lateStarted=false,latePaused=false,lateDialogue=null,lateOverlay=false,lateArena=null,lateClock=0,lateAutosave=0,lateToastClock=0,lateHUDClock=0,lateSaveError=false;
+let lateState=lateLoad.state||newLateState(latePlanet),lateStarted=false,latePaused=false,lateDialogue=null,lateOverlay=false,lateArena=null,lateClock=0,lateAutosave=0,lateToastClock=0,lateHUDClock=0,lateSaveError=false,backupCanSave=()=>true;
 let latePracticeMode=false,lateTrialReturn=null,lateImportPending=null;
 const latePriorName=readTravelerName(k=>localStorage.getItem(k));
 const latePlayer={x:lateState.player.x,z:lateState.player.z,hp:lateState.player.hp,face:{x:0,z:-1},walk:0,dash:0,dashing:0,inv:0,slash:0,wave:0};
@@ -29,6 +29,7 @@ function lateSet(id,text){const e=lateEl(id);if(e.textContent!==String(text))e.t
 function lateToast(text){lateSet('lateToast',text);lateEl('lateToast').hidden=false;lateToastClock=5;}
 function lateJourney(){return journeySummary(key=>{try{return localStorage.getItem(key);}catch{return null;}});}
 function lateSave(){
+ if(!backupCanSave())return true;
  if(!lateStarted)return false;
  if(!lateArena)lateState.player={x:latePlayer.x,z:latePlayer.z,hp:Math.max(1,latePlayer.hp)};
  try{writeLate(localStorage,lateState);lateSaveError=false;return true;}catch(e){if(!lateSaveError)lateToast('자동 저장을 사용할 수 없습니다. 진행 보관에서 파일로 남겨 주세요.');lateSaveError=true;return false;}
@@ -406,4 +407,4 @@ function lateLoop(now){
 }
 requestAnimationFrame(lateLoop);window.dispatchEvent(new Event('recommand-ready'));
 
-if(window.parent&&window.parent!==window)installBackupBridge({window,parent:window.parent,chapter:latePlanet,flush:()=>!lateStarted||lateSave(),pause:()=>{const previous=latePaused;latePaused=true;lateKeys.clear();return previous;},resume:previous=>{latePaused=previous;lateKeys.clear();}});
+if(window.parent&&window.parent!==window)backupCanSave=installBackupBridge({window,parent:window.parent,chapter:latePlanet,flush:()=>!lateStarted||lateSave(),pause:()=>{const previous=latePaused;latePaused=true;lateKeys.clear();return previous;},resume:previous=>{latePaused=previous;lateKeys.clear();}});

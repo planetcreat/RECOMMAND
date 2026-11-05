@@ -20,3 +20,12 @@ test('child checkpoint holds input once and restores prior pause state, rejectin
  installBackupBridge({window,parent,chapter:'yuon',flush:()=>{flushes++;return true;},pause:()=>{pauses++;const p=paused;paused=true;return p;},resume:p=>paused=p});
  listener({source:{},data:{type:'recommand-backup-lock'}});assert.equal(pauses,0);for(const request of[1,2])listener({source:parent,data:{type:'recommand-backup-lock',request}});assert.equal(pauses,1);assert.equal(flushes,2);assert.equal(messages[1].request,2);assert.equal(paused,true);listener({source:parent,data:{type:'recommand-backup-unlock'}});assert.equal(paused,false);
 });
+
+test('save gate blocks old autosaves even after a failed checkpoint and releases on cancel',()=>{
+ let listener,canSave,checks=0;const parent={postMessage(){}},window={addEventListener:(k,f)=>listener=f};
+ canSave=installBackupBridge({window,parent,chapter:'swaehae',pause(){},resume(){},flush(){assert.equal(canSave(),true);checks++;throw Error('quota');}});
+ assert.equal(canSave(),true);
+ listener({source:{},data:{type:'recommand-backup-lock'}});assert.equal(canSave(),true);
+ for(const request of [1,2]){listener({source:parent,data:{type:'recommand-backup-lock',request}});assert.equal(canSave(),false);}
+ assert.equal(checks,2);listener({source:parent,data:{type:'recommand-backup-unlock'}});assert.equal(canSave(),true);
+});

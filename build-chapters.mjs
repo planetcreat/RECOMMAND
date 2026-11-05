@@ -1,5 +1,8 @@
 import fs from 'node:fs';
 import {LATE_PLANETS} from './dist/late-story.js';
+const version=JSON.parse(fs.readFileSync('package.json','utf8')).version;
+const yuon=fs.readFileSync('dist/index.html','utf8').replace(/PLAYABLE STUDY · [^<]+/,`PLAYABLE STUDY · ${version}`);
+fs.writeFileSync('dist/index.html',yuon);
 for(const c of Object.values(LATE_PLANETS)){
  const html=`<!doctype html><html lang="ko" data-planet="${c.id}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#15233a"><title>${c.name} · RE:COMMAND</title><link rel="stylesheet" href="late.css"></head><body>
 <canvas id="lateWorld" tabindex="0" aria-label="${c.name}의 휘어진 세계"></canvas><div class="late-vignette"></div>

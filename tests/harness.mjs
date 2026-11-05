@@ -1,6 +1,6 @@
 import fs from 'node:fs';import vm from 'node:vm';
 const read=f=>fs.readFileSync(new URL('../dist/'+f,import.meta.url),'utf8');
-export function boot(){
+export function boot({embedded=false}={}){
  const ids=new Map(),all=[],storage=new Map(),events=new Map();let frame=null,now=0,confirmResult=true,storageFails=false;
  const ctx=new Proxy({createRadialGradient:()=>({addColorStop(){}})},{get:(t,k)=>t[k]||(()=>{}),set:(t,k,v)=>(t[k]=v,true)});
  const doc={hidden:false,activeElement:null};
@@ -22,11 +22,13 @@ export function boot(){
  doc.querySelectorAll=s=>s==='[data-action]'?all.filter(e=>e.dataset.action):all.filter(e=>e.dataset.key);
  doc.addEventListener=(t,f)=>{(events.get('doc:'+t)||events.set('doc:'+t,[]).get('doc:'+t)).push(f);};
  const sandbox={console,Math,JSON,Number,Array,Object,Float32Array,Map,Set,performance:{now:()=>now},innerWidth:1280,innerHeight:720,devicePixelRatio:1,HTMLInputElement:Input,document:doc,localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>{if(storageFails)throw Error('quota');storage.set(k,v);},removeItem:k=>storage.delete(k)},confirm:()=>confirmResult,location:{reload(){}},addEventListener:(t,f)=>{if(!events.has(t))events.set(t,[]);events.get(t).push(f);},requestAnimationFrame:f=>frame=f};
+ const parentMessages=[];if(embedded)sandbox.parent={postMessage:data=>parentMessages.push(data)};
  sandbox.window=sandbox;vm.createContext(sandbox);
  const stub='class Geometry{constructor(){this.data=[];}quad(){}tri(){}cone(){}ring(){}disc(){}}class Renderer{constructor(){this.gl={getError:()=>0};this.calls=0;}upload(g){return g;}texture(k){return k;}begin(){}mesh(){}drawDynamic(){}sprite(){}finish(){}}';
- const source=['math.js','story.js','content.js','save.js','tide.js','late-state.js'].map(read).join('\n')+'\n'+stub+'\n'+['environment.js','vfx.js','art.js','boss-models.js','game.js'].map(read).join('\n')+'\nthis.qa={player,state:()=>state,enemies,seals,memories,npc,fracture,obstacles,SCOUT,OLD_SURVEY,ECHO_SITES,BOSS,action,interact,advance,damageEnemy,takeDamage,start,tick,save,restore,draw,updateHUD,setStudy,finalChoice,journal:()=>journal,_dialog:()=>dialog};';
+ const source=['backup-bridge.js','math.js','story.js','content.js','save.js','tide.js','late-state.js'].map(read).join('\n')+'\n'+stub+'\n'+['environment.js','vfx.js','art.js','boss-models.js','game.js'].map(read).join('\n')+'\nthis.qa={player,state:()=>state,enemies,seals,memories,npc,fracture,obstacles,SCOUT,OLD_SURVEY,ECHO_SITES,BOSS,action,interact,advance,damageEnemy,takeDamage,start,tick,save,restore,draw,updateHUD,setStudy,finalChoice,journal:()=>journal,_dialog:()=>dialog};';
  vm.runInContext(source.replace(/^import .*;\r?\n/gm,'').replace(/\bexport /g,''),sandbox);
- return{a:sandbox.qa,storage,get:id=>ids.get(id)||null,confirm:v=>confirmResult=v,failStorage:v=>storageFails=v,
+ return{a:sandbox.qa,storage,get:id=>ids.get(id)||null,confirm:v=>confirmResult=v,failStorage:v=>storageFails=v,parentMessages,
+ parentMessage:data=>events.get('message')?.forEach(f=>f({source:sandbox.parent,data})),pagehide:()=>events.get('pagehide')?.forEach(f=>f()),
  emit:(key,type='keydown')=>events.get(type)?.forEach(f=>f({key,target:doc.activeElement,repeat:false,preventDefault(){}})),
  frames:(n,dt=1/60)=>{for(let i=0;i<n;i++){now+=dt*1000;const f=frame;frame=null;f?.(now);}}};
 }
