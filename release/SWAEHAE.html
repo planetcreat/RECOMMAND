@@ -24,15 +24,18 @@
 })();
 </script><script type="module">// Parent launcher asks for a save checkpoint while its modal is open.
 function installBackupBridge({window,parent,chapter,flush,pause,resume}){
- if(!parent||parent===window)return;
- let held=null;
+ if(!parent||parent===window)return()=>true;
+ let held=null,flushing=false;
  window.addEventListener('message',e=>{
   if(e.source!==parent||!e.data)return;
   if(e.data.type==='recommand-backup-lock'){
-   if(!held)held={previous:pause()};let ok=false;try{ok=flush()===true;}catch{}
+   if(!held)held={previous:pause()};let ok=false;flushing=true;try{ok=flush()===true;}catch{}finally{flushing=false;}
    parent.postMessage({type:'recommand-backup-ready',chapter,request:e.data.request,ok},'*');
   }else if(e.data.type==='recommand-backup-unlock'&&held){const previous=held.previous;held=null;resume(previous);}
  });
+ // Keep the outgoing iframe's blur/pagehide/autosave handlers from replacing
+ // restored records. Only an explicit parent checkpoint may write while held.
+ return()=>held===null||flushing;
 }
 
 // Pure gameplay math: no renderer dependency. x/z is the logical ground plane.
@@ -375,12 +378,12 @@ let seaRenderer;try{seaRenderer=new Renderer(el('chapterWorld'));seaRenderer.bac
 const seaArt=new WorldArt(seaRenderer);
 const seaSoft=seaRenderer.backend==='software';if(seaSoft)Geometry.lowDetail=true;
 const seaHeight=()=>0,seaVFX=new CombatVFX(seaRenderer,seaHeight),seaKeys=new Set(),seaEffects=[],seaObstacles=[],seaRandom=seeded(56241);
-let seaState=structuredClone(TIDE_INITIAL),seaPaused=false,seaDialog=null,seaClock=0,seaCooldown=0,seaSaveFailed=false;
+let seaState=structuredClone(TIDE_INITIAL),seaPaused=false,seaDialog=null,seaClock=0,seaCooldown=0,seaSaveFailed=false,backupCanSave=()=>true;
 const seaPlayer={x:0,z:10,face:{x:0,z:-1},walk:0};
 const seaMotion=new MotionPresenter(seaPlayer);let seaVisual=seaMotion.sample(seaPlayer);
 const seaBoss=createBelrok();let seaArena=false;
 try{const raw=localStorage.getItem(SEA_SAVE);if(raw)seaState=decodeTide(raw);}catch{}
-function saveSea(){try{localStorage.setItem(SEA_SAVE,JSON.stringify(seaState));seaSaveFailed=false;}catch{seaSaveFailed=true;}}
+function saveSea(){if(!backupCanSave())return true;try{localStorage.setItem(SEA_SAVE,JSON.stringify(seaState));seaSaveFailed=false;}catch{seaSaveFailed=true;}}
 function seaTalk(title,lines,after){seaKeys.clear();seaDialog={title,lines,index:0,after};el('chapterSpeaker').textContent=title;el('chapterText').textContent=lines[0];el('chapterDialog').classList.remove('hidden');el('chapterNext').focus();}
 function seaAdvance(){if(!seaDialog)return;if(++seaDialog.index<seaDialog.lines.length){el('chapterText').textContent=seaDialog.lines[seaDialog.index];return;}const cb=seaDialog.after;seaDialog=null;el('chapterDialog').classList.add('hidden');cb?.();saveSea();if(!seaDialog)el('chapterWorld').focus();}
 const seaObjects=[{x:4,z:3,kind:'naru',name:'나루 · 제방지기'},{x:-6,z:9,kind:'child',name:'도하 · 작은 배의 주인'},{x:-12,z:-4,kind:'gate',index:0,name:'서쪽 저류 수문'},{x:12,z:-15,kind:'gate',index:1,name:'동쪽 배수 수문'},{x:0,z:-14,kind:'gauge',name:'중앙 수압계'},{x:0,z:-32,kind:'foregate',name:'문지기의 수문'},{x:-8.5,z:-12,kind:'return',name:'오래된 되돌림 수로'},{x:-4.7,z:13,kind:'launch',name:'작은 배의 선착장'}];
@@ -506,7 +509,7 @@ if(typeof window.dispatchEvent==='function')window.dispatchEvent(new Event('reco
 
 el('seaNextPlanet').onclick=()=>{saveSea();location.href='MUMYEONG.html';};
 
-if(window.parent&&window.parent!==window)installBackupBridge({window,parent:window.parent,chapter:'swaehae',flush:()=>(()=>{saveSea();return !seaSaveFailed;})(),pause:()=>{const previous=seaPaused;seaPaused=true;seaKeys.clear();return previous;},resume:previous=>{seaPaused=previous;seaKeys.clear();}});
+if(window.parent&&window.parent!==window)backupCanSave=installBackupBridge({window,parent:window.parent,chapter:'swaehae',flush:()=>(()=>{saveSea();return !seaSaveFailed;})(),pause:()=>{const previous=seaPaused;seaPaused=true;seaKeys.clear();return previous;},resume:previous=>{seaPaused=previous;seaKeys.clear();}});
 
 el('travelerName').textContent=readTravelerName(k=>localStorage.getItem(k));
 </script></body></html>

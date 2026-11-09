@@ -7,7 +7,7 @@
 @media(max-width:760px){.side-quest{right:15px;top:275px;width:165px;padding:10px}.side-quest p{font-size:9px}.side-quest h2{font-size:11px}#bossInfo{top:198px;width:45vw;left:27%}#bossInfo h2{font-size:10px}.header-actions{flex-wrap:wrap;max-width:230px;gap:5px}header{align-items:flex-start}.header-actions button{font-size:9px;padding:6px}.planet,.objective{top:105px}#location{top:83px}}
 </style></head>
 <body><canvas id="world" tabindex="0" aria-label="행성 탐험 게임"></canvas><div id="vignette"></div>
-<header><a class="brand" href="#" id="brand">RE:COMMAND <span>리커맨드</span></a><div class="header-actions"><span class="version">PLAYABLE STUDY · 0.6.3</span><button id="learn">원리 보기 <kbd>F1</kbd></button><button id="journal">발견 기록</button><button id="pause">일시정지</button></div></header>
+<header><a class="brand" href="#" id="brand">RE:COMMAND <span>리커맨드</span></a><div class="header-actions"><span class="version">PLAYABLE STUDY · 0.6.4-preview.3</span><button id="learn">원리 보기 <kbd>F1</kbd></button><button id="journal">발견 기록</button><button id="pause">일시정지</button></div></header>
 <main id="hud"><section class="planet"><div class="eyebrow">PLANET 01 / 04</div><h1>유온 <span>Yuon</span></h1><p>남겨진 숨의 정원</p><div class="planet-dots"><i class="active"></i><i></i><i></i><i></i></div></section>
 <section class="objective"><div class="eyebrow">현재의 여정</div><h2 id="questTitle">숲의 신호를 따라서</h2><p id="questText">기록자 루미에게 다가가 E로 대화하세요.</p><div id="sealProgress"><span></span><span></span><span></span></div></section>
 <section id="sideQuest" class="side-quest hidden"><div class="eyebrow">발견한 의뢰</div><h2>기록에 없던 울림</h2><p id="sideQuestText"></p></section><section id="bossInfo" class="hidden"><h2 id="bossName"></h2><div class="boss-bar"><i id="bossHealth"></i></div></section><section class="vitals"><div class="portrait">✦</div><div><div class="player-label"><span id="travelerName">이름 없는 여행자</span> <span id="level">Lv. 1</span></div><div class="bar"><i id="health"></i><span id="hpText">100 / 100</span></div><div class="xp"><i id="xp"></i></div></div></section>
@@ -31,15 +31,18 @@ renderY = worldY − k × (dx² + dz²)</pre><p>이 식은 구의 근처를 흉�
 })();
 </script><script type="module">// Parent launcher asks for a save checkpoint while its modal is open.
 function installBackupBridge({window,parent,chapter,flush,pause,resume}){
- if(!parent||parent===window)return;
- let held=null;
+ if(!parent||parent===window)return()=>true;
+ let held=null,flushing=false;
  window.addEventListener('message',e=>{
   if(e.source!==parent||!e.data)return;
   if(e.data.type==='recommand-backup-lock'){
-   if(!held)held={previous:pause()};let ok=false;try{ok=flush()===true;}catch{}
+   if(!held)held={previous:pause()};let ok=false;flushing=true;try{ok=flush()===true;}catch{}finally{flushing=false;}
    parent.postMessage({type:'recommand-backup-ready',chapter,request:e.data.request,ok},'*');
   }else if(e.data.type==='recommand-backup-unlock'&&held){const previous=held.previous;held=null;resume(previous);}
  });
+ // Keep the outgoing iframe's blur/pagehide/autosave handlers from replacing
+ // restored records. Only an explicit parent checkpoint may write while held.
+ return()=>held===null||flushing;
 }
 
 // Pure gameplay math: no renderer dependency. x/z is the logical ground plane.
@@ -395,10 +398,11 @@ const npc={x:3,z:0},portal={x:0,z:11},fracture={x:9,z:-5};
 const seals=[{x:-19,z:-20,name:'뿌리의 제단'},{x:22,z:-33,name:'바람의 제단'},{x:-14,z:-55,name:'기억의 제단'}];
 const memories=[{x:22,z:-9,name:'쓰러진 기록석',text:'[이전 명령: 생태계 보존을 위해 거주민 접근을 차단한다.]\n차가운 문장 아래, 누군가 같은 필체로 덧붙였다.\n“보호와 감금은 무엇이 다른가?”'},{x:-32,z:-41,name:'낡은 관측기',text:'장치가 당신의 손에 반응한다.\n[명령권자 생체 서명 일치. 재명령 대기.]\n당신은 손을 뗀다. 처음 보는 장치인데, 사용법을 알고 있었다.'}];
 let state={quest:0,seals:[false,false,false],memories:[false,false],bond:false,fracture:false,boss:false,complete:false,ending:null,sidequest:0,echoes:[false,false],intel:false,surveyRecord:false,anomaly:false},started=false,paused=false,study=false,dialog=null,curve=.012,debug=false,grid=false,mapBig=false,time=0,toastTime=0,lastSave=0;
-let journal=[],storageWarning=false,contextLost=false;
+let journal=[],storageWarning=false,contextLost=false,backupCanSave=()=>true;
 let audio;function sound(freq=500,dur=.08,type='sine',gain=.035){try{audio??=new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(40,freq*.6),audio.currentTime+dur);g.gain.setValueAtTime(gain,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+dur);}catch{}}
 function toast(t){$('toast').textContent=t;toastTime=4;$('toast').style.opacity=1;}
 function save(){
+ if(!backupCanSave())return true;
  if(!started)return false;
  try{const next=JSON.stringify(snapshot(state,player,enemies,journal)),previous=localStorage.getItem(SAVE);
  if(previous&&previous!==next){try{decode(previous,enemies);localStorage.setItem(SAVE+'.backup',previous);}catch{}}
@@ -726,7 +730,7 @@ window.recommand={snapshot:()=>JSON.parse(JSON.stringify({player,state,started,p
 
 if(typeof window.dispatchEvent==='function')window.dispatchEvent(new Event('recommand-ready'));
 
-if(window.parent&&window.parent!==window)installBackupBridge({window,parent:window.parent,chapter:'yuon',flush:()=>!started||save(),pause:()=>{const previous=paused;paused=true;keys.clear();return previous;},resume:previous=>{paused=previous;keys.clear();}});
+if(window.parent&&window.parent!==window)backupCanSave=installBackupBridge({window,parent:window.parent,chapter:'yuon',flush:()=>!started||save(),pause:()=>{const previous=paused;paused=true;keys.clear();return previous;},resume:previous=>{paused=previous;keys.clear();}});
 
 $('travelerName').textContent=readTravelerName(k=>localStorage.getItem(k));
 </script></body></html>
