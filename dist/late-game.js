@@ -5,7 +5,7 @@ import {Renderer,Geometry} from './engine.js';
 import {SoftwareRenderer} from './software.js';
 import {WorldArt} from './art.js';
 import {CombatVFX} from './vfx.js';
-import {clamp,distance,normalize,resolveMove,MotionPresenter} from './math.js';
+import {clamp,distance,normalize,resolveMove,MotionPresenter,CharacterMotor,FixedStepClock,motionTelemetry} from './math.js';
 import {LATE_PLANETS,RELAY_TEXT} from './late-story.js';
 import {LATE_KEYS,newLateState,decodeLate,noteEvidence,reconstruct,canEnterLateBoss,canWitness,journeySummary,canShare,loadLate,writeLate} from './late-state.js';
 import {LATE_BOSS_CENTER,LATE_DEVICE,createLateBoss,tickLateBoss,hitLateBoss,dashLateBoss,divertLateBoss,latePhaseText} from './late-combat.js';
@@ -24,7 +24,7 @@ let lateState=lateLoad.state||newLateState(latePlanet),lateStarted=false,latePau
 let latePracticeMode=false,lateTrialReturn=null,lateImportPending=null;
 const latePriorName=readTravelerName(k=>localStorage.getItem(k));
 const latePlayer={x:lateState.player.x,z:lateState.player.z,hp:lateState.player.hp,face:{x:0,z:-1},walk:0,dash:0,dashing:0,inv:0,slash:0,wave:0};
-const lateMotion=new MotionPresenter(latePlayer);const lateCamera=lateMotion.camera;
+const lateMotor=new CharacterMotor(),lateMotion=new MotionPresenter(latePlayer);const lateCamera=lateMotion.camera;
 function lateSet(id,text){const e=lateEl(id);if(e.textContent!==String(text))e.textContent=String(text);}
 function lateToast(text){lateSet('lateToast',text);lateEl('lateToast').hidden=false;lateToastClock=5;}
 function lateJourney(){return journeySummary(key=>{try{return localStorage.getItem(key);}catch{return null;}});}
@@ -196,7 +196,7 @@ function lateDash(){if(!lateStarted||latePaused||lateDialogue||lateOverlay)retur
 function lateTick(dt){
  lateMotion.capture(latePlayer);
  lateClock+=dt;if(lateToastClock>0){lateToastClock-=dt;if(lateToastClock<=0)lateEl('lateToast').hidden=true;}
- if(!lateStarted||latePaused||lateDialogue||lateOverlay)return;
+ if(!lateStarted||latePaused||lateDialogue||lateOverlay){lateMotor.stop(latePlayer);return;}
  for(const key of['dash','dashing','inv','slash','wave'])latePlayer[key]=Math.max(0,latePlayer[key]-dt);
  if(lateArena){
   tickLateBoss(lateArena,latePlayer,dt);latePlayer.hp=lateArena.hero;
@@ -211,7 +211,7 @@ function lateTick(dt){
  if(dx||dz){latePlayer.face=d;latePlayer.walk+=dt*9;}else if((lateArena?.dashing||latePlayer.dashing)>0)d=latePlayer.face;
  const speed=(lateArena?.dashing||latePlayer.dashing)>0?18:6.2;
  const obstacles=lateArena?[{...LATE_BOSS_CENTER,r:1.5}]:lateObstacles;
- const p=resolveMove(latePlayer,d.x*speed*dt,d.z*speed*dt,obstacles);latePlayer.x=p.x;latePlayer.z=p.z;
+ const p=lateMotor.move(latePlayer,d,dt,{speed,dashing:(lateArena?.dashing||latePlayer.dashing)>0,obstacles});latePlayer.x=p.x;latePlayer.z=p.z;
  if(lateArena){const x=p.x,z=p.z+64,len=Math.hypot(x,z),scale=len>11.4?11.4/len:1;latePlayer.x=x*scale;latePlayer.z=-64+z*scale;}
  else{latePlayer.x=clamp(p.x,-26,26);latePlayer.z=clamp(p.z,-46,18);latePlayer.hp=Math.min(100,latePlayer.hp+dt*3);}
  if(lateKeys.has('j'))lateAttack('slash');
@@ -307,6 +307,7 @@ function lateArenaDraw(){
 }
 function lateDraw(alpha=1,dt=1/60){
  const pose=lateMotion.sample(latePlayer,alpha,dt,{frozen:!lateStarted||latePaused||!!lateDialogue||lateOverlay,dashing:(lateArena?.dashing||latePlayer.dashing)>0});
+ motionTelemetry(lateEl('lateWorld'),latePlayer,pose,lateSimulationClock);
  lateRenderer.begin(lateCamera.x,lateCamera.z,.011);lateRenderer.mesh(lateTerrainMesh);
  if(lateArena)lateArenaDraw();else{lateRenderer.mesh(lateArchitectureMesh);lateGroundDetails();}
  const inv=lateArena?.inv||latePlayer.inv;
@@ -397,11 +398,10 @@ lateEl('lateWorld').addEventListener('webglcontextlost',e=>{e.preventDefault();l
 if(!lateLoad.state)lateEl('lateContinue').hidden=true;
 lateSet('saveNotice',lateLoad.error?'기록 확인: '+lateLoad.error+'\n기존 원본은 삭제하지 않았습니다. 상단 진행 보관에서 원본을 남길 수 있습니다.':lateLoad.state?(lateLoad.source==='backup'?'이전 자동 저장을 발견했습니다. 기억 이어가기로 복구합니다.':'이 행성의 저장된 여정을 발견했습니다.'):'이 주소에 저장된 '+lateConfig.name+' 기록이 없습니다. 앞선 행성의 기록은 유지됩니다.');
 lateUpdateHUD();
-let latePrevious=performance.now(),lateAccumulator=0;
+const lateSimulationClock=new FixedStepClock();let latePrevious=performance.now();
 function lateLoop(now){
- const dt=clamp((now-latePrevious)/1000,0,.15);latePrevious=now;lateAccumulator+=dt;let n=0;
- while(lateAccumulator>=1/60&&n++<9){lateTick(1/60);lateAccumulator-=1/60;}
- if(n>=9)lateAccumulator=0;lateDraw(lateAccumulator*60,dt);
+ const step=lateSimulationClock.advance((now-latePrevious)/1000,lateTick),dt=step.dt;latePrevious=now;
+ lateDraw(step.alpha,dt);
  if((lateHUDClock+=dt)>=.1){lateHUDClock=0;lateUpdateHUD();}
  requestAnimationFrame(lateLoop);
 }

@@ -23,12 +23,13 @@ for(const [tag,clip] of Object.entries(narrationManifest)){
  const bytes=fs.readFileSync('dist/audio/'+clip.file);
  narrationClips[tag]='data:audio/mpeg;base64,'+bytes.toString('base64');
 }
-const runtime=['save.js','tide.js','late-state.js','journey-backup.js','journey-backup-ui.js'].map(f=>read(f).replace(/^import .*;\r?\n/gm,'').replace(/\bexport /g,'')).join('\n')+'\n'+read('narration.js').replace(/\bexport /g,'')+'\n'+read('music.js').replace(/\bexport /g,'')+'\n'+read('briefing.js').replace(/\bexport /g,'')+'\n'+read('launcher.js').replace(/^import .*;\r?\n/gm,'');
+const runtime=['storage-scope.js','save.js','tide.js','late-state.js','journey-backup.js','journey-backup-ui.js'].map(f=>read(f).replace(/^import .*;\r?\n/gm,'').replace(/\bexport /g,'')).join('\n')+'\n'+read('narration.js').replace(/\bexport /g,'')+'\n'+read('music.js').replace(/\bexport /g,'')+'\n'+read('briefing.js').replace(/\bexport /g,'')+'\n'+read('launcher.js').replace(/^import .*;\r?\n/gm,'');
 const script=`const chapters=${JSON.stringify(chapters)},assets=${JSON.stringify(assets)},names=${JSON.stringify(names)},version=${JSON.stringify(version)},narrationClips=${JSON.stringify(narrationClips)};\n`+runtime;
 new vm.Script(script);
 const buttons=entries.map(([id,,name])=>`<button data-chapter="${id}" disabled>${name}</button>`).join('');
 const html=`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="네 행성을 탐험하고, 오래된 명령을 다시 쓰는 2.5D 액션 어드벤처."><title>RE:COMMAND ${version} · 네 행성</title><style>${read('launcher.css')}</style></head><body>
 <header><strong>RE:COMMAND · ${version}</strong><nav aria-label="행성 이동">${buttons}<button id="journeyHelp" disabled>여정 안내</button><button id="journeyBackupOpen">진행 보관</button></nav></header>
+<p id="qaNotice" hidden role="status" style="position:fixed;bottom:0;left:0;z-index:30;margin:0;padding:6px 12px;background:#233b49;color:#f4e7b0;font:12px sans-serif"></p>
 <main id="welcome" class="welcome"><p class="eyebrow">네 행성 · 하나의 항로</p><h1>RE:COMMAND</h1><p>숨을 남긴 정원, 길을 닫은 바다, 이름을 지운 설원.<br>그리고 목소리가 돌아오는 궤도.</p><p>기록자 루미와 함께 주민의 이야기를 듣고,<br>별을 지키던 오래된 명령을 다시 선택하는 여정.</p><div class="chapters">${buttons}</div><p class="hint">처음이라면 <b>유온</b>에서 시작하세요. 짧은 이야기와 진행 안내가 먼저 나옵니다.<br>기존 기록이 있다면 해당 행성에서 <b>기억 이어가기</b>를 선택하세요.</p><p class="hint">WASD 이동 · E 대화·조사 · J 검격 · L 파동 · K / Space 회피<br>진행은 각 행성에서 자동 저장됩니다. 같은 브라우저·주소에서 이어서 플레이하세요.</p></main>
 <details class="audioSettings"><summary>배경음악</summary><div><button id="musicToggle" aria-pressed="false">음악 켜기</button><label for="musicVolume">음량</label><input id="musicVolume" type="range" min="0" max="100" value="35"><small id="musicStatus" role="status"></small></div></details>
 <iframe id="gameFrame" title="RE:COMMAND 게임" hidden allow="fullscreen"></iframe>
