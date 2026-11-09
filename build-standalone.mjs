@@ -13,7 +13,8 @@ function bundle(entry,modules,css,output){
  html=html.replace('<script src="boot.js"></script>',()=>'<script>'+read('dist/boot.js')+'</script>');
  html=html.replace('<link rel="stylesheet" href="'+css+'">',()=>'<style>'+read('dist/'+css)+'</style>');
  html=html.replace(/<script type="module" src="[^"]+"><\/script>/,()=>'<script type="module">'+source.replace(/<\/script/gi,'<\\/script')+'</script>');
- html=html.replace('href="index.html"','href="RECOMMAND.html"');
+ const chapterFiles={index:'RECOMMAND',swaehae:'SWAEHAE',mumyeong:'MUMYEONG',hwanseong:'HWANSEONG'};
+ html=html.replace(/href="(index|swaehae|mumyeong|hwanseong)\.html"/g,(_,chapter)=>`href="${chapterFiles[chapter]}.html"`);
  html=html.replace('href="LEARNING.md" download',()=> 'href="data:text/plain;charset=utf-8,'+encodeURIComponent(read('dist/LEARNING.md'))+'" download="RECOMMAND-LEARNING.md"');
  if(/<script[^>]+src=|<link[^>]+href=/i.test(html))throw Error('External code remains in '+output);
  fs.mkdirSync('release',{recursive:true});fs.writeFileSync('release/'+output,html);console.log(output+': '+Buffer.byteLength(html)+' bytes');
