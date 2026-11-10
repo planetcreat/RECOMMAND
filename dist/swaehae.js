@@ -60,24 +60,66 @@ function seaInteract(){if(seaPaused)return;if(seaDialog){seaAdvance();return;}
  }
 }
 const seaGround=new Geometry(),seaProps=new Geometry(),seaBase=new Geometry();
-for(let x=-55;x<55;x+=3)for(let z=-80;z<40;z+=3){const land=Math.abs(x)<20&&z<18&&z>-72,c=land?visualTerrain(x,z,'harbor'):[.13+.025*Math.sin(x*.2),.37,.44];seaGround.quad([x,0,z],[x+3,0,z],[x+3,0,z+3],[x,0,z+3],c);if(land)for(let k=seaGround.data.length-36;k<seaGround.data.length;k+=6){const col=visualTerrain(seaGround.data[k],seaGround.data[k+2],'harbor');for(let j=0;j<3;j++)seaGround.data[k+3+j]=col[j];}}
+// Build the headland in cross sections. The outer strips follow the same coast as
+// the dry stone, so beach, submerged shelves and breakers meet along one contour.
+function harborPoint(u,v,margin=0,y=0){
+ const z=-27+v*50;
+ const coast=20.6+1.4*Math.sin(z*.18+u)+.65*Math.cos(z*.49-u)
+  +2.5*Math.max(0,Math.sin(z*.12+u*2));
+ return [u*(coast+margin),y,z+v*(2.7*Math.cos(u*3.8)+1.1*Math.sin(u*7)+margin)];
+}
+for(let x=-78;x<78;x+=6)for(let z=-108;z<60;z+=6){
+ const light=.035*Math.sin(x*.21+z*.11)+.018*Math.cos(x*.34-z*.15);
+ seaGround.quad([x,-1.12,z],[x+6,-1.12,z],[x+6,-1.12,z+6],[x,-1.12,z+6],[.07+light,.28+light,.37+light]);
+}
+const harborOutline=[];
+for(let i=0;i<48;i++)harborOutline.push([1,-1+2*i/48]);
+for(let i=0;i<20;i++)harborOutline.push([1-2*i/20,1]);
+for(let i=0;i<48;i++)harborOutline.push([-1,1-2*i/48]);
+for(let i=0;i<20;i++)harborOutline.push([-1+2*i/20,-1]);
+const shoreBands=[[0,0],[.55,-.38],[1.25,-.55],[2.3,-.65],[4,-.73],[8,-.88],[14,-1.06]];
+const shoreColors=[[.34,.39,.34],[.57,.54,.38],[.68,.68,.48],[.37,.65,.6],[.22,.55,.55],[.14,.42,.48]];
+for(let i=0;i<harborOutline.length;i++){
+ const a=harborOutline[i],b=harborOutline[(i+1)%harborOutline.length];
+ for(let j=0;j<shoreColors.length;j++){
+  const near=shoreBands[j],far=shoreBands[j+1];
+  const col=shoreColors[j].map(v=>v+.017*Math.sin(i*1.7+j));
+  seaGround.quad(harborPoint(...a,...near),harborPoint(...b,...near),harborPoint(...b,...far),harborPoint(...a,...far),col);
+ }
+}
+for(let i=0;i<20;i++)for(let j=0;j<48;j++){
+ const u=i/10-1,v=j/24-1,a=harborPoint(u,v),b=harborPoint(u+.1,v);
+ const c=harborPoint(u+.1,v+1/24),d=harborPoint(u,v+1/24);
+ seaGround.quad(a,b,c,d,visualTerrain(a[0],a[2],'harbor'));
+}
 const seaRoad=(x,z,w,l)=>{for(let px=x-w/2;px<x+w/2;px+=1.1)for(let pz=z-l/2;pz<z+l/2;pz+=1.45){const ex=Math.min(px+1.04,x+w/2),ez=Math.min(pz+1.38,z+l/2),n=Math.sin(px*8+pz*3)*.035;seaBase.quad([px,.1,pz],[ex,.1,pz],[ex,.1,ez],[px,.1,ez],[.6+n,.59+n,.49+n]);}};seaRoad(0,-9,5,52);seaRoad(-6,-4,18,3);seaRoad(6,-15,18,3);
 for(const x of[-20,20])for(let z=-43;z<18;z+=3){seaProps.cone(x,0,z,.65,.85,[.47,.5,.43],4,.6);seaObstacles.push({x,z,r:.6});}
 for(const side of[-1,1])for(let z=-39;z<14;z+=7){const x=side*17;seaProps.cone(x,0,z,.18,2.7,[.28,.32,.29],6,.12);seaProps.cone(x,2.7,z,.34,.5,[.9,.74,.43],6,.24);seaProps.cone(x,3.2,z,.43,.25,[.28,.41,.4],6);seaObstacles.push({x,z,r:.3});}
 for(const o of seaObjects){if(o.kind==='gate'){seaProps.cone(o.x,0,o.z,.9,.5,[.37,.45,.43],6,.8);seaProps.cone(o.x,.5,o.z,.19,1.6,[.63,.56,.37],6,.16);seaObstacles.push({x:o.x,z:o.z,r:.9});}else if(o.kind==='gauge'){seaProps.cone(o.x,0,o.z,.65,1.45,[.4,.51,.49],6,.45);seaProps.cone(o.x,1.45,o.z,.8,.12,[.75,.72,.48],8,.75);seaObstacles.push({x:o.x,z:o.z,r:.8});}}
+// At a side edge u is fixed, so harborPoint is linear in v along z.
+const harborBerths=[[-1,6],[1,-7],[-1,-23],[1,-34]].map(([side,z])=>{
+ const south=harborPoint(side,-1)[2],north=harborPoint(side,1)[2];
+ const v=2*(z-south)/(north-south)-1;
+ const bank=harborPoint(side,v)[0];
+ return {side,z,bank,hull:bank+side*6.4,water:-.83};
+});
 // Docks, moored hulls, awnings, rope posts and layered masonry make the harbor feel inhabited.
-for(const [x,z]of[[-26,6],[27,-7],[-27,-23],[27,-34]]){seaProps.cone(x,.1,z,2.3,.65,[.33,.28,.22],6,1.5);seaProps.cone(x,.7,z,.09,5,[.55,.48,.32],6,.06);seaProps.quad([x,.9,z],[x,5.5,z],[x+2.5,3.8,z],[x+2.5,1.2,z],[.78,.73,.54]);}
+for(const {hull:x,z,water} of harborBerths){
+ seaProps.cone(x,water,z,2.3,.65,[.33,.28,.22],6,1.5);
+ seaProps.cone(x,water+.6,z,.09,5,[.55,.48,.32],6,.06);
+ seaProps.quad([x,water+.8,z],[x,water+5.4,z],[x+2.5,water+3.7,z],[x+2.5,water+1.1,z],[.78,.73,.54]);
+}
 for(const [x,z]of[[-11,3],[10,7],[-12,-24],[10,-26]]){seaProps.cone(x,0,z,1.5,.6,[.34,.33,.27],4,1.5);for(const dx of[-1.4,1.4])seaProps.cone(x+dx,.5,z,.08,2.5,[.4,.37,.26],4);seaProps.quad([x-1.7,3.1,z-1.2],[x+1.7,3.1,z-1.2],[x+1.7,2.8,z+1.2],[x-1.7,2.8,z+1.2],[.43,.63,.6]);seaObstacles.push({x,z,r:1.4});}
 for(let i=0;i<90;i++){const x=(seaRandom()>.5?1:-1)*(6+seaRandom()*9),z=seaRandom()*52-39;if(seaObjects.some(o=>distance({x,z},o)<4))continue;seaProps.cone(x,0,z,.2+seaRandom()*.25,.2+seaRandom()*.45,i%3?[.42,.45,.38]:[.68,.61,.43],5,.12);}
 // Timber landings and mooring posts face the boats beyond the walkable quay.
-for(const [side,z] of [[-1,6],[1,-7],[-1,-23],[1,-34]]){
+for(const {side,z,bank} of harborBerths){
  for(let i=0;i<7;i++){
-  const x=side*(19+i*.62);
+  const x=bank+side*(-.5+i*.62);
   seaBase.quad([x-.28,.24,z-1],[x+.28,.24,z-1],[x+.28,.24,z+1],[x-.28,.24,z+1],[.48+i%2*.035,.34,.22]);
  }
  for(const offset of [-1,1]){
-  const x=side*22.7;
-  seaBase.cone(x,0,z+offset,.2,1.15,[.35,.25,.17],7,.18);
+  const x=bank+side*3.2;
+  seaBase.cone(x,-.86,z+offset,.2,2.01,[.35,.25,.17],7,.18);
   seaBase.cone(x,.7,z+offset,.24,.23,[.75,.64,.44],7,.24);
  }
 }
@@ -102,6 +144,13 @@ function drawBelrokArena(){
  el('bossName').textContent='역류의 문지기 · 벨로크';el('bossHealth').style.width=b.hp/BELROK.hp*100+'%';el('heroHealth').style.width=b.hero+'%';el('bossNumbers').textContent=b.hp+' / '+BELROK.hp+' · 여행자 '+b.hero+' / 100';el('bossPhase').textContent=belrokPhaseText(b)+(b.diverted?' · 우회 성공':'');el('bossMessage').textContent=b.message||'바닥의 원을 피하고, 과압 방출 때 가슴을 공격하세요.';el('bossSkills').textContent='J 검격 · L 파동 '+(b.wave>0?b.wave.toFixed(1)+'초':'준비')+' · K 회피 '+(b.dash>0?b.dash.toFixed(1)+'초':'준비');
 }
 function seaDraw(alpha=1,dt=1/60){seaVisual=seaMotion.sample(seaPlayer,alpha,dt,{frozen:seaPaused||!!seaDialog,dashing:seaArena&&seaBoss.dashing>0});motionTelemetry(el('chapterWorld'),seaPlayer,seaVisual,seaSimulationClock);el('seaNextPlanet').classList.toggle('hidden',!seaState.boss.rewritten||seaArena);el('seaPractice').classList.toggle('hidden',!seaState.boss.defeated||seaArena);el('bossHud').classList.toggle('hidden',!seaArena);el('harborObjective').classList.toggle('hidden',seaArena);el('boatQuest').classList.toggle('hidden',seaArena||!seaState.boat.met);seaRenderer.begin(seaVisual.cameraX,seaVisual.cameraZ,.012);seaRenderer.mesh(seaGroundMesh);if(seaArena){drawBelrokArena();return;}seaRenderer.mesh(seaBaseMesh);if(!seaArt.propReady)seaRenderer.mesh(seaPropsMesh);const g=new Geometry(),status=tideState(seaState.gates),flow=status==='circulation'?1:status==='draining'?-1:0.3,waterY=status==='filling'?.36:status==='draining'?.04:.2;
+ // Broken foam crests move shoreward and fade into the shallow shelf.
+ for(const side of [-1,1])for(let i=0;i<26;i++){
+  const v=-.93+i*.073,phase=(seaClock*.23+i*.37)%1;
+  const margin=3.9-phase*1.45,thickness=.03+.11*Math.sin(phase*Math.PI);
+  const a=harborPoint(side,v,margin,-.60),b=harborPoint(side,v+.024,margin+.15,-.60);
+  g.quad(a,b,harborPoint(side,v+.024,margin+.15+thickness,-.60),harborPoint(side,v,margin+thickness,-.60),[.62,.82,.76]);
+ }
  for(const x of[-4.7,4.7])for(let z=-38;z<13;z+=1.5){const dy=Math.sin(seaClock*3+z*.5)*.018;g.quad([x-.6,waterY+dy,z],[x+.6,waterY+dy,z],[x+.6,waterY+dy,z+1.5],[x-.6,waterY+dy,z+1.5],[.24,.58,.61]);const p=z+(seaClock*flow)%1.5;g.ring(x,waterY+.03,p,.32,[.61,.8,.74],8,.025);}
  for(const z of[-19,9])g.quad([-4.7,waterY,z-.6],[4.7,waterY,z-.6],[4.7,waterY,z+.6],[-4.7,waterY,z+.6],[.24,.58,.61]);
  for(let i=0;i<13;i++){const x=-3+i*.5,z=-24,y=status==='circulation'?.12:.3+Math.abs(x)*.65;g.cone(x,y,z,.21,.13,[.6,.57,.44],4,.2);}
@@ -118,7 +167,7 @@ function seaDraw(alpha=1,dt=1/60){seaVisual=seaMotion.sample(seaPlayer,alpha,dt,
   g.tri(q(-.65,0,0),q(.65,0,0),q(0,.33,.38),[.95,.89,.68]);g.tri(q(.65,0,0),q(-.65,0,0),q(0,.33,-.38),[.75,.79,.68]);g.tri(q(-.35,.15,0),q(.35,.15,0),q(0,1.05,0),[1,.95,.78]);g.ring(p.x,.26,p.z,.65,[.69,.85,.79],18,.035);
  }
  seaRenderer.drawDynamic(g);seaVFX.draw(seaEffects,[],seaClock);seaRenderer.sprite(seaArt.hero(seaVisual,seaHero),seaVisual.x,seaVisual.bob,seaVisual.z,1.9*seaVisual.width,2.6*seaVisual.height);seaRenderer.sprite(seaArt.actor('naru',seaNaru),4,0,3,1.9,2.6);seaRenderer.sprite(seaArt.actor('doha',seaChild),-6,0,9,1.5,2.05);
- for(const [x,z]of[[-26,6],[27,-7],[-27,-23],[27,-34]])seaArt.drawProp('boat',x,.09+.08*Math.sin(seaClock*1.15+z),z,7);for(const [x,z]of[[-11,3],[10,7],[-12,-24],[10,-26]]){seaArt.drawProp('stall',x,0,z,4.5);seaArt.drawProp('cargo',x+2.8,0,z+1,2);}
+ for(const {hull,z,water} of harborBerths)seaArt.drawProp('boat',hull,water+.06*Math.sin(seaClock*1.15+z),z,7);for(const [x,z]of[[-11,3],[10,7],[-12,-24],[10,-26]]){seaArt.drawProp('stall',x,0,z,4.5);seaArt.drawProp('cargo',x+2.8,0,z+1,2);}
  for(const side of[-1,1])for(let z=-39;z<14;z+=7)seaArt.drawProp('lamp',side*17,0,z,3.7);for(const o of seaObjects){if(o.kind==='gate')seaArt.drawProp('sluice',o.x,0,o.z,3.2);if(o.kind==='gauge')seaArt.drawProp('gauge',o.x,0,o.z,2.9);}
  for(let i=0;i<16;i++)for(const side of[-1,1])seaArt.drawProp(i%3?'shrub':'rock',side*(14.7+Math.sin(i)*.5),0,-39+i*3.3,1.8);seaArt.drawProp('arch',0,0,-32,5.5);
  seaObjects.forEach((o,i)=>{if(seaVisible(o))seaRenderer.sprite(seaLabels[i],o.x,o.kind==='gate'?3:3.2,o.z,5.5,.65);});for(const side of[-1,1])for(let z=-39;z<14;z+=7)seaRenderer.sprite(seaGlow,side*17,2.2,z,1.6,1.6,.5);seaRenderer.finish();
