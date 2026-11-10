@@ -1,10 +1,13 @@
 import fs from 'node:fs';
 import {LATE_PLANETS} from './dist/late-story.js';
+const version=JSON.parse(fs.readFileSync('package.json','utf8')).version;
+const yuon=fs.readFileSync('dist/index.html','utf8').replace(/PLAYABLE STUDY · [^<]+/,`PLAYABLE STUDY · ${version}`);
+fs.writeFileSync('dist/index.html',yuon);
 for(const c of Object.values(LATE_PLANETS)){
  const html=`<!doctype html><html lang="ko" data-planet="${c.id}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#15233a"><title>${c.name} · RE:COMMAND</title><link rel="stylesheet" href="late.css"></head><body>
 <canvas id="lateWorld" tabindex="0" aria-label="${c.name}의 휘어진 세계"></canvas><div class="late-vignette"></div>
 <header class="late-header"><a class="late-brand" href="${c.previous}.html" data-previous>RE:COMMAND <small>이전 행성으로</small></a><div class="late-actions"><button id="latePractice" hidden>보스 연습</button><button id="lateRecords">발견 기록</button><button id="lateFiles">진행 보관</button><button id="latePause">일시정지</button></div></header>
-<section class="late-title"><div class="eyebrow">PLANET 0${c.number} / 04</div><h1>${c.name} <small>${c.roman}</small></h1><p>${c.subtitle}</p></section>
+<section class="late-title"><div class="eyebrow">PLANET 0${c.number} / 04</div><h1>${c.name} <small>${c.roman}</small></h1><p>${c.subtitle}</p><p id="travelerName">이름 없는 여행자</p></section>
 <canvas id="lateMap" width="180" height="180" aria-label="${c.name} 탐사 지도"></canvas>
 <section id="lateObjective" class="late-card late-objective"><span class="eyebrow">${c.tag}</span><h2 id="objectiveText"></h2><p id="objectiveHint"></p><div id="progressDots" aria-label="진행 단계"><i></i><i></i><i></i></div></section>
 <section id="lateQuest" class="late-card late-quest" hidden><span class="eyebrow" id="questName"></span><p id="questHint"></p></section>

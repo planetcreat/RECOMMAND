@@ -1,8 +1,11 @@
+import {NAME_RECORD,NAME_ACCEPTANCE} from './late-story.js';
+import {revealTravelerName,acceptTravelerName,travelerName,readTravelerName} from './late-state.js';
+import {installBackupBridge} from './backup-bridge.js';
 import {Renderer,Geometry} from './engine.js';
 import {SoftwareRenderer} from './software.js';
 import {WorldArt} from './art.js';
 import {CombatVFX} from './vfx.js';
-import {clamp,distance,normalize,resolveMove,MotionPresenter} from './math.js';
+import {clamp,distance,normalize,resolveMove,MotionPresenter,CharacterMotor,FixedStepClock,motionTelemetry} from './math.js';
 import {LATE_PLANETS,RELAY_TEXT} from './late-story.js';
 import {LATE_KEYS,newLateState,decodeLate,noteEvidence,reconstruct,canEnterLateBoss,canWitness,journeySummary,canShare,loadLate,writeLate} from './late-state.js';
 import {LATE_BOSS_CENTER,LATE_DEVICE,createLateBoss,tickLateBoss,hitLateBoss,dashLateBoss,divertLateBoss,latePhaseText} from './late-combat.js';
@@ -17,14 +20,16 @@ catch{const c=document.createElement('canvas');c.id='lateWorld';c.tabIndex=0;c.s
 const lateSoft=lateRenderer.backend==='software';if(lateSoft)Geometry.lowDetail=true;
 const lateArt=new WorldArt(lateRenderer),lateVFX=new CombatVFX(lateRenderer,()=>0),lateKeys=new Set(),lateEffects=[],lateObstacles=[];
 const lateLoad=loadLate(localStorage,latePlanet);
-let lateState=lateLoad.state||newLateState(latePlanet),lateStarted=false,latePaused=false,lateDialogue=null,lateOverlay=false,lateArena=null,lateClock=0,lateAutosave=0,lateToastClock=0,lateHUDClock=0,lateSaveError=false;
+let lateState=lateLoad.state||newLateState(latePlanet),lateStarted=false,latePaused=false,lateDialogue=null,lateOverlay=false,lateArena=null,lateClock=0,lateAutosave=0,lateToastClock=0,lateHUDClock=0,lateSaveError=false,backupCanSave=()=>true;
 let latePracticeMode=false,lateTrialReturn=null,lateImportPending=null;
+const latePriorName=readTravelerName(k=>localStorage.getItem(k));
 const latePlayer={x:lateState.player.x,z:lateState.player.z,hp:lateState.player.hp,face:{x:0,z:-1},walk:0,dash:0,dashing:0,inv:0,slash:0,wave:0};
-const lateMotion=new MotionPresenter(latePlayer);const lateCamera=lateMotion.camera;
+const lateMotor=new CharacterMotor(),lateMotion=new MotionPresenter(latePlayer);const lateCamera=lateMotion.camera;
 function lateSet(id,text){const e=lateEl(id);if(e.textContent!==String(text))e.textContent=String(text);}
 function lateToast(text){lateSet('lateToast',text);lateEl('lateToast').hidden=false;lateToastClock=5;}
 function lateJourney(){return journeySummary(key=>{try{return localStorage.getItem(key);}catch{return null;}});}
 function lateSave(){
+ if(!backupCanSave())return true;
  if(!lateStarted)return false;
  if(!lateArena)lateState.player={x:latePlayer.x,z:latePlayer.z,hp:Math.max(1,latePlayer.hp)};
  try{writeLate(localStorage,lateState);lateSaveError=false;return true;}catch(e){if(!lateSaveError)lateToast('자동 저장을 사용할 수 없습니다. 진행 보관에서 파일로 남겨 주세요.');lateSaveError=true;return false;}
@@ -52,8 +57,9 @@ function lateStart(load){
  if(!lateState.arrived)lateTalk(lateConfig.name+' · '+lateConfig.subtitle,lateConfig.arrival,()=>{lateState.arrived=true;lateSave();});
  else{lateEl('lateWorld').focus();if(lateLoad.source==='backup')lateToast('이전 자동 저장으로 복구했습니다. 기존 원본은 진행 보관에서 내보낼 수 있습니다.');}
  lateSave();lateUpdateHUD();
+ if(isSnow&&lateState.boss&&!lateState.nameAccepted)lateNameAcceptance(()=>{});
 }
-function lateTravel(chapter){lateSave();if(window.parent!==window)parent.postMessage({type:'recommand-switch',chapter},'*');else location.href=(chapter==='yuon'?'index':chapter)+'.html';}
+function lateTravel(chapter){if(isSnow&&lateState.boss&&!lateState.nameAccepted){lateNameAcceptance(()=>lateTravel(chapter));return;}lateSave();if(window.parent!==window)parent.postMessage({type:'recommand-switch',chapter},'*');else location.href=(chapter==='yuon'?'index':chapter)+'.html';}
 function lateNearest(){return lateConfig.objects.filter(o=>o.kind!=='secret'&&distance(o,latePlayer)<3.5&&(o.kind!=='portal'||lateState.ending)).sort((a,b)=>distance(a,latePlayer)-distance(b,latePlayer))[0];}
 function lateSecret(){return lateConfig.objects.find(o=>o.kind==='secret'&&distance(o,latePlayer)<1.7);}
 function lateInteract(){
@@ -89,7 +95,7 @@ function lateCompare(i){
  const r=lateConfig.reconstructions[i],missing=r.need.filter(id=>!lateState.heard.includes(id));
  if(missing.length){lateTalk(r.title,['아직 대조할 장면이 충분하지 않다.\n확인할 기록: '+missing.map(id=>lateConfig.evidence[id].title).join(' · ')],lateBoard);return;}
  lateTalk(r.title,[r.question],null,r.choices.map((label,answer)=>({label,action:()=>{
-  const ok=reconstruct(lateState,i,answer);lateSave();lateTalk(ok?'서로 다른 기억을 잇다':'장면을 다시 바라보기',[ok?r.explanation:'그 설명으로는 남아 있는 장면을 모두 설명할 수 없다.\n'+r.explanation],lateBoard);
+  const ok=reconstruct(lateState,i,answer);lateSave();lateTalk(ok?'서로 다른 기억을 잇다':'장면을 다시 바라보기',[ok?r.explanation:'그 설명으로는 남아 있는 장면을 모두 설명할 수 없다.\n'+r.explanation],()=>lateNameReveal(lateBoard));
  }})));
 }
 function lateInteractSecret(o){
@@ -133,6 +139,7 @@ function lateRelayChoice(index){
 }
 function lateEnterTrial(key,index){lateTrialReturn={x:latePlayer.x,z:latePlayer.z,index};lateEnterArena(key);}
 function lateEnterArena(trial=null,practice=false){
+ if(isSnow&&!lateState.nameRevealed&&lateState.compared.every(Boolean)){lateNameReveal(()=>lateEnterArena(trial,practice));return;}
  lateKeys.clear();lateSave();latePracticeMode=practice;lateArena=createLateBoss(latePlanet,lateJourney().patterns,trial);latePlayer.x=0;latePlayer.z=-57;latePlayer.hp=100;latePlayer.face={x:0,z:-1};lateEffects.length=0;lateCamera.x=0;lateCamera.z=-58;lateUpdateHUD();lateEl('lateWorld').focus();
 }
 function lateLeaveArena(){
@@ -140,7 +147,17 @@ function lateLeaveArena(){
  if(trial&&lateTrialReturn){latePlayer.x=lateTrialReturn.x;latePlayer.z=lateTrialReturn.z;}else{latePlayer.x=0;latePlayer.z=-38;}
  lateTrialReturn=null;lateCamera.x=latePlayer.x;lateCamera.z=latePlayer.z;lateUpdateHUD();
 }
+function lateNameReveal(after){
+ if(!isSnow||!lateState.compared.every(Boolean)||lateState.nameRevealed){after?.();return;}
+ lateTalk('기록에 남은 서명',NAME_RECORD,()=>{revealTravelerName(lateState);lateSave();after?.();},null,'A NAME IN THE RECORD');
+}
+function lateNameAcceptance(after){
+ if(!isSnow||!lateState.boss)return;
+ if(lateState.nameAccepted){after?.();return;}
+ lateNameReveal(()=>lateTalk('루미 · 당신을 부르는 말',NAME_ACCEPTANCE,()=>{acceptTravelerName(lateState);lateSave();lateUpdateHUD();after?.();},null,'A NAME, NOT AN ORDER'));
+}
 function lateSnowEnding(){
+ if(!lateState.nameAccepted){lateNameAcceptance(lateSnowEnding);return;}
  const choices=[{label:'주민의 기록을 복원한다',action:()=>lateFinish('restore')}];
  if(canWitness(lateState))choices.push({label:'이름 없이도 서로의 말을 기억한다',primary:true,action:()=>lateFinish('witness')});
  choices.push({label:'아직 이 설원에 더 머무른다',action:()=>{}});
@@ -150,7 +167,7 @@ function lateFinalChoice(){
  const choices=[{label:'공격 명령을 멈추고 응답을 기다린다',action:()=>lateFinish('guarded')}];
  if(canShare(lateState,lateJourney()))choices.push({label:'각자의 내일은, 각자의 선택으로',primary:true,action:()=>lateFinish('shared')});
  choices.push({label:'아직 듣지 못한 목소리에게 돌아간다',action:lateTravelMenu});
- lateTalk('환성 · 최종 명령',['관리핵: “최종 명령을 입력하십시오.”\n루미는 당신의 대답을 대신하지 않고 기다린다.'],null,choices,'FINAL COMMAND');
+ lateTalk('환성 · 최종 명령',['관리핵: “최종 명령을 입력하십시오.”\n'+(latePriorName==='이든'?'루미: “이든. 당신의 대답을 기다릴게요.”':'루미는 당신의 대답을 대신하지 않고 기다린다.')],null,choices,'FINAL COMMAND');
 }
 function lateFinish(ending){
  // Revalidate the optional route at the action, including any changed prior save.
@@ -179,7 +196,7 @@ function lateDash(){if(!lateStarted||latePaused||lateDialogue||lateOverlay)retur
 function lateTick(dt){
  lateMotion.capture(latePlayer);
  lateClock+=dt;if(lateToastClock>0){lateToastClock-=dt;if(lateToastClock<=0)lateEl('lateToast').hidden=true;}
- if(!lateStarted||latePaused||lateDialogue||lateOverlay)return;
+ if(!lateStarted||latePaused||lateDialogue||lateOverlay){lateMotor.stop(latePlayer);return;}
  for(const key of['dash','dashing','inv','slash','wave'])latePlayer[key]=Math.max(0,latePlayer[key]-dt);
  if(lateArena){
   tickLateBoss(lateArena,latePlayer,dt);latePlayer.hp=lateArena.hero;
@@ -194,7 +211,7 @@ function lateTick(dt){
  if(dx||dz){latePlayer.face=d;latePlayer.walk+=dt*9;}else if((lateArena?.dashing||latePlayer.dashing)>0)d=latePlayer.face;
  const speed=(lateArena?.dashing||latePlayer.dashing)>0?18:6.2;
  const obstacles=lateArena?[{...LATE_BOSS_CENTER,r:1.5}]:lateObstacles;
- const p=resolveMove(latePlayer,d.x*speed*dt,d.z*speed*dt,obstacles);latePlayer.x=p.x;latePlayer.z=p.z;
+ const p=lateMotor.move(latePlayer,d,dt,{speed,dashing:(lateArena?.dashing||latePlayer.dashing)>0,obstacles});latePlayer.x=p.x;latePlayer.z=p.z;
  if(lateArena){const x=p.x,z=p.z+64,len=Math.hypot(x,z),scale=len>11.4?11.4/len:1;latePlayer.x=x*scale;latePlayer.z=-64+z*scale;}
  else{latePlayer.x=clamp(p.x,-26,26);latePlayer.z=clamp(p.z,-46,18);latePlayer.hp=Math.min(100,latePlayer.hp+dt*3);}
  if(lateKeys.has('j'))lateAttack('slash');
@@ -203,12 +220,75 @@ function lateTick(dt){
 }
 
 const lateTerrain=new Geometry(),lateArchitecture=new Geometry();
-for(let x=-60;x<60;x+=3)for(let z=-96;z<35;z+=3){
- const n=Math.sin(x*.17+z*.25)*.023+Math.cos(z*.31-x*.3)*.015;
- const col=isSnow?[.7+n,.79+n,.83+n]:Math.abs(x)<27&&z<22?[.25+n,.25+n,.37+n]:[.08+n*.3,.13+n*.3,.23+n*.3];
- lateTerrain.quad([x,0,z],[x+3,0,z],[x+3,0,z+3],[x,0,z+3],col);
+if(isSnow){
+ // Sediment bands and wind shadows run across grid boundaries. Keep the walkable
+ // surface just below footprints and roads; let relief rise beyond the routes.
+ function snowVertex(x,z){
+  const outside=Math.max(0,Math.abs(x)-26,z-19,-73-z);
+  const sweep=Math.sin(x*.34+z*.12+.9*Math.sin(z*.17));
+  const swell=.5+.5*Math.cos(z*.21+x*.12);
+  const ridge=Math.min(1,outside/9)*(.8+3.8*swell);
+  const y=-.13+.12*sweep+ridge;
+  const shade=.08*sweep+.035*Math.cos(x*.23-z*.39);
+  return {point:[x,y,z],color:[.73+shade,.82+shade*.8,.87+shade*.55]};
+ }
+ for(let x=-60;x<60;x+=3)for(let z=-96;z<36;z+=3){
+  const corners=[snowVertex(x,z),snowVertex(x+3,z),snowVertex(x+3,z+3),snowVertex(x,z+3)];
+  for(const index of [0,1,2,0,2,3])lateTerrain.data.push(...corners[index].point,...corners[index].color);
+ }
+ // Wind-polished ice patches have a dark rim and uneven, tapering ends.
+ for(const [cx,cz,size] of [[-8,1,2.4],[8,-23,2],[-7,-35,3],[16,9,2.7],[-18,-14,1.8]]){
+  for(let i=0;i<12;i++){
+   const edge=k=>{const a=k*Math.PI/6,r=size*(1+.13*Math.sin(3*a+cz));return [cx+r*Math.cos(a),.017,cz+r*.48*Math.sin(a)+r*.19*Math.cos(a)];};
+   lateTerrain.tri([cx,.02,cz],edge(i),edge(i+1),i%4===0?[.55,.73,.79]:[.61,.77,.82]);
+  }
+ }
+}else{
+ // The deck has a real edge above a lower star field. Its concentric courses are
+ // subdivided radially to follow the planet's curvature even on the inner floor.
+ for(let x=-66;x<66;x+=6)for(let z=-100;z<45;z+=6){
+  lateTerrain.quad([x,-3,z],[x+6,-3,z],[x+6,-3,z+6],[x,-3,z+6],[.065,.085,.16]);
+  const seed=Math.sin(x*1.7+z*.87);
+  if(seed>0)lateTerrain.disc(x+2*seed,-2.96,z+2,.05+.1*seed,[.54,.58,.74],4);
+ }
+ const deckPoint=(angle,t,y)=>{
+  const dx=Math.cos(angle),dz=Math.sin(angle);
+  const radius=Math.min(30/Math.max(.0001,Math.abs(dx)),51/Math.max(.0001,Math.abs(dz)));
+  const lip=1.6*Math.cos(angle*8)+.8*Math.sin(angle*13);
+  return [dx*(radius+lip)*t,y,-25+dz*(radius+lip)*t];
+ };
+ const sectors=64,courses=16;
+ for(let i=0;i<sectors;i++){
+  const a=i*2*Math.PI/sectors,b=(i+1)*2*Math.PI/sectors;
+  for(let j=0;j<courses;j++){
+   const inner=j/courses,outer=(j+1)/courses,tone=.018*Math.cos(i*.62)+.019*Math.sin(j*1.7);
+   const plate=[.24+tone,.24+tone,.34+tone];
+   lateTerrain.quad(deckPoint(a,inner,0),deckPoint(b,inner,0),deckPoint(b,outer,0),deckPoint(a,outer,0),plate);
+   if(j%3===2)lateTerrain.quad(deckPoint(a,outer-.003,.012),deckPoint(b,outer-.003,.012),deckPoint(b,outer,.012),deckPoint(a,outer,.012),[.44,.40,.49]);
+  }
+  lateTerrain.quad(deckPoint(a,1,0),deckPoint(b,1,0),deckPoint(b,1,-1.6),deckPoint(a,1,-1.6),i%4?[.21,.21,.31]:[.45,.38,.34]);
+  lateTerrain.quad(deckPoint(a,.993,.02),deckPoint(b,.993,.02),deckPoint(b,1,.02),deckPoint(a,1,.02),[.68,.57,.39]);
+ }
 }
-function latePath(x,z,w,h){for(let px=x-w/2;px<x+w/2;px+=1.25)for(let pz=z-h/2;pz<z+h/2;pz+=1.5){const c=isSnow?[.48,.6,.66]:[.48,.43,.55];lateArchitecture.quad([px,.07,pz],[Math.min(px+1.19,x+w/2),.07,pz],[Math.min(px+1.19,x+w/2),.07,Math.min(pz+1.43,z+h/2)],[px,.07,Math.min(pz+1.43,z+h/2)],c);}}
+function latePath(x,z,w,h){
+ if(isSnow){
+  // Packed snow meanders inside the existing route. Its soft shoulders take the
+  // place of the regular masonry grid used on the orbital station.
+  const vertical=h>=w,length=vertical?h:w,width=vertical?w:h;
+  const point=(t,edge)=>{
+   const bend=.19*Math.sin((t+(vertical?z:x))*.77);
+   const offset=bend+width*edge*(1+.08*Math.sin(t*.48+Math.sign(edge)));
+   return vertical?[x+offset,.035,z+t]:[x+t,.035,z+offset];
+  };
+  for(let t=-length/2;t<length/2;t+=1.8){
+   const end=Math.min(t+1.8,length/2);
+   for(const [left,right,color] of [[-.53,-.39,[.72,.81,.84]],[-.39,.39,[.64,.74,.79]],[.39,.53,[.72,.81,.84]]]){
+    lateArchitecture.quad(point(t,left),point(t,right),point(end,right),point(end,left),color);
+   }
+  }
+  return;
+ }
+ for(let px=x-w/2;px<x+w/2;px+=1.25)for(let pz=z-h/2;pz<z+h/2;pz+=1.5){const c=isSnow?[.48,.6,.66]:[.48,.43,.55];lateArchitecture.quad([px,.07,pz],[Math.min(px+1.19,x+w/2),.07,pz],[Math.min(px+1.19,x+w/2),.07,Math.min(pz+1.43,z+h/2)],[px,.07,Math.min(pz+1.43,z+h/2)],c);}}
 latePath(0,-13,4.5,59);
 for(const o of lateConfig.objects){if(o.kind==='secret'||o.kind==='portal')continue;latePath(o.x/2,o.z,Math.abs(o.x)+4,2.6);}
 if(isSnow){
@@ -231,6 +311,31 @@ for(const o of lateConfig.objects.filter(o=>['echo','console','gate'].includes(o
  if(o.kind==='gate')continue;
  lateArchitecture.cone(o.x,0,o.z,.9,o.kind==='console'?.8:1.7,isSnow?[.51,.64,.71]:[.43,.36,.56],7,.55);lateObstacles.push({x:o.x,z:o.z,r:.7});
 }
+const snowStakes=[[-16,1],[16,-10],[-17,-27],[16,-36]];
+// Shallow relief follows the walking surface; keep the approaches to evidence open.
+if(isSnow){
+ for(const [x,z] of [[8,-11],[-12,-21],[9,-29]]){
+  for(let i=0;i<6;i++){
+   const px=x+Math.sin(i*.65)*.45+(i%2?.19:-.19),pz=z+i*.68;
+   lateArchitecture.cone(px,.083,pz,.17,.024,[.54,.66,.73],5,.12);
+  }
+ }
+ // Avalanche stakes preserve the old snow line even when the trail disappears.
+ for(const [x,z] of snowStakes){
+  lateArchitecture.cone(x,0,z,.14,1.8,[.36,.32,.29],5,.1);
+  for(let band=0;band<3;band++)lateArchitecture.cone(x,.7+band*.4,z,.15,.14,[.92,.58,.29],5,.14);
+ }
+}else{
+ // Broken brass traces connect each relay visually to the assembly.
+ for(const relay of lateConfig.objects.filter(o=>o.kind==='relay')){
+  const dx=-relay.x,dz=-21-relay.z,length=Math.hypot(dx,dz);
+  for(let i=2;i<length-2;i+=1.3){
+   const x=relay.x+dx*i/length,z=relay.z+dz*i/length;
+   lateArchitecture.disc(x,.103,z,.13,[.74,.59,.43],6);
+  }
+  for(let k=0;k<3;k++)lateArchitecture.ring(relay.x,.105,relay.z,2.9,[.88,.72,.49],10,.13,k*2.094,k*2.094+1.15);
+ }
+}
 const lateTerrainMesh=lateRenderer.upload(lateTerrain),lateArchitectureMesh=lateRenderer.upload(lateArchitecture);
 const lateFallback=lateRenderer.texture('late-fallback-actor',c=>{
  c.fillStyle='#20304066';c.beginPath();c.ellipse(64,119,27,6,0,0,Math.PI*2);c.fill();c.fillStyle=isSnow?'#536c89':'#76608e';c.beginPath();c.moveTo(43,45);c.lineTo(85,45);c.lineTo(96,111);c.lineTo(32,111);c.fill();c.fillStyle='#e0cfb5';c.beginPath();c.ellipse(64,29,18,23,0,0,Math.PI*2);c.fill();c.fillStyle='#25354a';c.fillRect(43,5,42,16);
@@ -239,6 +344,18 @@ const lateLabelTextures=new Map();
 for(const o of lateConfig.objects){if(o.kind==='secret')continue;lateLabelTextures.set(o.id,lateRenderer.texture('late-label-'+o.id,c=>{c.font='20px Malgun Gothic';c.textAlign='center';c.shadowColor='#132034';c.shadowBlur=7;c.fillStyle=isSnow?'#29485d':'#ece4cf';if(isSnow){c.shadowColor='#fff';c.shadowBlur=5;}c.fillText(o.name,256,36);},512,64));}
 function lateGroundDetails(){
  const g=new Geometry(),c=isSnow?[.59,.79,.88]:[.77,.64,.93];
+ if(isSnow){
+  for(const [x,z] of snowStakes){
+   const flutter=Math.sin(lateClock*2.1+z)*.22;
+   g.tri([x,1.65,z],[x,1.35,z],[x+.85,1.45+flutter*.3,z+flutter],[.82,.4,.21]);
+  }
+ }else{
+  for(const o of lateConfig.objects){
+   if(o.kind!=='relay')continue;
+   const t=(lateClock*.24+Math.abs(o.x)*.1)%1;
+   g.disc(o.x*(1-t),.125,o.z+(-21-o.z)*t,.19,[.83,.81,.66],6);
+  }
+ }
  for(const o of lateConfig.objects){
   if(o.kind==='portal'&&!lateState.ending)continue;
   if(o.kind==='secret'){
@@ -260,7 +377,7 @@ function lateGroundDetails(){
  }
  // Particle positions are deterministic presentation, independent of the gameplay clock and random state.
  for(let i=0;i<(lateSoft?28:65);i++){
-  const x=latePlayer.x+Math.sin(i*7.13)*23+Math.sin(lateClock*.18+i)*.6,z=latePlayer.z+Math.cos(i*4.71)*25,y=isSnow?1+(i*1.37+18-lateClock*.65)%12:3+(i*.73)%9;
+  const x=latePlayer.x+Math.sin(i*7.13)*23+Math.sin(lateClock*.18+i)*.6,z=latePlayer.z+Math.cos(i*4.71)*25,y=isSnow?1+((i*1.37+18-lateClock*.65)%12+12)%12:3+(i*.73)%9;
   if(isSnow)g.cone(x,y,z,.035,.065,[.94,.96,.97],3);else g.cone(x,y+Math.sin(lateClock*.6+i)*.3,z,.04,.08,[.88,.79,.99],4);
  }
  lateRenderer.drawDynamic(g);
@@ -290,10 +407,11 @@ function lateArenaDraw(){
 }
 function lateDraw(alpha=1,dt=1/60){
  const pose=lateMotion.sample(latePlayer,alpha,dt,{frozen:!lateStarted||latePaused||!!lateDialogue||lateOverlay,dashing:(lateArena?.dashing||latePlayer.dashing)>0});
+ motionTelemetry(lateEl('lateWorld'),latePlayer,pose,lateSimulationClock);
  lateRenderer.begin(lateCamera.x,lateCamera.z,.011);lateRenderer.mesh(lateTerrainMesh);
  if(lateArena)lateArenaDraw();else{lateRenderer.mesh(lateArchitectureMesh);lateGroundDetails();}
  const inv=lateArena?.inv||latePlayer.inv;
- lateRenderer.sprite(lateArt.actor(['hero0','hero1','heroBack0','heroBack1'][pose.frame],lateFallback),pose.x,pose.bob,pose.z,1.9*pose.width,2.65*pose.height,inv>0&&Math.sin(lateClock*35)>0?.5:1);
+ lateRenderer.sprite(lateArt.hero(pose,lateFallback),pose.x,pose.bob,pose.z,1.9*pose.width,2.65*pose.height,pose.dashBlend>.5?.65:(inv>0&&Math.sin(lateClock*35)>0?.5:1));
  lateVFX.draw(lateEffects,[],lateClock);lateRenderer.finish();
 }
 function lateMapDraw(){
@@ -303,6 +421,7 @@ function lateMapDraw(){
  const[x,y]=point(latePlayer.x,latePlayer.z);c.fillStyle='#fff3c5';c.beginPath();c.arc(x,y,3.3,0,Math.PI*2);c.fill();c.font='10px sans-serif';c.textAlign='center';c.fillStyle='#c8d9dd';c.fillText('N',90,15);
 }
 function lateUpdateHUD(){
+ lateSet('travelerName',isSnow?travelerName(lateState):latePriorName);
  const arena=!!lateArena;lateEl('lateBossHud').hidden=!arena;lateEl('lateObjective').hidden=arena;lateEl('lateMap').hidden=arena;lateEl('lateQuest').hidden=arena||!(isSnow?lateState.chime:lateState.tomorrow);
  lateEl('latePractice').hidden=!lateState.boss||arena;lateSet('latePause',latePaused?'계속하기':'일시정지');
  if(arena){const b=lateArena;lateSet('lateBossName',b.trial?RELAY_TEXT[b.trial].title+' · 반응 시험':lateConfig.boss);lateEl('lateBossHealth').style.width=(b.hp/b.max*100)+'%';lateEl('lateHeroHealth').style.width=b.hero+'%';lateSet('lateBossNumbers',b.trial?'노출 종료까지 생존 · 여행자 '+b.hero+' / 100':b.hp+' / '+b.max+' · 여행자 '+b.hero+' / 100');lateSet('lateBossPhase',latePhaseText(b));lateSet('lateBossMessage',b.trial?'공격할 필요 없이 반응 한 주기를 피하면 시험을 통과합니다.':b.message||'바닥에 자국이 남는 원을 피하고, 명령핵이 열릴 때 공격하세요.');lateSet('lateBossSkills','J 검격 · L 파동 '+(b.wave>0?b.wave.toFixed(1)+'초':'준비')+' · K 회피 '+(b.dash>0?b.dash.toFixed(1)+'초':'준비'));lateSet('latePrompt',distance(latePlayer,LATE_DEVICE)<3.1?'E · 갈라진 원 / 회수 예고 때 우회':'');return;}
@@ -320,6 +439,8 @@ function lateOpenJournal(){
  if(lateDialogue||lateOverlay||!lateStarted)return;lateOverlay=true;lateKeys.clear();const box=lateEl('journalEntries');box.replaceChildren();
  const entries=isSnow?lateState.heard.map(id=>lateConfig.evidence[id]):['garden','sea','snow'].map((key,i)=>({title:RELAY_TEXT[key].title,lines:[lateState.relays[i]?RELAY_TEXT[key].test:'반응 시험을 아직 마치지 않았다.',lateState.invited[i]?(lateJourney()[key]?'주민의 응답 회선이 연결되었다.':'질문을 보내고 응답을 기다리고 있다.'):'기존 관리 회선 유지 중.']}));
  if(isSnow)lateState.compared.forEach((v,i)=>{if(v)entries.push({title:'대조 · '+lateConfig.reconstructions[i].title,lines:[lateConfig.reconstructions[i].explanation]});});
+ if(isSnow&&lateState.nameRevealed)entries.push({title:'기록에 남은 서명',lines:NAME_RECORD});
+ if(isSnow&&lateState.nameAccepted)entries.push({title:'당신을 부르는 말',lines:NAME_ACCEPTANCE});
  if(lateState.chime)entries.push({title:'누구도 부르지 않은 이름',lines:[lateState.asked?'“나를 알아보지 못해도 괜찮아. 오늘의 대답부터 기억해 줄래?”':'작은 종에 이름 대신 돌아왔다는 소리를 남겼다.']});
  if(lateState.tomorrow)entries.push({title:'내일을 위한 빈 의자',lines:['루미: “오늘은 여기 남고 싶어요. 내일은 또 물어봐 줘요.”']});
  if(!entries.length)entries.push({title:'첫 발자국',lines:['아직 직접 들은 증언이 없다. 사람에게 말을 걸고 남아 있는 장면을 조사하자.']});
@@ -377,12 +498,13 @@ lateEl('lateWorld').addEventListener('webglcontextlost',e=>{e.preventDefault();l
 if(!lateLoad.state)lateEl('lateContinue').hidden=true;
 lateSet('saveNotice',lateLoad.error?'기록 확인: '+lateLoad.error+'\n기존 원본은 삭제하지 않았습니다. 상단 진행 보관에서 원본을 남길 수 있습니다.':lateLoad.state?(lateLoad.source==='backup'?'이전 자동 저장을 발견했습니다. 기억 이어가기로 복구합니다.':'이 행성의 저장된 여정을 발견했습니다.'):'이 주소에 저장된 '+lateConfig.name+' 기록이 없습니다. 앞선 행성의 기록은 유지됩니다.');
 lateUpdateHUD();
-let latePrevious=performance.now(),lateAccumulator=0;
+const lateSimulationClock=new FixedStepClock();let latePrevious=performance.now();
 function lateLoop(now){
- const dt=clamp((now-latePrevious)/1000,0,.15);latePrevious=now;lateAccumulator+=dt;let n=0;
- while(lateAccumulator>=1/60&&n++<9){lateTick(1/60);lateAccumulator-=1/60;}
- if(n>=9)lateAccumulator=0;lateDraw(lateAccumulator*60,dt);
+ const step=lateSimulationClock.advance((now-latePrevious)/1000,lateTick),dt=step.dt;latePrevious=now;
+ lateDraw(step.alpha,dt);
  if((lateHUDClock+=dt)>=.1){lateHUDClock=0;lateUpdateHUD();}
  requestAnimationFrame(lateLoop);
 }
 requestAnimationFrame(lateLoop);window.dispatchEvent(new Event('recommand-ready'));
+
+if(window.parent&&window.parent!==window)backupCanSave=installBackupBridge({window,parent:window.parent,chapter:latePlanet,flush:()=>!lateStarted||lateSave(),pause:()=>{const previous=latePaused;latePaused=true;lateKeys.clear();return previous;},resume:previous=>{latePaused=previous;lateKeys.clear();}});

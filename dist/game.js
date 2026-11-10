@@ -1,8 +1,10 @@
+import {readTravelerName} from './late-state.js';
+import {installBackupBridge} from './backup-bridge.js';
 import {Renderer,Geometry} from './engine.js';
 import {SoftwareRenderer} from './software.js';
 import {snapshot,decode} from './save.js';
 import {PLANETS,BOSS,SCOUT,OLD_SURVEY,ECHO_SITES,canOfferSurvey,beginPulseSequence,advancePulseSequence} from './content.js';
-import {clamp,distance,normalize,inSector,resolveMove,seeded,MotionPresenter} from './math.js';
+import {clamp,distance,normalize,inSector,resolveMove,seeded,MotionPresenter,CharacterMotor,FixedStepClock,motionTelemetry} from './math.js';
 import {canRewrite,discoveredTriggers} from './story.js';
 import {CombatVFX} from './vfx.js';
 import {decorateGarden} from './environment.js';
@@ -14,15 +16,16 @@ try{R=new Renderer($('world'));R.backend='webgl';}catch(e){hardwareWarning=e.mes
 const terrainRand=seeded(2872),SOFT=R.backend==='software';if(SOFT)Geometry.lowDetail=true;
 const rand=seeded(2871), keys=new Set(), obstacles=[], particles=[], effects=[];
 const player={x:0,z:7,hp:100,xp:0,face:{x:0,z:-1},attack:0,dash:0,skill:0,inv:0,walk:0,dashTime:0};
-const playerMotion=new MotionPresenter(player);
+const playerMotion=new MotionPresenter(player),playerMotor=new CharacterMotor();
 const npc={x:3,z:0},portal={x:0,z:11},fracture={x:9,z:-5};
 const seals=[{x:-19,z:-20,name:'뿌리의 제단'},{x:22,z:-33,name:'바람의 제단'},{x:-14,z:-55,name:'기억의 제단'}];
 const memories=[{x:22,z:-9,name:'쓰러진 기록석',text:'[이전 명령: 생태계 보존을 위해 거주민 접근을 차단한다.]\n차가운 문장 아래, 누군가 같은 필체로 덧붙였다.\n“보호와 감금은 무엇이 다른가?”'},{x:-32,z:-41,name:'낡은 관측기',text:'장치가 당신의 손에 반응한다.\n[명령권자 생체 서명 일치. 재명령 대기.]\n당신은 손을 뗀다. 처음 보는 장치인데, 사용법을 알고 있었다.'}];
 let state={quest:0,seals:[false,false,false],memories:[false,false],bond:false,fracture:false,boss:false,complete:false,ending:null,sidequest:0,echoes:[false,false],intel:false,surveyRecord:false,anomaly:false},started=false,paused=false,study=false,dialog=null,curve=.012,debug=false,grid=false,mapBig=false,time=0,toastTime=0,lastSave=0;
-let journal=[],storageWarning=false,contextLost=false;
+let journal=[],storageWarning=false,contextLost=false,backupCanSave=()=>true;
 let audio;function sound(freq=500,dur=.08,type='sine',gain=.035){try{audio??=new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(40,freq*.6),audio.currentTime+dur);g.gain.setValueAtTime(gain,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+dur);}catch{}}
 function toast(t){$('toast').textContent=t;toastTime=4;$('toast').style.opacity=1;}
 function save(){
+ if(!backupCanSave())return true;
  if(!started)return false;
  try{const next=JSON.stringify(snapshot(state,player,enemies,journal)),previous=localStorage.getItem(SAVE);
  if(previous&&previous!==next){try{decode(previous,enemies);localStorage.setItem(SAVE+'.backup',previous);}catch{}}
@@ -252,12 +255,12 @@ addEventListener('pagehide',save);
 function tick(dt){
  playerMotion.capture(player);
  time+=dt;if(toastTime>0){toastTime-=dt;if(toastTime<=0)$('toast').style.opacity=0;}
- if(!started||paused||study||dialog||contextLost)return;
+ if(!started||paused||study||dialog||contextLost){playerMotor.stop(player);return;}
  for(const k of['attack','dash','skill','inv','dashTime'])player[k]=Math.max(0,player[k]-dt);
  let dx=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0),dz=(keys.has('s')||keys.has('arrowdown')?1:0)-(keys.has('w')||keys.has('arrowup')?1:0),dir=normalize(dx,dz);
  if(dx||dz){player.face=dir;player.walk+=dt*9;}
  if(player.dashTime>0){dir=player.face;burst(player.x,player.z,[.55,.76,.73],1);}
- const speed=player.dashTime>0?22:6.2,m=resolveMove(player,dir.x*speed*dt,dir.z*speed*dt,obstacles);player.x=m.x;player.z=m.z;
+ const speed=player.dashTime>0?22:6.2,m=playerMotor.move(player,dir,dt,{speed,dashing:player.dashTime>0,obstacles});player.x=m.x;player.z=m.z;
  if(keys.has('j'))action('attack');
  for(const e of enemies){
  if(e.hp<=0)continue;e.hit=Math.max(0,e.hit-dt);if(e===boss&&!state.seals.every(Boolean))continue;
@@ -294,6 +297,7 @@ function updateHUD(){
 }
 function draw(alpha=1,dt=1/60){
  const pose=playerMotion.sample(player,alpha,dt,{frozen:!started||paused||study||!!dialog,dashing:player.dashTime>0});
+ motionTelemetry($('world'),player,pose,simulationClock);
  const camX=started?pose.cameraX:0,camZ=started?pose.cameraZ:-1;R.begin(camX,camZ,curve);R.mesh(worldMesh);R.mesh(roadMesh);if(grid)R.mesh(gridMesh);R.mesh(propMesh);if(!worldArt.propReady){R.mesh(treeMesh);R.mesh(portalMesh);}R.mesh(brokenMesh);
  const g=new Geometry(),visible=e=>Math.abs(e.x-camX)<48&&Math.abs(e.z-camZ)<58;
  if(state.boss&&visible(boss))g.ring(boss.x,groundY(boss.x,boss.z)+.12,boss.z,1.35,[.85,.82,.46],48,.08);
@@ -323,7 +327,7 @@ function draw(alpha=1,dt=1/60){
  for(const e of enemies){if(e.hp<=0||!visible(e))continue;const isBoss=e===boss,w=isBoss?4.8:2.2,h=isBoss?5.2:2;draws.push(()=>{if(isBoss)R.drawDynamic(makeBossModel('ormun',e.x,groundY(e.x,e.z),e.z,time,e,SOFT));else R.sprite(worldArt.actor('slime'+e.type+(Math.floor(time*2+(e.jitter||0))%2?'b':''),slimeTextures[e.type][Math.floor(time*4+(e.jitter||0))%2]),e.x,groundY(e.x,e.z)+Math.sin(time*4)*.06,e.z,w,h,e.hit>0?.45:1);if(isBoss)R.sprite(labels.boss,e.x,6.1,e.z,6,.75);if(e.hp<e.max||e.wind>0){const tex=R.texture('hp'+e.id+'-'+Math.ceil(e.hp/10),c=>{c.fillStyle='#143632';c.fillRect(10,45,108,12);c.fillStyle=isBoss?'#dfb271':'#bfd495';c.fillRect(12,47,104*e.hp/e.max,8);});R.sprite(tex,e.x,h+.4,e.z,isBoss?4:2.6,.65);}});}
  if(state.boss&&visible(boss))draws.push(()=>{R.sprite(glowTex,boss.x,groundY(boss.x,boss.z)+1.2+Math.sin(time*1.5)*.1,boss.z,2.3,2.3,.75);R.sprite(labels.remains,boss.x,groundY(boss.x,boss.z)+3,boss.z,5,.65);});
  const frame=pose.frame;
- draws.push(()=>R.sprite(worldArt.actor(['hero0','hero1','heroBack0','heroBack1'][frame],heroSprites[frame]),pose.x,groundY(pose.x,pose.z)+pose.bob,pose.z,1.9*pose.width,2.6*pose.height,player.inv>0&&Math.floor(time*16)%2?.45:1));
+ draws.push(()=>R.sprite(worldArt.hero(pose,heroSprites[frame]),pose.x,groundY(pose.x,pose.z)+pose.bob,pose.z,1.9*pose.width,2.6*pose.height,player.inv>0&&Math.floor(time*16)%2?.45:1));
  // Alpha cutoff writes depth, so opaque sprite pixels occlude correctly with 3D trees.
  for(const d of draws)d();
  for(let i=0;i<26;i++){const x=camX+Math.sin(i*19.7+time*.09)*25,z=camZ+Math.cos(i*13.1+time*.08)*28;R.sprite(glowTex,x,1.5+Math.sin(time*.5+i),z,.25,.25,.55);}
@@ -341,11 +345,15 @@ function drawMap(){
  let[x,y]=xy(npc.x,npc.z);c.fillStyle='#e6dfaf';c.beginPath();c.arc(x,y,3,0,TAU);c.fill();
  [x,y]=xy(player.x,player.z);c.save();c.translate(x,y);c.rotate(-Math.atan2(player.face.x,player.face.z));c.fillStyle='#f4e7b0';c.beginPath();c.moveTo(0,6);c.lineTo(-4,-4);c.lineTo(4,-4);c.fill();c.restore();c.restore();
 }
-let previous=performance.now(),accumulator=0,frames=0,lastFPS=performance.now(),fps=0,renderMs=0;
-function loop(now){const frameDt=clamp((now-previous)/1000,0,.15);accumulator+=frameDt;previous=now;let steps=0;while(accumulator>=1/60&&steps<8){tick(1/60);accumulator-=1/60;steps++;}if(steps===8)accumulator=0;if(!contextLost){const before=performance.now();draw(accumulator*60,frameDt);renderMs=performance.now()-before;}frames++;if(now-lastFPS>1000){fps=Math.round(frames*1000/(now-lastFPS));frames=0;lastFPS=now;}$('fps').textContent=fps+' FPS · '+renderMs.toFixed(1)+' ms/render';requestAnimationFrame(loop);}requestAnimationFrame(loop);
+const simulationClock=new FixedStepClock();let previous=performance.now(),frames=0,lastFPS=performance.now(),fps=0,renderMs=0;
+function loop(now){const step=simulationClock.advance((now-previous)/1000,tick),frameDt=step.dt;previous=now;if(!contextLost){const before=performance.now();draw(step.alpha,frameDt);renderMs=performance.now()-before;}frames++;if(now-lastFPS>1000){fps=Math.round(frames*1000/(now-lastFPS));frames=0;lastFPS=now;}$('fps').textContent=fps+' FPS · '+renderMs.toFixed(1)+' ms/render';requestAnimationFrame(loop);}requestAnimationFrame(loop);
 $('world').addEventListener('webglcontextlost',e=>{e.preventDefault();contextLost=true;paused=true;save();showDialog('그래픽 연결 끊김',['진행을 저장했습니다. 계속을 누르면 게임을 다시 엽니다. 시작 화면에서 기억 이어가기를 선택하세요.'],()=>location.reload(),{record:false});});
 // Read-only observability for QA. No gameplay cheats or mutable state exposed.
 window.recommand={snapshot:()=>JSON.parse(JSON.stringify({player,state,started,paused,study,dialog:dialog?{name:dialog.name,index:dialog.index}:null,enemies:enemies.map(({id,x,z,hp,wind})=>({id,x,z,hp,wind})),curve,drawCalls:R.calls,backend:R.backend,fps,vfxReady:combatVFX.ready,vfxFailed:!!combatVFX.failed,storageWarning,contextLost}))};
 
 
 if(typeof window.dispatchEvent==='function')window.dispatchEvent(new Event('recommand-ready'));
+
+if(window.parent&&window.parent!==window)backupCanSave=installBackupBridge({window,parent:window.parent,chapter:'yuon',flush:()=>!started||save(),pause:()=>{const previous=paused;paused=true;keys.clear();return previous;},resume:previous=>{paused=previous;keys.clear();}});
+
+$('travelerName').textContent=readTravelerName(k=>localStorage.getItem(k));

@@ -39,9 +39,9 @@ function chapterBoot(saved){
  const doc={getElementById:id=>els.get(id),querySelectorAll:()=>[],addEventListener:(k,f)=>events[k]=f};
  const box={console,structuredClone,Math,JSON,Number,Array,Object,Map,Set,document:doc,localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},performance:{now:()=>0},requestAnimationFrame(){},addEventListener:(k,f)=>events[k]=f};box.window=box;vm.createContext(box);
  const graphics='class Geometry{constructor(){this.data=[];}quad(){}tri(){}cone(){}ring(){}disc(){}}class Renderer{texture(k){return k;}upload(g){return g;}begin(){}mesh(){}drawDynamic(){}sprite(){}finish(){}}';
- const source=[read('math.js'),graphics,read('vfx.js'),read('art.js'),read('boss-models.js'),read('tide.js'),read('belrok.js'),read('swaehae.js'),'this.qa={state:seaState,player:seaPlayer,boss:seaBoss,arena:()=>seaArena,attack:seaAttack,interact:seaInteract,advance:seaAdvance,tick:seaTick,draw:seaDraw,nearest:seaNearest,dialog:()=>seaDialog,pause:pauseSea};'].join('\n').replace(/^import .*;\r?\n/gm,'').replace(/\bexport /g,'');vm.runInContext(source,box);
+ const source=[read('math.js'),graphics,read('vfx.js'),read('art.js'),read('boss-models.js'),read('tide.js'),read('late-state.js'),read('belrok.js'),read('swaehae.js'),'this.qa={state:seaState,player:seaPlayer,boss:seaBoss,arena:()=>seaArena,attack:seaAttack,interact:seaInteract,advance:seaAdvance,tick:seaTick,draw:seaDraw,nearest:seaNearest,dialog:()=>seaDialog,pause:pauseSea};'].join('\n').replace(/^import .*;\r?\n/gm,'').replace(/\bexport /g,'');vm.runInContext(source,box);
  const close=()=>{let n=0;while(box.qa.dialog()&&n++<30)box.qa.advance();};
- return {a:box.qa,els,storage,close,blur:()=>events.blur(),visit:(x,z)=>{box.qa.player.x=x;box.qa.player.z=z;box.qa.interact();}};
+ return {a:box.qa,els,storage,close,key:key=>events.keydown({key,preventDefault(){}}),blur:()=>events.blur(),visit:(x,z)=>{box.qa.player.x=x;box.qa.player.z=z;box.qa.interact();}};
 }
 
 test('boss strategy stays behind the completed hidden quest in both arrival and NPC dialogue',()=>{
@@ -71,7 +71,7 @@ test('real chapter: discover, repair, launch, pause, reload, return and claim on
 });
 test('chapter fight pauses, death keeps hidden progress and victory resumes into the ending',()=>{
  const saved={...ready(),arrival:true,foregate:true,gates:[true,true],boat:{met:true,stage:'complete',elapsed:14}};
- const h=chapterBoot(saved);h.visit(0,-32);h.close();assert.equal(h.a.arena(),true);h.a.draw();h.a.tick(.1);const t=h.a.boss.time;h.a.pause();h.a.tick(.1);assert.equal(h.a.boss.time,t);h.a.pause();
+ const h=chapterBoot(saved);h.visit(0,-32);h.close();assert.equal(h.a.arena(),true);h.a.draw();h.a.tick(.1);const t=h.a.boss.time;h.a.pause();const beforeDash=h.a.boss.dash;h.key('k');assert.equal(h.a.boss.dash,beforeDash);h.a.tick(.1);assert.equal(h.a.boss.time,t);h.key('Escape');h.key('k');assert(h.a.boss.dashing>0);
  h.a.boss.hero=0;h.a.tick(.1);assert.equal(h.a.arena(),false);h.close();assert.equal(h.a.state.boat.stage,'complete');
  h.visit(0,-32);h.close();assert.equal(h.a.boss.hero,100);h.a.boss.phase='open';h.a.boss.hp=18;h.a.player.x=0;h.a.player.z=-51;h.a.player.face={x:0,z:-1};h.a.attack('slash');h.a.tick(.02);assert.equal(h.a.state.boss.defeated,true);h.a.draw();
  const resumed=chapterBoot(JSON.parse(h.storage.get('recommand-swaehae-v1')));resumed.visit(0,-32);resumed.close();assert.equal(resumed.a.boss.hp,0);resumed.visit(0,-51);assert(resumed.a.dialog().lines.some(x=>x.includes('돌아올 길을 지켜라')));resumed.close();assert.equal(resumed.a.state.boss.rewritten,true);assert.equal(resumed.a.arena(),false);resumed.a.draw();assert.match(resumed.els.get('chapterObjective').textContent,/쇄해 1막 완료/);assert.equal(JSON.parse(resumed.storage.get('recommand-swaehae-v1')).boss.rewritten,true);

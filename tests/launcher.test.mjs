@@ -1,12 +1,21 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';
 import {boot} from './harness.mjs';import {launcherHarness} from './launcher-harness.mjs';
+test('isolated QA launcher and chapter share a namespace and leave real saves and briefing flags intact',()=>{
+ const h=launcherHarness({seenAll:true,qaScope:'motion-review'});h.buttons[0].onclick();
+ assert.equal(h.elements.briefing.open,true);h.elements.briefSkip.onclick();
+ assert.match(h.elements.gameFrame.srcdoc,/data-qa-scope="motion-review"/);
+ assert.match(h.elements.gameFrame.srcdoc,/const localStorage=\(function createScopedStorage/);
+ assert.equal(h.storage.get('recommand-save-v1'),'existing-user-save');
+ assert(h.storage.has('recommand-qa:motion-review:recommand-briefing-v1'));
+ assert.match(h.elements.qaNotice.textContent,/기존 플레이 기록과 분리/);
+});
 test('single-file launcher parses, switches both embedded chapters and reports ready/errors',()=>{
  const html=fs.readFileSync(new URL('../release/PLAY-RECOMMAND.html',import.meta.url),'utf8'),code=html.match(/<script>([\s\S]*?)<\/script>/)[1];new vm.Script(code);
  const {elements,events,buttons}=launcherHarness({seenAll:true});
  buttons[0].onclick();let child=elements.gameFrame.srcdoc;assert(child.includes('parent.postMessage'));assert(!child.includes("location.href='SWAEHAE.html'"));assert(!/<script[^>]+src=|<link[^>]+href=/i.test(child));
  for(const m of child.matchAll(/<script(?: type="module")?>([\s\S]*?)<\/script>/g))new vm.Script(m[1]);
  events.message({source:{},data:{type:'recommand-switch',chapter:'swaehae'}});assert.equal(elements.gameFrame.srcdoc,child);
- events.message({source:elements.gameFrame.contentWindow,data:{type:'recommand-switch',chapter:'swaehae'}});child=elements.gameFrame.srcdoc;assert(child.includes('data-return-yuon'));assert(!/<script[^>]+src=|<link[^>]+href=/i.test(child));
+ events.message({source:elements.gameFrame.contentWindow,data:{type:'recommand-switch',chapter:'swaehae'}});child=elements.gameFrame.srcdoc;assert(!/<script[^>]+src=|<link[^>]+href=/i.test(child));
  for(const m of child.matchAll(/<script(?: type="module")?>([\s\S]*?)<\/script>/g))new vm.Script(m[1]);
  events.message({source:elements.gameFrame.contentWindow,data:{type:'recommand-child-ready',chapter:'swaehae'}});assert.equal(elements.launcherStatus.hidden,true);
  events.message({source:elements.gameFrame.contentWindow,data:{type:'recommand-child-error',chapter:'swaehae',message:'test error'}});assert.equal(elements.launcherStatus.hidden,false);assert.match(elements.loadMessage.textContent,/test error/);
