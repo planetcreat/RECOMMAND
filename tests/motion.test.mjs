@@ -21,3 +21,15 @@ test('blocked movement settles into idle and pause uses the exact logical positi
 test('facing hysteresis avoids front-back flicker near a diagonal boundary',()=>{
  const p={x:0,z:0,face:{z:-1}},m=new MotionPresenter(p);m.sample(p);p.face.z=-.05;assert.equal(m.sample(p).frame,2);p.face.z=.2;assert.equal(m.sample(p).frame,0);
 });
+
+test('dash holds the stride phase and eases the silhouette on entry and exit',()=>{
+ const p={x:0,z:0},m=new MotionPresenter(p);
+ m.capture(p);p.x=.1;m.sample(p);
+ const phase=m.phase;
+ m.capture(p);p.x+=.3;m.sample(p,1,1/60,{dashing:true});
+ assert.equal(m.phase,phase);
+ const entry=m.dashBlend;
+ assert(entry>0 && entry<1);
+ m.capture(p);m.sample(p);
+ assert(m.dashBlend>0 && m.dashBlend<entry);
+});
