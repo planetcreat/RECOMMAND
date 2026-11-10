@@ -53,6 +53,27 @@ export class PlanetMusic{
   if(n%8===0){for(const v of chord)this.note(track,s.root+v,time,beat*4.5,.027,'sine',.45);this.note(track,s.root-12+chord[0],time,beat*3,.045,'sine',.12);}
   const melody=s.melody[n%s.melody.length];
   if(melody!==null){const variation=Math.floor(n/32)%2===1?-12:0;this.note(track,s.root+melody+variation,time,beat*1.8,.055,s.tone);this.note(track,s.root+melody+12+variation,time,beat*.9,s.air,'sine');}
-  if(n%4===2)this.note(track,s.root+chord[(Math.floor(n/2))%chord.length]+12,time,beat*1.6,.025,'sine');
+  const slot=n%8,bar=Math.floor(n/8),section=Math.floor(bar/4)%4;
+  if(s===PLANET_SCORES.swaehae){
+   // A low plucked ostinato leans behind the beat. Leave the last bar open.
+   if(slot===0 || slot===3 || (slot===6 && bar%4!==3)){
+    const degree=slot===0?0:slot===3?2:1;
+    this.note(track,s.root+chord[degree],time+(slot===3?beat*.12:0),beat*.82,.037,'triangle',.012);
+   }
+   if(section===2 && slot===7)this.note(track,s.root+chord[3]+12,time,beat*1.4,.022,'sine',.1);
+  }else if(s===PLANET_SCORES.mumyeong){
+   // A distant bell answers in the gaps, with a softer octave overtone.
+   if(bar%2===1 && slot===(section%2?5:3)){
+    const pitch=s.root+chord[section%4]+12;
+    this.note(track,pitch,time,beat*2.6,.033,'sine',.016);
+    this.note(track,pitch+12,time+beat*.32,beat*1.5,.011,'sine',.06);
+   }
+  }else if(s===PLANET_SCORES.hwanseong){
+   const pattern=section%2?[3,1,2,0]:[0,2,1,3];
+   if(slot%2===0 && !(section===3 && slot===6)){
+    this.note(track,s.root+12+chord[pattern[slot/2]],time,beat*.78,.028,'triangle',.04);
+   }
+   if(section===2 && slot%4===3)this.note(track,s.root+chord[1],time,beat*1.3,.022,'sine',.12);
+  }else if(n%4===2)this.note(track,s.root+chord[(Math.floor(n/2))%chord.length]+12,time,beat*1.6,.025,'sine');
  }
 }

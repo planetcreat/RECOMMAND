@@ -248,6 +248,31 @@ for(const o of lateConfig.objects.filter(o=>['echo','console','gate'].includes(o
  if(o.kind==='gate')continue;
  lateArchitecture.cone(o.x,0,o.z,.9,o.kind==='console'?.8:1.7,isSnow?[.51,.64,.71]:[.43,.36,.56],7,.55);lateObstacles.push({x:o.x,z:o.z,r:.7});
 }
+const snowStakes=[[-16,1],[16,-10],[-17,-27],[16,-36]];
+// Shallow relief follows the walking surface; keep the approaches to evidence open.
+if(isSnow){
+ for(const [x,z] of [[8,-11],[-12,-21],[9,-29]]){
+  for(let i=0;i<6;i++){
+   const px=x+Math.sin(i*.65)*.45+(i%2?.19:-.19),pz=z+i*.68;
+   lateArchitecture.cone(px,.083,pz,.17,.024,[.54,.66,.73],5,.12);
+  }
+ }
+ // Avalanche stakes preserve the old snow line even when the trail disappears.
+ for(const [x,z] of snowStakes){
+  lateArchitecture.cone(x,0,z,.14,1.8,[.36,.32,.29],5,.1);
+  for(let band=0;band<3;band++)lateArchitecture.cone(x,.7+band*.4,z,.15,.14,[.92,.58,.29],5,.14);
+ }
+}else{
+ // Broken brass traces connect each relay visually to the assembly.
+ for(const relay of lateConfig.objects.filter(o=>o.kind==='relay')){
+  const dx=-relay.x,dz=-21-relay.z,length=Math.hypot(dx,dz);
+  for(let i=2;i<length-2;i+=1.3){
+   const x=relay.x+dx*i/length,z=relay.z+dz*i/length;
+   lateArchitecture.disc(x,.103,z,.13,[.74,.59,.43],6);
+  }
+  for(let k=0;k<3;k++)lateArchitecture.ring(relay.x,.105,relay.z,2.9,[.88,.72,.49],10,.13,k*2.094,k*2.094+1.15);
+ }
+}
 const lateTerrainMesh=lateRenderer.upload(lateTerrain),lateArchitectureMesh=lateRenderer.upload(lateArchitecture);
 const lateFallback=lateRenderer.texture('late-fallback-actor',c=>{
  c.fillStyle='#20304066';c.beginPath();c.ellipse(64,119,27,6,0,0,Math.PI*2);c.fill();c.fillStyle=isSnow?'#536c89':'#76608e';c.beginPath();c.moveTo(43,45);c.lineTo(85,45);c.lineTo(96,111);c.lineTo(32,111);c.fill();c.fillStyle='#e0cfb5';c.beginPath();c.ellipse(64,29,18,23,0,0,Math.PI*2);c.fill();c.fillStyle='#25354a';c.fillRect(43,5,42,16);
@@ -256,6 +281,18 @@ const lateLabelTextures=new Map();
 for(const o of lateConfig.objects){if(o.kind==='secret')continue;lateLabelTextures.set(o.id,lateRenderer.texture('late-label-'+o.id,c=>{c.font='20px Malgun Gothic';c.textAlign='center';c.shadowColor='#132034';c.shadowBlur=7;c.fillStyle=isSnow?'#29485d':'#ece4cf';if(isSnow){c.shadowColor='#fff';c.shadowBlur=5;}c.fillText(o.name,256,36);},512,64));}
 function lateGroundDetails(){
  const g=new Geometry(),c=isSnow?[.59,.79,.88]:[.77,.64,.93];
+ if(isSnow){
+  for(const [x,z] of snowStakes){
+   const flutter=Math.sin(lateClock*2.1+z)*.22;
+   g.tri([x,1.65,z],[x,1.35,z],[x+.85,1.45+flutter*.3,z+flutter],[.82,.4,.21]);
+  }
+ }else{
+  for(const o of lateConfig.objects){
+   if(o.kind!=='relay')continue;
+   const t=(lateClock*.24+Math.abs(o.x)*.1)%1;
+   g.disc(o.x*(1-t),.125,o.z+(-21-o.z)*t,.19,[.83,.81,.66],6);
+  }
+ }
  for(const o of lateConfig.objects){
   if(o.kind==='portal'&&!lateState.ending)continue;
   if(o.kind==='secret'){
@@ -277,7 +314,7 @@ function lateGroundDetails(){
  }
  // Particle positions are deterministic presentation, independent of the gameplay clock and random state.
  for(let i=0;i<(lateSoft?28:65);i++){
-  const x=latePlayer.x+Math.sin(i*7.13)*23+Math.sin(lateClock*.18+i)*.6,z=latePlayer.z+Math.cos(i*4.71)*25,y=isSnow?1+(i*1.37+18-lateClock*.65)%12:3+(i*.73)%9;
+  const x=latePlayer.x+Math.sin(i*7.13)*23+Math.sin(lateClock*.18+i)*.6,z=latePlayer.z+Math.cos(i*4.71)*25,y=isSnow?1+((i*1.37+18-lateClock*.65)%12+12)%12:3+(i*.73)%9;
   if(isSnow)g.cone(x,y,z,.035,.065,[.94,.96,.97],3);else g.cone(x,y+Math.sin(lateClock*.6+i)*.3,z,.04,.08,[.88,.79,.99],4);
  }
  lateRenderer.drawDynamic(g);
@@ -311,7 +348,7 @@ function lateDraw(alpha=1,dt=1/60){
  lateRenderer.begin(lateCamera.x,lateCamera.z,.011);lateRenderer.mesh(lateTerrainMesh);
  if(lateArena)lateArenaDraw();else{lateRenderer.mesh(lateArchitectureMesh);lateGroundDetails();}
  const inv=lateArena?.inv||latePlayer.inv;
- lateRenderer.sprite(lateArt.actor(['hero0','hero1','heroBack0','heroBack1'][pose.frame],lateFallback),pose.x,pose.bob,pose.z,1.9*pose.width,2.65*pose.height,inv>0&&Math.sin(lateClock*35)>0?.5:1);
+ lateRenderer.sprite(lateArt.hero(pose,lateFallback),pose.x,pose.bob,pose.z,1.9*pose.width,2.65*pose.height,inv>0&&Math.sin(lateClock*35)>0?.5:1);
  lateVFX.draw(lateEffects,[],lateClock);lateRenderer.finish();
 }
 function lateMapDraw(){

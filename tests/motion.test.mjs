@@ -77,3 +77,17 @@ test('a moving camera target follows the same path at 30, 60 and 144 Hz',()=>{
   });
  }
 });
+
+test('footfalls follow displayed travel even when render intervals vary',()=>{
+ const player={x:0,z:0},motion=new MotionPresenter(player);
+ motion.capture(player);player.x=.1;
+ motion.sample(player,.2,.012);
+ motion.sample(player,.8,.003);
+ assert(Math.abs(motion.phase-.08*1.45)<1e-12);
+ const before=motion.phase;
+ motion.sample(player,.8,.015);
+ assert.equal(motion.phase,before);
+ player.x=30;
+ motion.sample(player,1,.016);
+ assert.equal(motion.phase,0);
+});
