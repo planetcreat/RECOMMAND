@@ -125,7 +125,7 @@ class FixedStepClock{
 // Expose bounded, read-only DOM measurements only in an explicitly isolated QA frame.
 function motionTelemetry(canvas,player,pose,clock){
  if(!canvas?.ownerDocument?.documentElement?.dataset.qaScope)return;
- for(const [key,value] of Object.entries({logicalX:player.x,logicalZ:player.z,renderX:pose.x,renderZ:pose.z,gait:pose.gait,droppedTime:clock.dropped}))canvas.dataset[key]=value.toFixed(6);
+ for(const [key,value] of Object.entries({logicalX:player.x,logicalZ:player.z,renderX:pose.x,renderZ:pose.z,frame:pose.frame,passing:Number(pose.passing),turn:pose.turn,dashBlend:pose.dashBlend,cameraX:pose.cameraX,cameraZ:pose.cameraZ,gait:pose.gait,droppedTime:clock.dropped}))canvas.dataset[key]=value.toFixed(6);
 }
 function seeded(seed=9273){return()=>{seed=(Math.imul(seed,1664525)+1013904223)|0;return(seed>>>0)/4294967296;};}
 
@@ -172,7 +172,7 @@ class MotionPresenter{
   const walk=this.gait*(1-this.dashBlend);
   const stride=Math.sin(this.phase*Math.PI),idle=Math.sin(this.clock*1.8);
   const passing=!frozen && !dashing && this.gait>.12 && this.phase%1>=.25 && this.phase%1<.75;
-  return{x,z,passing,cameraX:this.camera.x,cameraZ:this.camera.z,frame:(this.gait>.12?Math.floor(this.phase)%2:0)+(showBack?2:0),bob:walk*Math.abs(stride)*.045+(1-this.gait)*idle*.012,width:turnWidth*(1+this.dashBlend*.055+Math.cos(this.phase*Math.PI*2)*walk*.009),height:1-(this.dashBlend*.04+Math.abs(stride)*walk*.012),gait:this.gait};
+  return{x,z,passing,turn:this.turn,dashBlend:this.dashBlend,cameraX:this.camera.x,cameraZ:this.camera.z,frame:(this.gait>.12?Math.floor(this.phase)%2:0)+(showBack?2:0),bob:walk*Math.abs(stride)*.045+(1-this.gait)*idle*.012,width:turnWidth*(1+this.dashBlend*.055+Math.cos(this.phase*Math.PI*2)*walk*.009),height:1-(this.dashBlend*.04+Math.abs(stride)*walk*.012),gait:this.gait};
  }
 }
 function perspective(fov,aspect,near,far){const f=1/Math.tan(fov/2),nf=1/(near-far);return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0]);}
