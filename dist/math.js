@@ -81,9 +81,9 @@ export function seeded(seed=9273){return()=>{seed=(Math.imul(seed,1664525)+10139
 
 // Presentation only: interpolate fixed simulation steps; never mutate collision or save data.
 export class MotionPresenter{
- constructor(p){this.previous={x:p.x,z:p.z};this.camera={x:p.x,z:p.z};this.phase=0;this.gait=0;this.dashBlend=0;this.back=p.face?.z<-.2;this.turn=this.back?1:0;this.clock=0;}
+ constructor(p){this.previous={x:p.x,z:p.z};this.camera={x:p.x,z:p.z};this.followTarget=null;this.phase=0;this.gait=0;this.dashBlend=0;this.back=p.face?.z<-.2;this.turn=this.back?1:0;this.clock=0;}
  capture(p){this.previous={x:p.x,z:p.z};}
- reset(p){this.previous={x:p.x,z:p.z};Object.assign(this.camera,{x:p.x,z:p.z});this.gait=0;this.phase=0;this.dashBlend=0;this.back=p.face?.z<-.2;this.turn=this.back?1:0;}
+ reset(p){this.previous={x:p.x,z:p.z};Object.assign(this.camera,{x:p.x,z:p.z});this.followTarget=null;this.gait=0;this.phase=0;this.dashBlend=0;this.back=p.face?.z<-.2;this.turn=this.back?1:0;}
  sample(p,alpha=1,dt=1/60,{frozen=false,dashing=false}={}){
   dt=clamp(Number.isFinite(dt)?dt:0,0,.15);alpha=clamp(Number.isFinite(alpha)?alpha:1,0,1);
   if(distance(this.previous,p)>8||distance(this.camera,p)>16)this.reset(p);
@@ -101,7 +101,16 @@ export class MotionPresenter{
   const movingTurn=this.gait>.12 && !dashing && !frozen;
   const showBack=movingTurn?this.turn>=.5:this.back;
   const turnWidth=movingTurn?1-.08*4*this.turn*(1-this.turn):1;
-  const follow=1-Math.exp(-12*dt);this.camera.x+=(x-this.camera.x)*follow;this.camera.z+=(z-this.camera.z)*follow;
+  // Integrate exponential follow over the target's path between rendered frames.
+  // Sampling only the endpoint makes the camera lead farther at lower refresh rates.
+  if(!this.followTarget)this.followTarget={x,z};
+  const interval=12*dt;
+  const follow=-Math.expm1(-interval);
+  const travelWeight=interval>0?1-follow/interval:0;
+  this.camera.x+=(this.followTarget.x-this.camera.x)*follow+(x-this.followTarget.x)*travelWeight;
+  this.camera.z+=(this.followTarget.z-this.camera.z)*follow+(z-this.followTarget.z)*travelWeight;
+  this.followTarget.x=x;
+  this.followTarget.z=z;
   // One footfall per frame change. Keep the feet planted while the dash pose takes over.
   this.dashBlend+=((dashing&&!frozen?1:0)-this.dashBlend)*(1-Math.exp(-28*dt));
   const walk=this.gait*(1-this.dashBlend);

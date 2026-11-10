@@ -52,3 +52,28 @@ test('walking reversal waits for travel to reverse before changing silhouettes',
  motion.reset(player);
  assert.equal(motion.turn,1);
 });
+
+test('a moving camera target follows the same path at 30, 60 and 144 Hz',()=>{
+ function follow(hz){
+  const player={x:0,z:0},motion=new MotionPresenter(player);
+  motion.sample(player,1,0);
+  const checkpoints=[];
+  for(const speed of [6.2,-6.2,22,0]){
+   for(let frame=0;frame<hz/2;frame++){
+    motion.capture(player);
+    player.x+=speed/hz;
+    player.z-=speed/(2*hz);
+    motion.sample(player,1,1/hz);
+   }
+   checkpoints.push({...motion.camera});
+  }
+  return checkpoints;
+ }
+ const reference=follow(60);
+ for(const hz of [30,144]){
+  follow(hz).forEach((camera,i)=>{
+   assert(Math.abs(reference[i].x-camera.x)<1e-10);
+   assert(Math.abs(reference[i].z-camera.z)<1e-10);
+  });
+ }
+});
