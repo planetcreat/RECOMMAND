@@ -738,12 +738,75 @@ function lateTick(dt){
 }
 
 const lateTerrain=new Geometry(),lateArchitecture=new Geometry();
-for(let x=-60;x<60;x+=3)for(let z=-96;z<35;z+=3){
- const n=Math.sin(x*.17+z*.25)*.023+Math.cos(z*.31-x*.3)*.015;
- const col=isSnow?[.7+n,.79+n,.83+n]:Math.abs(x)<27&&z<22?[.25+n,.25+n,.37+n]:[.08+n*.3,.13+n*.3,.23+n*.3];
- lateTerrain.quad([x,0,z],[x+3,0,z],[x+3,0,z+3],[x,0,z+3],col);
+if(isSnow){
+ // Sediment bands and wind shadows run across grid boundaries. Keep the walkable
+ // surface just below footprints and roads; let relief rise beyond the routes.
+ function snowVertex(x,z){
+  const outside=Math.max(0,Math.abs(x)-26,z-19,-73-z);
+  const sweep=Math.sin(x*.34+z*.12+.9*Math.sin(z*.17));
+  const swell=.5+.5*Math.cos(z*.21+x*.12);
+  const ridge=Math.min(1,outside/9)*(.8+3.8*swell);
+  const y=-.13+.12*sweep+ridge;
+  const shade=.08*sweep+.035*Math.cos(x*.23-z*.39);
+  return {point:[x,y,z],color:[.73+shade,.82+shade*.8,.87+shade*.55]};
+ }
+ for(let x=-60;x<60;x+=3)for(let z=-96;z<36;z+=3){
+  const corners=[snowVertex(x,z),snowVertex(x+3,z),snowVertex(x+3,z+3),snowVertex(x,z+3)];
+  for(const index of [0,1,2,0,2,3])lateTerrain.data.push(...corners[index].point,...corners[index].color);
+ }
+ // Wind-polished ice patches have a dark rim and uneven, tapering ends.
+ for(const [cx,cz,size] of [[-8,1,2.4],[8,-23,2],[-7,-35,3],[16,9,2.7],[-18,-14,1.8]]){
+  for(let i=0;i<12;i++){
+   const edge=k=>{const a=k*Math.PI/6,r=size*(1+.13*Math.sin(3*a+cz));return [cx+r*Math.cos(a),.017,cz+r*.48*Math.sin(a)+r*.19*Math.cos(a)];};
+   lateTerrain.tri([cx,.02,cz],edge(i),edge(i+1),i%4===0?[.55,.73,.79]:[.61,.77,.82]);
+  }
+ }
+}else{
+ // The deck has a real edge above a lower star field. Its concentric courses are
+ // subdivided radially to follow the planet's curvature even on the inner floor.
+ for(let x=-66;x<66;x+=6)for(let z=-100;z<45;z+=6){
+  lateTerrain.quad([x,-3,z],[x+6,-3,z],[x+6,-3,z+6],[x,-3,z+6],[.065,.085,.16]);
+  const seed=Math.sin(x*1.7+z*.87);
+  if(seed>0)lateTerrain.disc(x+2*seed,-2.96,z+2,.05+.1*seed,[.54,.58,.74],4);
+ }
+ const deckPoint=(angle,t,y)=>{
+  const dx=Math.cos(angle),dz=Math.sin(angle);
+  const radius=Math.min(30/Math.max(.0001,Math.abs(dx)),51/Math.max(.0001,Math.abs(dz)));
+  const lip=1.6*Math.cos(angle*8)+.8*Math.sin(angle*13);
+  return [dx*(radius+lip)*t,y,-25+dz*(radius+lip)*t];
+ };
+ const sectors=64,courses=16;
+ for(let i=0;i<sectors;i++){
+  const a=i*2*Math.PI/sectors,b=(i+1)*2*Math.PI/sectors;
+  for(let j=0;j<courses;j++){
+   const inner=j/courses,outer=(j+1)/courses,tone=.018*Math.cos(i*.62)+.019*Math.sin(j*1.7);
+   const plate=[.24+tone,.24+tone,.34+tone];
+   lateTerrain.quad(deckPoint(a,inner,0),deckPoint(b,inner,0),deckPoint(b,outer,0),deckPoint(a,outer,0),plate);
+   if(j%3===2)lateTerrain.quad(deckPoint(a,outer-.003,.012),deckPoint(b,outer-.003,.012),deckPoint(b,outer,.012),deckPoint(a,outer,.012),[.44,.40,.49]);
+  }
+  lateTerrain.quad(deckPoint(a,1,0),deckPoint(b,1,0),deckPoint(b,1,-1.6),deckPoint(a,1,-1.6),i%4?[.21,.21,.31]:[.45,.38,.34]);
+  lateTerrain.quad(deckPoint(a,.993,.02),deckPoint(b,.993,.02),deckPoint(b,1,.02),deckPoint(a,1,.02),[.68,.57,.39]);
+ }
 }
-function latePath(x,z,w,h){for(let px=x-w/2;px<x+w/2;px+=1.25)for(let pz=z-h/2;pz<z+h/2;pz+=1.5){const c=isSnow?[.48,.6,.66]:[.48,.43,.55];lateArchitecture.quad([px,.07,pz],[Math.min(px+1.19,x+w/2),.07,pz],[Math.min(px+1.19,x+w/2),.07,Math.min(pz+1.43,z+h/2)],[px,.07,Math.min(pz+1.43,z+h/2)],c);}}
+function latePath(x,z,w,h){
+ if(isSnow){
+  // Packed snow meanders inside the existing route. Its soft shoulders take the
+  // place of the regular masonry grid used on the orbital station.
+  const vertical=h>=w,length=vertical?h:w,width=vertical?w:h;
+  const point=(t,edge)=>{
+   const bend=.19*Math.sin((t+(vertical?z:x))*.77);
+   const offset=bend+width*edge*(1+.08*Math.sin(t*.48+Math.sign(edge)));
+   return vertical?[x+offset,.035,z+t]:[x+t,.035,z+offset];
+  };
+  for(let t=-length/2;t<length/2;t+=1.8){
+   const end=Math.min(t+1.8,length/2);
+   for(const [left,right,color] of [[-.53,-.39,[.72,.81,.84]],[-.39,.39,[.64,.74,.79]],[.39,.53,[.72,.81,.84]]]){
+    lateArchitecture.quad(point(t,left),point(t,right),point(end,right),point(end,left),color);
+   }
+  }
+  return;
+ }
+ for(let px=x-w/2;px<x+w/2;px+=1.25)for(let pz=z-h/2;pz<z+h/2;pz+=1.5){const c=isSnow?[.48,.6,.66]:[.48,.43,.55];lateArchitecture.quad([px,.07,pz],[Math.min(px+1.19,x+w/2),.07,pz],[Math.min(px+1.19,x+w/2),.07,Math.min(pz+1.43,z+h/2)],[px,.07,Math.min(pz+1.43,z+h/2)],c);}}
 latePath(0,-13,4.5,59);
 for(const o of lateConfig.objects){if(o.kind==='secret'||o.kind==='portal')continue;latePath(o.x/2,o.z,Math.abs(o.x)+4,2.6);}
 if(isSnow){
