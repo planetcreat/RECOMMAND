@@ -4,7 +4,14 @@ import {PROLOGUE,BRIEFINGS,BRIEFING_KEY,readBriefingSeen,pendingBriefing} from '
 import {PlanetMusic,PLANET_SCORES,MUSIC_KEY,readMusicSettings} from './music.js';
 import {NarrationPlayer} from './narration.js';
 // chapters, assets and names are embedded by build-launcher.mjs.
-const qaScope=window.location?.search?new URLSearchParams(window.location.search).get('qa')||'':'';
+const qaNames=new URLSearchParams(window.location?.search||'').getAll('qa');
+if(qaNames.length && (qaNames.length!==1 || !/^[a-z0-9-]{1,48}$/.test(qaNames[0]))){
+ const notice=document.getElementById('qaNotice');
+ notice.hidden=false;
+ notice.textContent='QA URL: use one ?qa=name (a-z, 0-9, hyphen; 1-48 characters).';
+ throw new Error('Invalid QA save scope');
+}
+const qaScope=qaNames[0]||'';
 const journeyStorage=qaScope?createScopedStorage(localStorage,qaScope):localStorage;
 if(qaScope){const note=document.getElementById('qaNotice');if(note){note.hidden=false;note.textContent='별도 검증 저장 · '+qaScope+' · 기존 플레이 기록과 분리';}}
 const frame=document.getElementById('gameFrame'),status=document.getElementById('launcherStatus'),modal=document.getElementById('briefing');

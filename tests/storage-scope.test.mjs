@@ -15,3 +15,10 @@ test('child frame uses exactly the parent QA namespace; ordinary launch is untou
  assert.equal(raw.getItem('recommand-save-v1'),'real-user-progress');assert.equal(createScopedStorage(raw,'motion').getItem('recommand-save-v1'),'qa-play');
  assert.throws(()=>chapterDocument(html,[],'bad"scope'));
 });
+
+test('malformed QA links stop the built launcher before a save is selected',async()=>{
+ const {launcherHarness}=await import('./launcher-harness.mjs');
+ for(const search of ['?qa','?qa=','?qa=a&qa=b','?qa=bad%20name']){
+  assert.throws(()=>launcherHarness({search}),/Invalid QA save scope/);
+ }
+});
