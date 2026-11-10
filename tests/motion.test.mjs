@@ -33,3 +33,22 @@ test('dash holds the stride phase and eases the silhouette on entry and exit',()
  m.capture(p);m.sample(p);
  assert(m.dashBlend>0 && m.dashBlend<entry);
 });
+
+test('walking reversal waits for travel to reverse before changing silhouettes',()=>{
+ const player={x:0,z:0,face:{z:1}};
+ const motion=new MotionPresenter(player);
+ function step(dz){
+  motion.capture(player);
+  player.z+=dz;
+  return motion.sample(player);
+ }
+ for(let i=0;i<12;i++)step(.1);
+ player.face.z=-1;
+ assert(step(.03).frame<2);
+ const turning=step(-.03);
+ assert(turning.frame<2);
+ assert(turning.width<.97);
+ assert(step(-.08).frame>=2);
+ motion.reset(player);
+ assert.equal(motion.turn,1);
+});
