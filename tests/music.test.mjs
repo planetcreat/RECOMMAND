@@ -30,3 +30,25 @@ test('turning off while resume is pending never starts music; missing audio fail
 test('settings survive blocked or malformed storage without touching game saves',()=>{
  assert.deepEqual(readMusicSettings(()=>{throw Error('blocked');}),{enabled:false,volume:.35});assert.deepEqual(readMusicSettings(()=>'null'),{enabled:false,volume:.35});assert.deepEqual(readMusicSettings(()=>'invalid'),{enabled:false,volume:.35});assert.deepEqual(readMusicSettings(()=>'{"enabled":true,"volume":-1}'),{enabled:true,volume:0});
 });
+
+test('sixteen-bar arrangements schedule bounded notes and distinct regional rhythms',()=>{
+ const music=harness().music;
+ const signatures=new Set();
+ for(const score of Object.values(PLANET_SCORES)){
+  const rhythm=[];
+  for(let step=0;step<128;step++){
+   const time=step*30/score.bpm;
+   let count=0;
+   music.note=(_,pitch,start,length,volume,type,attack=.025)=>{
+    assert(Number.isFinite(pitch) && start>=time && length>attack);
+    assert(volume>0 && volume<.1);
+    count++;
+   };
+   music.step({score,step},time);
+   assert(count<=10);
+   rhythm.push(count);
+  }
+  signatures.add(rhythm.join(','));
+ }
+ assert.equal(signatures.size,4);
+});

@@ -385,7 +385,7 @@ function tideIntel(state){return state.observations.every(Boolean);}
 function decodeTide(raw){const s=typeof raw==='string'?JSON.parse(raw):raw;const bools=(v,n)=>Array.isArray(v)&&v.length===n&&v.every(x=>typeof x==='boolean');if(s?.v!==1||!['arrival','introduced','foregate'].every(k=>typeof s[k]==='boolean')||!bools(s.gates,2)||!bools(s.observations,3)||s.foregate&&!s.introduced)throw Error('쇄해의 기록을 읽을 수 없습니다.');const b=s.boat===undefined?{...TIDE_INITIAL.boat}:s.boat;if(!b||typeof b.met!=='boolean'||!BOAT_STAGES.includes(b.stage)||!Number.isFinite(b.elapsed)||b.elapsed<0||b.elapsed>BOAT_SECONDS||b.stage!=='unknown'&&(!b.met||!s.introduced||!s.observations.every(Boolean))||['returned','complete'].includes(b.stage)&&b.elapsed!==BOAT_SECONDS||['unknown','charted','repaired'].includes(b.stage)&&b.elapsed!==0)throw Error('종이배의 기록을 읽을 수 없습니다.');const boss=s.boss===undefined?{...TIDE_INITIAL.boss}:s.boss;if(!boss||typeof boss.defeated!=='boolean'||typeof boss.rewritten!=='boolean'||boss.defeated&&!s.foregate||boss.rewritten&&!boss.defeated)throw Error('벨로크의 기록을 읽을 수 없습니다.');return{v:1,arrival:s.arrival,introduced:s.introduced,gates:[...s.gates],observations:[...s.observations],foregate:s.foregate,boat:{met:b.met,stage:b.stage,elapsed:b.elapsed},boss:{defeated:boss.defeated,rewritten:boss.rewritten}};}
 const SWAEHAE_SCENES={
  arrival:['발밑의 관문은 모래가 아니라, 바닷물이 말라붙은 계단 위에 열렸다.\n멀리 배들이 묶여 있다. 돛은 모두 육지 쪽을 향한다.','[제방 안전 확인. 외부 항로 봉쇄 유지.]\n사람을 반기는 말보다, 오래된 안내 방송이 먼저 들렸다.','루미: “유온에서는 숲이 말을 못 했어요. 여기는 사람들이 말하고 있는데…… 문은 듣지 않네요.”'],
- naru:['나루: “파도가 길을 삼킨 날, 명령권자가 제방을 닫았어요. 그 덕분에 살아남았죠.”','주인공: “그 뒤로 한 번도 열지 않았나요?”\n나루: “닫아야 한다는 명령은 남았는데, 언제 열어도 되는지는 없었거든요.”','나루: “명령을 가진 사람이라면 열 수 있겠죠. 하지만 먼저 저 물을 봐요. 문만 연다고 길이 돌아오지는 않아요.”\n서쪽은 저류지, 동쪽은 배수로다. 두 수문과 중앙 수압계를 직접 살펴보자.'],
+ naru:['나루: “파도가 길을 삼킨 날, 명령권자가 제방을 닫았어요. 그 덕분에 살아남았죠.”','나루가 소매를 걷는다. 손목에 밧줄이 파고든 자국이 희다. “그날 마지막 배를 제가 당겼어요. 안에 몇 사람이 있는지 몰라서, 손에 닿는 줄은 다 잡았죠.”','주인공: “그 뒤로 한 번도 열지 않았나요?”\n나루: “닫아야 한다는 명령은 남았는데, 언제 열어도 되는지는 없었거든요.”','나루: “명령을 가진 사람이라면 열 수 있겠죠. 하지만 먼저 저 물을 봐요. 문만 연다고 길이 돌아오지는 않아요.”\n서쪽은 저류지, 동쪽은 배수로다. 두 수문과 중앙 수압계를 직접 살펴보자.'],
  child:['도하: “이 배는 바다에 띄우려고 만든 거예요. 어른들은 책장으로 쓰면 튼튼하겠대요.”','주인공: “어디로 가고 싶은데?”\n도하: “저도 아직 몰라요. 그래도 배가 어느 쪽으로 가는지는, 물에 놓아 봐야 알잖아요.”','루미는 기록장에 목적지를 쓰려다 멈춘다. 대신 ‘배를 띄워 보고 싶다’고 적는다.'],
  foregate:['중앙 보행교가 내려앉으며 수문 안쪽의 원형 방이 드러났다.\n벽에 걸린 문장은 파도에 닳아 있었다. [안전은 정지된 상태로 유지한다.]','녹슨 문틀에는 오래된 출항 통지서가 붙어 있다.\n허가를 기다리는 날짜는 적혀 있지만, 기다림이 끝나는 날은 비어 있다.','루미: “이 문 앞에서 얼마나 오래 기다렸을까요.”\n주인공은 닳아 버린 통지서에서 손을 뗀다. 방 안에서 낮은 울림이 돌아온다.','문지기의 수압계가 붉게 기울어진다.\n[외부 항로 봉쇄. 접근하는 압력을 배출한다.]']
 };
@@ -544,7 +544,7 @@ function seaInteract(){if(seaPaused)return;if(seaDialog){seaAdvance();return;}
  if(o.kind==='gate'){if(!seaState.introduced){seaTalk(o.name,['레버에는 제방지기의 봉인이 걸려 있다. 먼저 나루와 이야기하자.']);return;}seaState.gates[o.index]=!seaState.gates[o.index];saveSea();seaTalk(o.name,[(seaState.gates[o.index]?'수문을 열었다.':'수문을 닫았다.')+'\n'+tideDescription(seaState.gates),'눈금의 변화는 중앙 수압계에서 기록할 수 있다.']);}
  if(o.kind==='gauge'){observeTide(seaState);saveSea();seaTalk(o.name,[tideDescription(seaState.gates),tideIntel(seaState)?'세 관측이 하나로 이어진다.\n같은 수로도 밀려갈 때와 되돌아올 때 물의 힘이 다르다. 보스가 흐름을 뒤집을 때, 안전한 곳도 바뀔 것이다.':'흐름을 바꾸어 다시 관측하면, 수로가 어느 방향으로 힘을 전달하는지 비교할 수 있다.']);}
  if(o.kind==='foregate'){if(!seaState.introduced)return;if(tideState(seaState.gates)!=='circulation'){seaTalk(o.name,['보행교가 들려 있다. 한쪽에 고인 수압 때문에 내릴 수 없다.\n저류지와 배수로를 함께 열어 물이 순환하게 해야 한다.']);return;}
-  if(seaState.boss.rewritten){seaTalk('귀환 항로의 수호자',['벨로크: [귀환 항로 보호 중. 출항 여부는 주민에게 위임.]','문지기는 더 이상 항구를 가두지 않는다.']);return;}
+  if(seaState.boss.rewritten){seaTalk('귀환 항로의 수호자',['벨로크: [귀환 항로 보호 중. 출항 여부는 주민에게 위임.]','나루가 마지막 계류줄을 풀려다 도하를 본다. 도하가 고개를 젓는다. “오늘은 묶어 둘래요. 제가 풀 수 있는 매듭으로요.” 나루는 줄 끝을 아이 손에 건넨다.']);return;}
   const enter=()=>{seaState.foregate=true;saveSea();seaArena=true;seaEffects.length=0;if(seaState.boss.defeated){seaBoss.active=false;seaBoss.hp=0;seaBoss.hero=100;seaBoss.phase='won';seaPlayer.x=0;seaPlayer.z=-50;}else startBelrok(seaBoss,seaPlayer);seaPlayer.face={x:0,z:-1};};
   seaTalk('역류의 문지기 · 벨로크',[...SWAEHAE_SCENES.foregate,...(seaState.boat.stage==='complete'?['물길의 기억이 겹친다. 종이배가 돌아왔던 홈과 같은 갈라진 원이다.\n'+BELROK_CLUE]:[]),'문지기가 고개를 든다. 방 안의 오래된 명령이 다시 울린다.\nJ 검격 · L 파동 · K / Space 회피'],enter);
  }
@@ -559,6 +559,18 @@ for(const o of seaObjects){if(o.kind==='gate'){seaProps.cone(o.x,0,o.z,.9,.5,[.3
 for(const [x,z]of[[-26,6],[27,-7],[-27,-23],[27,-34]]){seaProps.cone(x,.1,z,2.3,.65,[.33,.28,.22],6,1.5);seaProps.cone(x,.7,z,.09,5,[.55,.48,.32],6,.06);seaProps.quad([x,.9,z],[x,5.5,z],[x+2.5,3.8,z],[x+2.5,1.2,z],[.78,.73,.54]);}
 for(const [x,z]of[[-11,3],[10,7],[-12,-24],[10,-26]]){seaProps.cone(x,0,z,1.5,.6,[.34,.33,.27],4,1.5);for(const dx of[-1.4,1.4])seaProps.cone(x+dx,.5,z,.08,2.5,[.4,.37,.26],4);seaProps.quad([x-1.7,3.1,z-1.2],[x+1.7,3.1,z-1.2],[x+1.7,2.8,z+1.2],[x-1.7,2.8,z+1.2],[.43,.63,.6]);seaObstacles.push({x,z,r:1.4});}
 for(let i=0;i<90;i++){const x=(seaRandom()>.5?1:-1)*(6+seaRandom()*9),z=seaRandom()*52-39;if(seaObjects.some(o=>distance({x,z},o)<4))continue;seaProps.cone(x,0,z,.2+seaRandom()*.25,.2+seaRandom()*.45,i%3?[.42,.45,.38]:[.68,.61,.43],5,.12);}
+// Timber landings and mooring posts face the boats beyond the walkable quay.
+for(const [side,z] of [[-1,6],[1,-7],[-1,-23],[1,-34]]){
+ for(let i=0;i<7;i++){
+  const x=side*(19+i*.62);
+  seaBase.quad([x-.28,.24,z-1],[x+.28,.24,z-1],[x+.28,.24,z+1],[x-.28,.24,z+1],[.48+i%2*.035,.34,.22]);
+ }
+ for(const offset of [-1,1]){
+  const x=side*22.7;
+  seaBase.cone(x,0,z+offset,.2,1.15,[.35,.25,.17],7,.18);
+  seaBase.cone(x,.7,z+offset,.24,.23,[.75,.64,.44],7,.24);
+ }
+}
 const seaGroundMesh=seaRenderer.upload(seaGround),seaPropsMesh=seaRenderer.upload(seaProps),seaBaseMesh=seaRenderer.upload(seaBase);
 function seaSprite(key,color,hat=false){return seaRenderer.texture('sea-person-'+key,c=>{c.fillStyle='#102d3955';c.beginPath();c.ellipse(64,116,31,7,0,0,Math.PI*2);c.fill();c.fillStyle='#263b43';c.fillRect(44,92,15,23);c.fillRect(69,92,15,23);c.fillStyle=color;c.beginPath();c.moveTo(43,53);c.lineTo(85,53);c.lineTo(91,96);c.lineTo(36,96);c.fill();c.fillStyle='#e4c69c';c.beginPath();c.ellipse(64,37,20,24,0,0,Math.PI*2);c.fill();c.fillStyle=hat?'#bdad78':'#29414a';c.beginPath();c.ellipse(64,21,26,13,0,0,Math.PI*2);c.fill();if(hat)c.fillRect(31,27,66,7);c.fillStyle='#263c42';c.fillRect(53,38,4,5);c.fillRect(73,38,4,5);c.fillStyle='#dfc984';c.fillRect(42,58,45,5);});}
 const seaHero=seaSprite('hero','#466974'),seaNaru=seaSprite('naru','#7e7860',true),seaChild=seaSprite('child','#8c8f60');
@@ -596,7 +608,7 @@ function seaDraw(alpha=1,dt=1/60){seaVisual=seaMotion.sample(seaPlayer,alpha,dt,
   g.tri(q(-.65,0,0),q(.65,0,0),q(0,.33,.38),[.95,.89,.68]);g.tri(q(.65,0,0),q(-.65,0,0),q(0,.33,-.38),[.75,.79,.68]);g.tri(q(-.35,.15,0),q(.35,.15,0),q(0,1.05,0),[1,.95,.78]);g.ring(p.x,.26,p.z,.65,[.69,.85,.79],18,.035);
  }
  seaRenderer.drawDynamic(g);seaVFX.draw(seaEffects,[],seaClock);seaRenderer.sprite(seaArt.hero(seaVisual,seaHero),seaVisual.x,seaVisual.bob,seaVisual.z,1.9*seaVisual.width,2.6*seaVisual.height);seaRenderer.sprite(seaArt.actor('naru',seaNaru),4,0,3,1.9,2.6);seaRenderer.sprite(seaArt.actor('doha',seaChild),-6,0,9,1.5,2.05);
- for(const [x,z]of[[-26,6],[27,-7],[-27,-23],[27,-34]])seaArt.drawProp('boat',x,0,z,7);for(const [x,z]of[[-11,3],[10,7],[-12,-24],[10,-26]]){seaArt.drawProp('stall',x,0,z,4.5);seaArt.drawProp('cargo',x+2.8,0,z+1,2);}
+ for(const [x,z]of[[-26,6],[27,-7],[-27,-23],[27,-34]])seaArt.drawProp('boat',x,.09+.08*Math.sin(seaClock*1.15+z),z,7);for(const [x,z]of[[-11,3],[10,7],[-12,-24],[10,-26]]){seaArt.drawProp('stall',x,0,z,4.5);seaArt.drawProp('cargo',x+2.8,0,z+1,2);}
  for(const side of[-1,1])for(let z=-39;z<14;z+=7)seaArt.drawProp('lamp',side*17,0,z,3.7);for(const o of seaObjects){if(o.kind==='gate')seaArt.drawProp('sluice',o.x,0,o.z,3.2);if(o.kind==='gauge')seaArt.drawProp('gauge',o.x,0,o.z,2.9);}
  for(let i=0;i<16;i++)for(const side of[-1,1])seaArt.drawProp(i%3?'shrub':'rock',side*(14.7+Math.sin(i)*.5),0,-39+i*3.3,1.8);seaArt.drawProp('arch',0,0,-32,5.5);
  seaObjects.forEach((o,i)=>{if(seaVisible(o))seaRenderer.sprite(seaLabels[i],o.x,o.kind==='gate'?3:3.2,o.z,5.5,.65);});for(const side of[-1,1])for(let z=-39;z<14;z+=7)seaRenderer.sprite(seaGlow,side*17,2.2,z,1.6,1.6,.5);seaRenderer.finish();
