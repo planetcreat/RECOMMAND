@@ -112,7 +112,10 @@ class CharacterMotor{
 class FixedStepClock{
  constructor({step=1/60,maxSteps=8}={}){this.step=step;this.maxSteps=maxSteps;this.accumulator=0;this.dropped=0;}
  advance(elapsed,tick){
-  const dt=clamp(Number.isFinite(elapsed)?elapsed:0,0,.15);this.accumulator+=dt;
+  const elapsedSeconds=Number.isFinite(elapsed)?Math.max(0,elapsed):0;
+  const dt=Math.min(elapsedSeconds,.15);
+  this.dropped+=elapsedSeconds-dt;
+  this.accumulator+=dt;
   let steps=0;while(this.accumulator+1e-10>=this.step&&steps<this.maxSteps){tick(this.step);this.accumulator=Math.max(0,this.accumulator-this.step);steps++;}
   if(this.accumulator>=this.step){const discard=Math.floor(this.accumulator/this.step)*this.step;this.dropped+=discard;this.accumulator-=discard;}
   return{dt,steps,alpha:clamp(this.accumulator/this.step,0,1)};
@@ -128,16 +131,22 @@ function seeded(seed=9273){return()=>{seed=(Math.imul(seed,1664525)+1013904223)|
 
 // Presentation only: interpolate fixed simulation steps; never mutate collision or save data.
 class MotionPresenter{
- constructor(p){this.previous={x:p.x,z:p.z};this.camera={x:p.x,z:p.z};this.followTarget=null;this.phase=0;this.gait=0;this.dashBlend=0;this.back=p.face?.z<-.2;this.turn=this.back?1:0;this.clock=0;}
+ constructor(p){this.previous={x:p.x,z:p.z};this.camera={x:p.x,z:p.z};this.followTarget=null;this.rendered={x:p.x,z:p.z};this.phase=0;this.gait=0;this.dashBlend=0;this.back=p.face?.z<-.2;this.turn=this.back?1:0;this.clock=0;}
  capture(p){this.previous={x:p.x,z:p.z};}
- reset(p){this.previous={x:p.x,z:p.z};Object.assign(this.camera,{x:p.x,z:p.z});this.followTarget=null;this.gait=0;this.phase=0;this.dashBlend=0;this.back=p.face?.z<-.2;this.turn=this.back?1:0;}
+ reset(p){this.previous={x:p.x,z:p.z};Object.assign(this.camera,{x:p.x,z:p.z});this.followTarget=null;this.rendered.x=p.x;this.rendered.z=p.z;this.gait=0;this.phase=0;this.dashBlend=0;this.back=p.face?.z<-.2;this.turn=this.back?1:0;}
  sample(p,alpha=1,dt=1/60,{frozen=false,dashing=false}={}){
   dt=clamp(Number.isFinite(dt)?dt:0,0,.15);alpha=clamp(Number.isFinite(alpha)?alpha:1,0,1);
   if(distance(this.previous,p)>8||distance(this.camera,p)>16)this.reset(p);
   const x=frozen?p.x:this.previous.x+(p.x-this.previous.x)*alpha,z=frozen?p.z:this.previous.z+(p.z-this.previous.z)*alpha;
   const speed=frozen?0:distance(p,this.previous)*60;
   this.gait+=(clamp(speed/6.2,0,1)-this.gait)*(1-Math.exp(-18*dt));
-  if(!frozen){this.clock+=dt;if(!dashing)this.phase+=speed*dt*1.45;}
+  // Advance footfalls by visible ground travel, including interpolation between ticks.
+  if(!frozen){
+   this.clock+=dt;
+   if(!dashing)this.phase+=Math.hypot(x-this.rendered.x,z-this.rendered.z)*1.45;
+  }
+  this.rendered.x=x;
+  this.rendered.z=z;
   // During a reversal, finish the outgoing step before showing the opposite pose.
   const stepZ=p.z-this.previous.z;
   const reversing=!frozen && !dashing && Math.abs(stepZ)>.01 && stepZ*p.face?.z<0;

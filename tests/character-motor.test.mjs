@@ -39,3 +39,10 @@ test('dash keeps its configured speed and motion data never enters save objects'
  const next=m.move(p,{x:0,z:-1},1/60,{speed:22,dashing:true});
  assert.equal(next.z,-22/60);assert.equal(JSON.stringify(p),before);
 });
+
+test('long pauses account for all skipped time without running extra ticks',()=>{
+ const clock=new FixedStepClock();
+ const {steps,alpha}=clock.advance(5,()=>{});
+ assert.equal(steps,8);
+ assert(Math.abs(clock.dropped+steps*clock.step+alpha*clock.step-5)<1e-10);
+});
