@@ -115,6 +115,10 @@ for(let i=0;i<90;i++){const x=(seaRandom()>.5?1:-1)*(6+seaRandom()*9),z=seaRando
 for(const {side,z,bank} of harborBerths){
  for(let i=0;i<7;i++){
   const x=bank+side*(-.5+i*.62);
+  for(const edge of [-1,1]){
+   seaBase.quad([x-.28,.24,z+edge],[x+.28,.24,z+edge],[x+.28,.09,z+edge],[x-.28,.09,z+edge],[.34,.23,.16]);
+  }
+  if(i===3 || i===6)for(const edge of [-.76,.76])seaBase.cone(x,-.9,z+edge,.13,1.01,[.31,.23,.17],5,.13);
   seaBase.quad([x-.28,.24,z-1],[x+.28,.24,z-1],[x+.28,.24,z+1],[x-.28,.24,z+1],[.48+i%2*.035,.34,.22]);
  }
  for(const offset of [-1,1]){
@@ -144,6 +148,14 @@ function drawBelrokArena(){
  el('bossName').textContent='역류의 문지기 · 벨로크';el('bossHealth').style.width=b.hp/BELROK.hp*100+'%';el('heroHealth').style.width=b.hero+'%';el('bossNumbers').textContent=b.hp+' / '+BELROK.hp+' · 여행자 '+b.hero+' / 100';el('bossPhase').textContent=belrokPhaseText(b)+(b.diverted?' · 우회 성공':'');el('bossMessage').textContent=b.message||'바닥의 원을 피하고, 과압 방출 때 가슴을 공격하세요.';el('bossSkills').textContent='J 검격 · L 파동 '+(b.wave>0?b.wave.toFixed(1)+'초':'준비')+' · K 회피 '+(b.dash>0?b.dash.toFixed(1)+'초':'준비');
 }
 function seaDraw(alpha=1,dt=1/60){seaVisual=seaMotion.sample(seaPlayer,alpha,dt,{frozen:seaPaused||!!seaDialog,dashing:seaArena&&seaBoss.dashing>0});motionTelemetry(el('chapterWorld'),seaPlayer,seaVisual,seaSimulationClock);el('seaNextPlanet').classList.toggle('hidden',!seaState.boss.rewritten||seaArena);el('seaPractice').classList.toggle('hidden',!seaState.boss.defeated||seaArena);el('bossHud').classList.toggle('hidden',!seaArena);el('harborObjective').classList.toggle('hidden',seaArena);el('boatQuest').classList.toggle('hidden',seaArena||!seaState.boat.met);seaRenderer.begin(seaVisual.cameraX,seaVisual.cameraZ,.012);seaRenderer.mesh(seaGroundMesh);if(seaArena){drawBelrokArena();return;}seaRenderer.mesh(seaBaseMesh);if(!seaArt.propReady)seaRenderer.mesh(seaPropsMesh);const g=new Geometry(),status=tideState(seaState.gates),flow=status==='circulation'?1:status==='draining'?-1:0.3,waterY=status==='filling'?.36:status==='draining'?.04:.2;
+ // Two broken wake lines at the hull; keep the deck-facing side clear.
+ for(const {hull,z,side} of harborBerths){
+  for(let k=0;k<2;k++){
+   const phase=(seaClock*.32+k*.5)%1;
+   const x=hull+side*(.75+phase*.85);
+   g.quad([x,-.70,z-.65],[x+side*.08,-.70,z-.55],[x+side*.23,-.70,z+.67],[x+side*.12,-.70,z+.57],[.39,.64,.63]);
+  }
+ }
  // Broken foam crests move shoreward and fade into the shallow shelf.
  for(const side of [-1,1])for(let i=0;i<26;i++){
   const v=-.93+i*.073,phase=(seaClock*.23+i*.37)%1;
@@ -196,7 +208,7 @@ el('seaSlash').onpointerdown=e=>{e.preventDefault();seaAttack('slash');};el('sea
 el('seaPractice').onclick=()=>{if(!seaState.boss.defeated||seaArena||seaDialog||seaPaused)return;seaArena=true;seaEffects.length=0;seaKeys.clear();startBelrok(seaBoss,seaPlayer);seaPlayer.face={x:0,z:-1};};
 el('chapterPause').onclick=pauseSea;el('chapterNext').onclick=seaAdvance;el('chapterInteract').onclick=seaInteract;
 for(const b of document.querySelectorAll('[data-sea-key]')){b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);seaKeys.add(b.dataset.seaKey);};b.onpointerup=b.onpointercancel=b.onlostpointercapture=()=>seaKeys.delete(b.dataset.seaKey);}
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['BUTTON','A'].includes(e.target?.tagName)&&['enter',' '].includes(k))return;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();if(e.repeat)return;if(k==='e'||k==='enter'&&seaDialog){seaInteract();return;}if(k==='escape'){pauseSea();return;}if(seaDialog)return;seaKeys.add(k);if(seaArena&&(k==='k'||k===' '))dashBelrok(seaBoss);if(k==='j')seaAttack('slash');if(k==='l')seaAttack('wave');});addEventListener('keyup',e=>seaKeys.delete(e.key.toLowerCase()));addEventListener('blur',()=>{seaKeys.clear();if(!seaPaused)pauseSea();saveSea();});document.addEventListener('visibilitychange',()=>{if(document.hidden){seaKeys.clear();if(!seaPaused)pauseSea();saveSea();}});addEventListener('pagehide',saveSea);
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['BUTTON','A'].includes(e.target?.tagName)&&['enter',' '].includes(k))return;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();if(e.repeat)return;if(k==='escape'){pauseSea();return;}if(seaPaused)return;if(k==='e'||k==='enter'&&seaDialog){seaInteract();return;}if(seaDialog)return;seaKeys.add(k);if(seaArena&&(k==='k'||k===' '))dashBelrok(seaBoss);if(k==='j')seaAttack('slash');if(k==='l')seaAttack('wave');});addEventListener('keyup',e=>seaKeys.delete(e.key.toLowerCase()));addEventListener('blur',()=>{seaKeys.clear();if(!seaPaused)pauseSea();saveSea();});document.addEventListener('visibilitychange',()=>{if(document.hidden){seaKeys.clear();if(!seaPaused)pauseSea();saveSea();}});addEventListener('pagehide',saveSea);
 const seaSimulationClock=new FixedStepClock();let seaPrevious=performance.now();function seaLoop(now){const step=seaSimulationClock.advance((now-seaPrevious)/1000,seaTick);seaPrevious=now;seaDraw(step.alpha,step.dt);requestAnimationFrame(seaLoop);}requestAnimationFrame(seaLoop);
 if(!seaState.arrival)seaTalk('쇄해 · 닫힌 길의 바다',SWAEHAE_SCENES.arrival,()=>{seaState.arrival=true;saveSea();});
 window.recommandSea={snapshot:()=>JSON.parse(JSON.stringify({state:seaState,player:seaPlayer,paused:seaPaused,tide:tideState(seaState.gates),vfxReady:seaVFX.ready,backend:seaRenderer.backend}))};

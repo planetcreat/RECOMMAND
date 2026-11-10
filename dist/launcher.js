@@ -8,7 +8,7 @@ const qaNames=new URLSearchParams(window.location?.search||'').getAll('qa');
 if(qaNames.length && (qaNames.length!==1 || !/^[a-z0-9-]{1,48}$/.test(qaNames[0]))){
  const notice=document.getElementById('qaNotice');
  notice.hidden=false;
- notice.textContent='QA URL: use one ?qa=name (a-z, 0-9, hyphen; 1-48 characters).';
+ notice.textContent='QA 주소를 확인해 주세요. ?qa=이름 형식으로 한 번만 입력하세요. 이름에는 영문 소문자, 숫자, 하이픈을 1~48자 사용할 수 있습니다.';
  throw new Error('Invalid QA save scope');
 }
 const qaScope=qaNames[0]||'';
