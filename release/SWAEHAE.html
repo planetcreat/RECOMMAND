@@ -586,19 +586,30 @@ const seaRoad=(x,z,w,l)=>{for(let px=x-w/2;px<x+w/2;px+=1.1)for(let pz=z-l/2;pz<
 for(const x of[-20,20])for(let z=-43;z<18;z+=3){seaProps.cone(x,0,z,.65,.85,[.47,.5,.43],4,.6);seaObstacles.push({x,z,r:.6});}
 for(const side of[-1,1])for(let z=-39;z<14;z+=7){const x=side*17;seaProps.cone(x,0,z,.18,2.7,[.28,.32,.29],6,.12);seaProps.cone(x,2.7,z,.34,.5,[.9,.74,.43],6,.24);seaProps.cone(x,3.2,z,.43,.25,[.28,.41,.4],6);seaObstacles.push({x,z,r:.3});}
 for(const o of seaObjects){if(o.kind==='gate'){seaProps.cone(o.x,0,o.z,.9,.5,[.37,.45,.43],6,.8);seaProps.cone(o.x,.5,o.z,.19,1.6,[.63,.56,.37],6,.16);seaObstacles.push({x:o.x,z:o.z,r:.9});}else if(o.kind==='gauge'){seaProps.cone(o.x,0,o.z,.65,1.45,[.4,.51,.49],6,.45);seaProps.cone(o.x,1.45,o.z,.8,.12,[.75,.72,.48],8,.75);seaObstacles.push({x:o.x,z:o.z,r:.8});}}
+// At a side edge u is fixed, so harborPoint is linear in v along z.
+const harborBerths=[[-1,6],[1,-7],[-1,-23],[1,-34]].map(([side,z])=>{
+ const south=harborPoint(side,-1)[2],north=harborPoint(side,1)[2];
+ const v=2*(z-south)/(north-south)-1;
+ const bank=harborPoint(side,v)[0];
+ return {side,z,bank,hull:bank+side*6.4,water:-.83};
+});
 // Docks, moored hulls, awnings, rope posts and layered masonry make the harbor feel inhabited.
-for(const [x,z]of[[-26,6],[27,-7],[-27,-23],[27,-34]]){seaProps.cone(x,.1,z,2.3,.65,[.33,.28,.22],6,1.5);seaProps.cone(x,.7,z,.09,5,[.55,.48,.32],6,.06);seaProps.quad([x,.9,z],[x,5.5,z],[x+2.5,3.8,z],[x+2.5,1.2,z],[.78,.73,.54]);}
+for(const {hull:x,z,water} of harborBerths){
+ seaProps.cone(x,water,z,2.3,.65,[.33,.28,.22],6,1.5);
+ seaProps.cone(x,water+.6,z,.09,5,[.55,.48,.32],6,.06);
+ seaProps.quad([x,water+.8,z],[x,water+5.4,z],[x+2.5,water+3.7,z],[x+2.5,water+1.1,z],[.78,.73,.54]);
+}
 for(const [x,z]of[[-11,3],[10,7],[-12,-24],[10,-26]]){seaProps.cone(x,0,z,1.5,.6,[.34,.33,.27],4,1.5);for(const dx of[-1.4,1.4])seaProps.cone(x+dx,.5,z,.08,2.5,[.4,.37,.26],4);seaProps.quad([x-1.7,3.1,z-1.2],[x+1.7,3.1,z-1.2],[x+1.7,2.8,z+1.2],[x-1.7,2.8,z+1.2],[.43,.63,.6]);seaObstacles.push({x,z,r:1.4});}
 for(let i=0;i<90;i++){const x=(seaRandom()>.5?1:-1)*(6+seaRandom()*9),z=seaRandom()*52-39;if(seaObjects.some(o=>distance({x,z},o)<4))continue;seaProps.cone(x,0,z,.2+seaRandom()*.25,.2+seaRandom()*.45,i%3?[.42,.45,.38]:[.68,.61,.43],5,.12);}
 // Timber landings and mooring posts face the boats beyond the walkable quay.
-for(const [side,z] of [[-1,6],[1,-7],[-1,-23],[1,-34]]){
+for(const {side,z,bank} of harborBerths){
  for(let i=0;i<7;i++){
-  const x=side*(19+i*.62);
+  const x=bank+side*(-.5+i*.62);
   seaBase.quad([x-.28,.24,z-1],[x+.28,.24,z-1],[x+.28,.24,z+1],[x-.28,.24,z+1],[.48+i%2*.035,.34,.22]);
  }
  for(const offset of [-1,1]){
-  const x=side*22.7;
-  seaBase.cone(x,0,z+offset,.2,1.15,[.35,.25,.17],7,.18);
+  const x=bank+side*3.2;
+  seaBase.cone(x,-.86,z+offset,.2,2.01,[.35,.25,.17],7,.18);
   seaBase.cone(x,.7,z+offset,.24,.23,[.75,.64,.44],7,.24);
  }
 }
@@ -646,7 +657,7 @@ function seaDraw(alpha=1,dt=1/60){seaVisual=seaMotion.sample(seaPlayer,alpha,dt,
   g.tri(q(-.65,0,0),q(.65,0,0),q(0,.33,.38),[.95,.89,.68]);g.tri(q(.65,0,0),q(-.65,0,0),q(0,.33,-.38),[.75,.79,.68]);g.tri(q(-.35,.15,0),q(.35,.15,0),q(0,1.05,0),[1,.95,.78]);g.ring(p.x,.26,p.z,.65,[.69,.85,.79],18,.035);
  }
  seaRenderer.drawDynamic(g);seaVFX.draw(seaEffects,[],seaClock);seaRenderer.sprite(seaArt.hero(seaVisual,seaHero),seaVisual.x,seaVisual.bob,seaVisual.z,1.9*seaVisual.width,2.6*seaVisual.height);seaRenderer.sprite(seaArt.actor('naru',seaNaru),4,0,3,1.9,2.6);seaRenderer.sprite(seaArt.actor('doha',seaChild),-6,0,9,1.5,2.05);
- for(const [x,z]of[[-26,6],[27,-7],[-27,-23],[27,-34]])seaArt.drawProp('boat',x,.09+.08*Math.sin(seaClock*1.15+z),z,7);for(const [x,z]of[[-11,3],[10,7],[-12,-24],[10,-26]]){seaArt.drawProp('stall',x,0,z,4.5);seaArt.drawProp('cargo',x+2.8,0,z+1,2);}
+ for(const {hull,z,water} of harborBerths)seaArt.drawProp('boat',hull,water+.06*Math.sin(seaClock*1.15+z),z,7);for(const [x,z]of[[-11,3],[10,7],[-12,-24],[10,-26]]){seaArt.drawProp('stall',x,0,z,4.5);seaArt.drawProp('cargo',x+2.8,0,z+1,2);}
  for(const side of[-1,1])for(let z=-39;z<14;z+=7)seaArt.drawProp('lamp',side*17,0,z,3.7);for(const o of seaObjects){if(o.kind==='gate')seaArt.drawProp('sluice',o.x,0,o.z,3.2);if(o.kind==='gauge')seaArt.drawProp('gauge',o.x,0,o.z,2.9);}
  for(let i=0;i<16;i++)for(const side of[-1,1])seaArt.drawProp(i%3?'shrub':'rock',side*(14.7+Math.sin(i)*.5),0,-39+i*3.3,1.8);seaArt.drawProp('arch',0,0,-32,5.5);
  seaObjects.forEach((o,i)=>{if(seaVisible(o))seaRenderer.sprite(seaLabels[i],o.x,o.kind==='gate'?3:3.2,o.z,5.5,.65);});for(const side of[-1,1])for(let z=-39;z<14;z+=7)seaRenderer.sprite(seaGlow,side*17,2.2,z,1.6,1.6,.5);seaRenderer.finish();
