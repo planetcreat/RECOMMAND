@@ -124,7 +124,8 @@ export class MotionPresenter{
   this.dashBlend+=((dashing&&!frozen?1:0)-this.dashBlend)*(1-Math.exp(-28*dt));
   const walk=this.gait*(1-this.dashBlend);
   const stride=Math.sin(this.phase*Math.PI),idle=Math.sin(this.clock*1.8);
-  return{x,z,cameraX:this.camera.x,cameraZ:this.camera.z,frame:(this.gait>.12?Math.floor(this.phase)%2:0)+(showBack?2:0),bob:walk*Math.abs(stride)*.045+(1-this.gait)*idle*.012,width:turnWidth*(1+this.dashBlend*.055+Math.cos(this.phase*Math.PI*2)*walk*.009),height:1-(this.dashBlend*.04+Math.abs(stride)*walk*.012),gait:this.gait};
+  const passing=!frozen && !dashing && this.gait>.12 && this.phase%1>=.25 && this.phase%1<.75;
+  return{x,z,passing,cameraX:this.camera.x,cameraZ:this.camera.z,frame:(this.gait>.12?Math.floor(this.phase)%2:0)+(showBack?2:0),bob:walk*Math.abs(stride)*.045+(1-this.gait)*idle*.012,width:turnWidth*(1+this.dashBlend*.055+Math.cos(this.phase*Math.PI*2)*walk*.009),height:1-(this.dashBlend*.04+Math.abs(stride)*walk*.012),gait:this.gait};
  }
 }
 export function perspective(fov,aspect,near,far){const f=1/Math.tan(fov/2),nf=1/(near-far);return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0]);}

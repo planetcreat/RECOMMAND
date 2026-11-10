@@ -17,3 +17,15 @@ test('atlas GPU failures preserve fallback art and request CORS',()=>{
  try{const a=new WorldArt({texture(){throw Error('GPU unavailable');}});assert.equal(a.actorReady,false);assert.equal(a.propReady,false);assert.equal(a.failed.length,2);assert(images.every(i=>i.crossOrigin==='anonymous'));assert.equal(a.actor('hero0','fallback'),'fallback');}finally{if(previous===undefined)delete globalThis.Image;else globalThis.Image=previous;}
 });
 test('planet palettes vary smoothly without consuming randomness',()=>{for(const name of['garden','harbor']){const a=visualTerrain(2,3,name),b=visualTerrain(2.01,3,name);assert(a.every(x=>x>0&&x<1));assert(Math.max(...a.map((x,i)=>Math.abs(x-b[i])))<.01);}});
+
+test('hero keeps its atlas frame when a passing texture is unavailable',()=>{
+ const art=new WorldArt({});
+ const pose={frame:3,passing:true};
+ assert.equal(art.hero(pose,'fallback'),'fallback');
+ art.actorReady=true;
+ art.actors[3]='back contact';
+ assert.equal(art.hero(pose,'fallback'),'back contact');
+ art.passing[3]='back passing';
+ assert.equal(art.hero(pose,'fallback'),'back passing');
+ assert.equal(art.hero({...pose,passing:false},'fallback'),'back contact');
+});

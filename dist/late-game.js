@@ -311,7 +311,7 @@ function lateDraw(alpha=1,dt=1/60){
  lateRenderer.begin(lateCamera.x,lateCamera.z,.011);lateRenderer.mesh(lateTerrainMesh);
  if(lateArena)lateArenaDraw();else{lateRenderer.mesh(lateArchitectureMesh);lateGroundDetails();}
  const inv=lateArena?.inv||latePlayer.inv;
- lateRenderer.sprite(lateArt.actor(['hero0','hero1','heroBack0','heroBack1'][pose.frame],lateFallback),pose.x,pose.bob,pose.z,1.9*pose.width,2.65*pose.height,inv>0&&Math.sin(lateClock*35)>0?.5:1);
+ lateRenderer.sprite(lateArt.hero(pose,lateFallback),pose.x,pose.bob,pose.z,1.9*pose.width,2.65*pose.height,inv>0&&Math.sin(lateClock*35)>0?.5:1);
  lateVFX.draw(lateEffects,[],lateClock);lateRenderer.finish();
 }
 function lateMapDraw(){
