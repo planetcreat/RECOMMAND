@@ -11,8 +11,11 @@ import {decorateGarden,buildGardenRoad} from './environment.js';
 import {WorldArt,visualTerrain} from './art.js';
 import {makeBossModel} from './boss-models.js';
 const $=id=>document.getElementById(id),TAU=Math.PI*2,SAVE='recommand-save-v1';
-let R;let hardwareWarning='';
-try{R=new Renderer($('world'));R.backend='webgl';}catch(e){hardwareWarning=e.message;const canvas=document.createElement('canvas');canvas.id='world';canvas.tabIndex=0;canvas.setAttribute('aria-label','행성 탐험 게임');$('world').replaceWith(canvas);R=new SoftwareRenderer(canvas);}
+let R;
+if(document.documentElement?.dataset?.qaRenderer!=='software'){
+ try{R=new Renderer($('world'));R.backend='webgl';}catch{}
+}
+if(!R){const canvas=document.createElement('canvas');canvas.id='world';canvas.tabIndex=0;canvas.setAttribute('aria-label','행성 탐험 게임');$('world').replaceWith(canvas);R=new SoftwareRenderer(canvas);}
 const terrainRand=seeded(2872),SOFT=R.backend==='software';if(SOFT)Geometry.lowDetail=true;
 const rand=seeded(2871), keys=new Set(), obstacles=[], particles=[], effects=[];
 const player={x:0,z:7,hp:100,xp:0,face:{x:0,z:-1},attack:0,dash:0,skill:0,inv:0,walk:0,dashTime:0};

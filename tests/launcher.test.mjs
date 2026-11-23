@@ -9,6 +9,52 @@ test('isolated QA launcher and chapter share a namespace and leave real saves an
  assert(h.storage.has('recommand-qa:motion-review:recommand-briefing-v1'));
  assert.match(h.elements.qaNotice.textContent,/기존 플레이 기록과 분리/);
 });
+test('software renderer is gated by a valid QA scope and is carried to every chapter',()=>{
+ const h=launcherHarness({search:'?qa=garden-soft&renderer=software'});
+ for(const button of h.buttons){
+  button.onclick();h.elements.briefSkip.onclick();
+  assert.match(h.elements.gameFrame.srcdoc,/<html data-qa-scope="garden-soft" data-qa-renderer="software"/);
+ }
+ assert.match(h.elements.qaNotice.textContent,/CPU 3D/);
+ assert.equal(h.storage.get('recommand-save-v1'),'existing-user-save');
+ for(const search of ['?renderer=software','?qa=garden-soft','?qa=garden-soft&renderer=software&renderer=software']){
+  const launch=launcherHarness({search,seenAll:true});
+  launch.buttons[0].onclick();
+  if(launch.elements.briefing.open)launch.elements.briefSkip.onclick();
+  assert.doesNotMatch(launch.elements.gameFrame.srcdoc,/<html[^>]*data-qa-renderer/);
+ }
+ assert.throws(()=>launcherHarness({search:'?qa=&renderer=software'}),/Invalid QA save scope/);
+});
+
+test('chapter renderer startup honours QA forcing and still falls back if WebGL fails',()=>{
+ for(const [file,rendererName,endMarker] of [
+  ['RECOMMAND.html','R','const terrainRand'],
+  ['SWAEHAE.html','seaRenderer','const seaArt'],
+  ['MUMYEONG.html','lateRenderer','const lateSoft'],
+  ['HWANSEONG.html','lateRenderer','const lateSoft']
+ ]){
+  const html=fs.readFileSync(new URL('../release/'+file,import.meta.url),'utf8');
+  const start=html.indexOf('let '+rendererName+';'),end=html.indexOf(endMarker,start);
+  assert(start>=0&&end>start,file);
+  for(const [forced,webglFails,expectedAttempts,expectedBackend] of [
+   [true,false,0,'software'],[false,false,1,'webgl'],[false,true,1,'software']
+  ]){
+   let attempts=0,replacements=0;
+   const lookup=()=>({replaceWith(){replacements++;}});
+   const box={
+    $:lookup,el:lookup,lateEl:lookup,lateConfig:{name:'test'},
+    document:{documentElement:{dataset:forced?{qaRenderer:'software'}:{}},createElement:()=>({setAttribute(){}})},
+    Renderer:class{constructor(){attempts++;if(webglFails)throw Error('WebGL unavailable');}},
+    SoftwareRenderer:class{constructor(){this.backend='software';}}
+   };
+   const renderer=vm.runInNewContext(html.slice(start,end)+'\n'+rendererName,box);
+   assert.equal(attempts,expectedAttempts,file);
+   assert.equal(renderer.backend,expectedBackend,file);
+   assert.equal(replacements,expectedBackend==='software'?1:0,file);
+  }
+ }
+});
+
 test('single-file launcher parses, switches both embedded chapters and reports ready/errors',()=>{
  const html=fs.readFileSync(new URL('../release/PLAY-RECOMMAND.html',import.meta.url),'utf8'),code=html.match(/<script>([\s\S]*?)<\/script>/)[1];new vm.Script(code);
  const {elements,events,buttons}=launcherHarness({seenAll:true});

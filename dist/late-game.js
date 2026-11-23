@@ -15,8 +15,10 @@ const lateEl=id=>document.getElementById(id),latePlanet=document.documentElement
 if(!lateConfig)throw Error('행성 구성을 읽을 수 없습니다.');
 document.documentElement.style.setProperty('--accent',lateConfig.color);
 let lateRenderer;
-try{lateRenderer=new Renderer(lateEl('lateWorld'));lateRenderer.backend='webgl';}
-catch{const c=document.createElement('canvas');c.id='lateWorld';c.tabIndex=0;c.setAttribute('aria-label',lateConfig.name+'의 휘어진 세계');lateEl('lateWorld').replaceWith(c);lateRenderer=new SoftwareRenderer(c);}
+if(document.documentElement.dataset.qaRenderer!=='software'){
+ try{lateRenderer=new Renderer(lateEl('lateWorld'));lateRenderer.backend='webgl';}catch{}
+}
+if(!lateRenderer){const c=document.createElement('canvas');c.id='lateWorld';c.tabIndex=0;c.setAttribute('aria-label',lateConfig.name+'의 휘어진 세계');lateEl('lateWorld').replaceWith(c);lateRenderer=new SoftwareRenderer(c);}
 const lateSoft=lateRenderer.backend==='software';if(lateSoft)Geometry.lowDetail=true;
 const lateArt=new WorldArt(lateRenderer),lateVFX=new CombatVFX(lateRenderer,()=>0),lateKeys=new Set(),lateEffects=[],lateObstacles=[];
 const lateLoad=loadLate(localStorage,latePlanet);

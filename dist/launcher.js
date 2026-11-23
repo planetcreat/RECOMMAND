@@ -4,7 +4,8 @@ import {PROLOGUE,BRIEFINGS,BRIEFING_KEY,readBriefingSeen,pendingBriefing} from '
 import {PlanetMusic,PLANET_SCORES,MUSIC_KEY,readMusicSettings} from './music.js';
 import {NarrationPlayer} from './narration.js';
 // chapters, assets and names are embedded by build-launcher.mjs.
-const qaNames=new URLSearchParams(window.location?.search||'').getAll('qa');
+const launchParams=new URLSearchParams(window.location?.search||'');
+const qaNames=launchParams.getAll('qa');
 if(qaNames.length && (qaNames.length!==1 || !/^[a-z0-9-]{1,48}$/.test(qaNames[0]))){
  const notice=document.getElementById('qaNotice');
  notice.hidden=false;
@@ -12,8 +13,10 @@ if(qaNames.length && (qaNames.length!==1 || !/^[a-z0-9-]{1,48}$/.test(qaNames[0]
  throw new Error('Invalid QA save scope');
 }
 const qaScope=qaNames[0]||'';
+const rendererOptions=launchParams.getAll('renderer');
+const qaSoftware=!!qaScope&&rendererOptions.length===1&&rendererOptions[0]==='software';
 const journeyStorage=qaScope?createScopedStorage(localStorage,qaScope):localStorage;
-if(qaScope){const note=document.getElementById('qaNotice');if(note){note.hidden=false;note.textContent='별도 검증 저장 · '+qaScope+' · 기존 플레이 기록과 분리';}}
+if(qaScope){const note=document.getElementById('qaNotice');if(note){note.hidden=false;note.textContent='별도 검증 저장 · '+qaScope+' · 기존 플레이 기록과 분리'+(qaSoftware?' · CPU 3D':'');}}
 const frame=document.getElementById('gameFrame'),status=document.getElementById('launcherStatus'),modal=document.getElementById('briefing');
 const seen=readBriefingSeen(k=>journeyStorage.getItem(k));let selected=null,childReady=false,loadTimer,pages=[],pageIndex=0,pendingChapter=null,replaying=false,voiceOn=false;
 const musicPrefs=readMusicSettings(k=>journeyStorage.getItem(k));
@@ -29,7 +32,7 @@ musicVolume.oninput=()=>{music.setVolume(Number(musicVolume.value)/100);saveMusi
 function selectMusic(chapter){music.select(chapter);if(musicPrefs.enabled&&!music.enabled){musicPrefs.enabled=false;void music.enable(true).then(ok=>{if(ok)musicLabel();});}musicLabel();}
 const backupUI=createJourneyBackupUI({document,window,store:journeyStorage,frame,names,current:()=>selected,ready:()=>childReady,reload:loadChapter,status:setStatus});
 function setStatus(message){status.hidden=false;document.getElementById('loadRetry').hidden=!selected;document.getElementById('loadMessage').textContent=message;}
-function loadChapter(name){childReady=false;selected=name;clearTimeout(loadTimer);setStatus('행성을 여는 중입니다…');document.getElementById('welcome').hidden=true;frame.hidden=false;frame.srcdoc=chapterDocument(chapters[name],assets,qaScope);document.title=names[name]+' · RE:COMMAND '+version;loadTimer=setTimeout(()=>setStatus('시작이 지연되고 있습니다. Chrome 또는 Edge에서 실행하거나 다시 열기를 눌러 주세요.'),15000);}
+function loadChapter(name){childReady=false;selected=name;clearTimeout(loadTimer);setStatus('행성을 여는 중입니다…');document.getElementById('welcome').hidden=true;frame.hidden=false;frame.srcdoc=chapterDocument(chapters[name],assets,qaScope,qaSoftware);document.title=names[name]+' · RE:COMMAND '+version;loadTimer=setTimeout(()=>setStatus('시작이 지연되고 있습니다. Chrome 또는 Edge에서 실행하거나 다시 열기를 눌러 주세요.'),15000);}
 function openChapter(name){if(backupUI.blocked||backupUI.isOpen())return;if(!Object.hasOwn(chapters,name))return;selectMusic(name);const next=pendingBriefing(name,seen);if(next.length){showBriefing(next,name,false);return;}loadChapter(name);}
 const narrator=new NarrationPlayer({makeAudio:src=>new window.Audio(src),duck:v=>music.duck(v),status:state=>{document.getElementById('voiceStatus').textContent=state==='playing'?'한국어 나레이션을 재생 중입니다.':state==='ended'?'음성 안내를 마쳤습니다.':'음성을 재생하지 못했습니다. 글로 계속할 수 있습니다.';}});
 function cancelVoice(){narrator.stop();}

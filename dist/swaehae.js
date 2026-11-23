@@ -9,7 +9,11 @@ import {clamp,normalize,resolveMove,seeded,distance,MotionPresenter,CharacterMot
 import {TIDE_INITIAL,tideState,tideDescription,observeTide,tideIntel,decodeTide,SWAEHAE_SCENES,boatAction,tickBoat,boatPosition,boatHint} from './tide.js';
 import {BELROK,createBelrok,startBelrok,tickBelrok,hitBelrok,dashBelrok,divertBelrok,belrokPhaseText,BELROK_CLUE,BELROK_ENDING} from './belrok.js';
 const el=id=>document.getElementById(id),SEA_SAVE='recommand-swaehae-v1';
-let seaRenderer;try{seaRenderer=new Renderer(el('chapterWorld'));seaRenderer.backend='webgl';}catch{const c=document.createElement('canvas');c.id='chapterWorld';c.tabIndex=0;c.setAttribute('aria-label','쇄해의 제방 항구');el('chapterWorld').replaceWith(c);seaRenderer=new SoftwareRenderer(c);}
+let seaRenderer;
+if(document.documentElement?.dataset?.qaRenderer!=='software'){
+ try{seaRenderer=new Renderer(el('chapterWorld'));seaRenderer.backend='webgl';}catch{}
+}
+if(!seaRenderer){const c=document.createElement('canvas');c.id='chapterWorld';c.tabIndex=0;c.setAttribute('aria-label','쇄해의 제방 항구');el('chapterWorld').replaceWith(c);seaRenderer=new SoftwareRenderer(c);}
 const seaArt=new WorldArt(seaRenderer);
 const seaSoft=seaRenderer.backend==='software';if(seaSoft)Geometry.lowDetail=true;
 const seaHeight=()=>0,seaVFX=new CombatVFX(seaRenderer,seaHeight),seaKeys=new Set(),seaEffects=[],seaObstacles=[],seaRandom=seeded(56241);

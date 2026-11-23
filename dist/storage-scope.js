@@ -1,4 +1,4 @@
-// QA uses the same browser and renderer, but a disjoint, explicitly named save space.
+// QA uses a disjoint, explicitly named save space.
 export function createScopedStorage(store,scope){
  if(!/^[a-z0-9-]{1,48}$/.test(scope))throw new Error('Invalid QA save scope');
  const prefix='recommand-qa:'+scope+':';
@@ -13,12 +13,13 @@ export function createScopedStorage(store,scope){
  };
 }
 
-export function chapterDocument(html,assets,scope=''){
+export function chapterDocument(html,assets,scope='',software=false){
  let result=html.replace(/__RECOMMAND_ASSET_(\d+)__/g,(_,i)=>assets[Number(i)]);
  if(scope){
   if(!/^[a-z0-9-]{1,48}$/.test(scope))throw new Error('Invalid QA save scope');
   const bootstrap='const localStorage=('+createScopedStorage.toString()+')(window.localStorage,'+JSON.stringify(scope)+');\n';
-  result=result.replace(/<html\b/,()=>'<html data-qa-scope="'+scope+'"');
+  const renderer=software?' data-qa-renderer="software"':'';
+  result=result.replace(/<html\b/,()=>'<html data-qa-scope="'+scope+'"'+renderer);
   result=result.replace('<script type="module">',()=>'<script type="module">'+bootstrap);
  }
  return result;
