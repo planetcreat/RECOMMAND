@@ -1,6 +1,49 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {newLateState,decodeLate,reconstruct,canShare,loadLate,writeLate} from '../dist/late-state.js';
 import {createLateBoss,tickLateBoss,hitLateBoss} from '../dist/late-combat.js';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {clamp} from '../dist/math.js';
+import {LATE_PLANETS} from '../dist/late-story.js';
+
+function stationPanels(){
+ const source=fs.readFileSync(new URL('../dist/late-game.js',import.meta.url),'utf8').replaceAll('\r\n','\n');
+ const start=source.indexOf('function latePath(');
+ const end=source.indexOf('\nif(isSnow){\n // Bury the feet',start);
+ assert(start>=0&&end>start);
+ const panels=[];
+ const lateArchitecture={quad(a,b,c,d){panels.push([a,b,c,d]);}};
+ vm.runInNewContext(source.slice(start,end),{isSnow:false,lateConfig:LATE_PLANETS.hwanseong,lateArchitecture,clamp});
+ return panels;
+}
+
+test('station branch panels do not overlap the main corridor',()=>{
+ const panels=stationPanels().map(points=>{
+  const xs=points.map(point=>point[0]),zs=points.map(point=>point[2]);
+  return [Math.min(...xs),Math.max(...xs),Math.min(...zs),Math.max(...zs)];
+ }).filter(([, , ,maxZ])=>maxZ<=13);
+ assert(panels.length>0);
+ for(const [i,[minX,maxX,minZ,maxZ]] of panels.entries()){
+  for(const [left,right,near,far] of panels.slice(i+1)){
+   const overlapX=Math.min(maxX,right)-Math.max(minX,left);
+   const overlapZ=Math.min(maxZ,far)-Math.max(minZ,near);
+   assert(overlapX<1e-8||overlapZ<1e-8,'station panels overlap');
+  }
+ }
+});
+
+test('station corridor narrows at the south end and connects to the north approach',()=>{
+ const panels=stationPanels(),points=panels.flat();
+ const south=Math.max(...points.map(point=>point[2]));
+ const outerXAt=z=>Math.max(...points.filter(point=>point[2]===z).map(point=>Math.abs(point[0])));
+ assert.equal(south,16.5);
+ assert(outerXAt(south)<outerXAt(13));
+ assert(panels.some(panel=>{
+  const xs=panel.map(point=>point[0]),zs=panel.map(point=>point[2]);
+  return Math.min(...xs)<0&&Math.max(...xs)>0&&Math.min(...zs)<-42.6&&Math.max(...zs)>-42.6;
+ }));
+});
+
 test('late chapters preserve separate records and reject fabricated endings',()=>{for(const planet of ['mumyeong','hwanseong']){const s=newLateState(planet);assert.deepEqual(decodeLate(JSON.stringify(s),planet),s);s.boss=true;assert.throws(()=>decodeLate(s,planet));}});
 test('testimony comparisons require evidence and correct reasoning',()=>{const s=newLateState('mumyeong');assert(!reconstruct(s,0,0));s.arrived=true;s.heard=['keeper','walker','bell','footprints','archive'];assert(!reconstruct(s,0,1));assert(reconstruct(s,0,0));assert(reconstruct(s,1,1));assert(reconstruct(s,2,1));s.boss=true;s.ending='witness';assert.throws(()=>decodeLate(s,'mumyeong'));s.chime=s.asked=true;assert(decodeLate(s,'mumyeong'));});
 test('shared ending requires actual earlier responses',()=>{const s=newLateState('hwanseong');s.boss=s.tomorrow=s.lumi=true;s.invited=[true,true,true];assert(!canShare(s,{garden:true,sea:false,snow:true}));assert(canShare(s,{garden:true,sea:true,snow:true}));});

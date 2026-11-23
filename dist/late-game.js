@@ -271,26 +271,44 @@ if(isSnow){
  }
 }
 function latePath(x,z,w,h){
- if(isSnow){
-  // Packed snow meanders inside the existing route. Its soft shoulders take the
-  // place of the regular masonry grid used on the orbital station.
-  const vertical=h>=w,length=vertical?h:w,width=vertical?w:h;
-  const point=(t,edge)=>{
-   const bend=.19*Math.sin((t+(vertical?z:x))*.77);
-   const offset=bend+width*edge*(1+.08*Math.sin(t*.48+Math.sign(edge)));
-   return vertical?[x+offset,.035,z+t]:[x+t,.035,z+offset];
-  };
-  for(let t=-length/2;t<length/2;t+=1.8){
-   const end=Math.min(t+1.8,length/2);
-   for(const [left,right,color] of [[-.53,-.39,[.72,.81,.84]],[-.39,.39,[.64,.74,.79]],[.39,.53,[.72,.81,.84]]]){
-    lateArchitecture.quad(point(t,left),point(t,right),point(end,right),point(end,left),color);
-   }
+ // Packed snow meanders inside the existing route.
+ const vertical=h>=w,length=vertical?h:w,width=vertical?w:h;
+ const point=(t,edge)=>{
+  const bend=.19*Math.sin((t+(vertical?z:x))*.77);
+  const offset=bend+width*edge*(1+.08*Math.sin(t*.48+Math.sign(edge)));
+  return vertical?[x+offset,.035,z+t]:[x+t,.035,z+offset];
+ };
+ for(let t=-length/2;t<length/2;t+=1.8){
+  const end=Math.min(t+1.8,length/2);
+  for(const [left,right,color] of [[-.53,-.39,[.72,.81,.84]],[-.39,.39,[.64,.74,.79]],[.39,.53,[.72,.81,.84]]]){
+   lateArchitecture.quad(point(t,left),point(t,right),point(end,right),point(end,left),color);
   }
-  return;
  }
- for(let px=x-w/2;px<x+w/2;px+=1.25)for(let pz=z-h/2;pz<z+h/2;pz+=1.5){const c=isSnow?[.48,.6,.66]:[.48,.43,.55];lateArchitecture.quad([px,.07,pz],[Math.min(px+1.19,x+w/2),.07,pz],[Math.min(px+1.19,x+w/2),.07,Math.min(pz+1.43,z+h/2)],[px,.07,Math.min(pz+1.43,z+h/2)],c);}}
-latePath(0,-13,4.5,59);
-for(const o of lateConfig.objects){if(o.kind==='secret'||o.kind==='portal')continue;latePath(o.x/2,o.z,Math.abs(o.x)+4,2.6);}
+}
+function stationPath(minX,maxX,minZ,maxZ){
+ const point=(x,z)=>[x*(1-.4*clamp((z-13)/3.5,0,1)),.07,z];
+ for(let x=minX;x<maxX;x+=1.25)for(let z=minZ;z<maxZ;z+=1.5){
+  const right=Math.min(x+1.19,maxX),far=Math.min(z+1.43,maxZ);
+  const color=z>=16?[.53,.47,.52]:[.48,.43,.55];
+  lateArchitecture.quad(point(x,z),point(right,z),point(right,far),point(x,far),color);
+ }
+}
+if(isSnow){
+ latePath(0,-13,4.5,59);
+ for(const o of lateConfig.objects){
+  if(o.kind==='secret'||o.kind==='portal')continue;
+  latePath(o.x/2,o.z,Math.abs(o.x)+4,2.6);
+ }
+}else{
+ const halfWidth=2.25;
+ stationPath(-halfWidth,halfWidth,-45.5,16.5);
+ // At each junction, the main corridor owns the panels between its edges.
+ for(const {x,z,kind} of lateConfig.objects){
+  if(x===0||kind==='secret'||kind==='portal')continue;
+  const [left,right]=x<0?[x-2,-halfWidth]:[halfWidth,x+2];
+  stationPath(left,right,z-1.3,z+1.3);
+ }
+}
 if(isSnow){
  // Bury the feet below the wind-scoured surface so the sides meet the snow.
  const buriedFoot=-.34;
