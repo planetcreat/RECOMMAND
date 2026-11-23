@@ -148,12 +148,17 @@ function drawBelrokArena(){
  el('bossName').textContent='역류의 문지기 · 벨로크';el('bossHealth').style.width=b.hp/BELROK.hp*100+'%';el('heroHealth').style.width=b.hero+'%';el('bossNumbers').textContent=b.hp+' / '+BELROK.hp+' · 여행자 '+b.hero+' / 100';el('bossPhase').textContent=belrokPhaseText(b)+(b.diverted?' · 우회 성공':'');el('bossMessage').textContent=b.message||'바닥의 원을 피하고, 과압 방출 때 가슴을 공격하세요.';el('bossSkills').textContent='J 검격 · L 파동 '+(b.wave>0?b.wave.toFixed(1)+'초':'준비')+' · K 회피 '+(b.dash>0?b.dash.toFixed(1)+'초':'준비');
 }
 function seaDraw(alpha=1,dt=1/60){seaVisual=seaMotion.sample(seaPlayer,alpha,dt,{frozen:seaPaused||!!seaDialog,dashing:seaArena&&seaBoss.dashing>0});motionTelemetry(el('chapterWorld'),seaPlayer,seaVisual,seaSimulationClock);el('seaNextPlanet').classList.toggle('hidden',!seaState.boss.rewritten||seaArena);el('seaPractice').classList.toggle('hidden',!seaState.boss.defeated||seaArena);el('bossHud').classList.toggle('hidden',!seaArena);el('harborObjective').classList.toggle('hidden',seaArena);el('boatQuest').classList.toggle('hidden',seaArena||!seaState.boat.met);seaRenderer.begin(seaVisual.cameraX,seaVisual.cameraZ,.012);seaRenderer.mesh(seaGroundMesh);if(seaArena){drawBelrokArena();return;}seaRenderer.mesh(seaBaseMesh);if(!seaArt.propReady)seaRenderer.mesh(seaPropsMesh);const g=new Geometry(),status=tideState(seaState.gates),flow=status==='circulation'?1:status==='draining'?-1:0.3,waterY=status==='filling'?.36:status==='draining'?.04:.2;
- // Two broken wake lines at the hull; keep the deck-facing side clear.
- for(const {hull,z,side} of harborBerths){
+ // Foam starts beside each moored hull and thins as it drifts away from the landing.
+ for(const {hull,z,side,water} of harborBerths){
   for(let k=0;k<2;k++){
-   const phase=(seaClock*.32+k*.5)%1;
-   const x=hull+side*(.75+phase*.85);
-   g.quad([x,-.70,z-.65],[x+side*.08,-.70,z-.55],[x+side*.23,-.70,z+.67],[x+side*.12,-.70,z+.57],[.39,.64,.63]);
+   const phase=(seaClock*.32+k*.5+Math.abs(z)*.07)%1;
+   const x=hull+side*(1.05+phase*1.35),y=water+.08;
+   const end=z+1.2-phase*.35,start=z-1.15+phase*.45;
+   const width=.08+.18*Math.sin(Math.PI*phase);
+   const fade=1-phase;
+   g.quad([x,y,start],[x+side*width*.4,y,start+.2],
+    [x+side*(.22+width),y,end-.15],[x+side*.22,y,end],
+    [.38+.36*fade,.65+.22*fade,.65+.16*fade]);
   }
  }
  // Broken foam crests move shoreward and fade into the shallow shelf.
