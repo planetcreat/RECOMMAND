@@ -1,6 +1,12 @@
 // Shared visual assets only: no gameplay state, collision or random stream is touched.
 export const ART_KEYS={hero0:0,hero1:1,heroBack0:2,heroBack1:3,lumi:4,scout:5,naru:6,doha:7,slime0:8,slime1:9,slime2:10,worker:11,slime0b:12,slime1b:13,slime2b:14,elder:15};
 export const PROP_KEYS={oak:0,pine:1,rock:2,lamp:3,arch:4,altar:5,portal:6,observatory:7,boat:8,stall:9,sluice:10,gauge:11,flowers:12,shrub:13,mushrooms:14,cargo:15};
+export const UI_CANVAS_FONT='"Jua", "Malgun Gothic", sans-serif';
+export function whenUiFontReady(draw){
+ const fonts=document.fonts;
+ if(fonts)fonts.load('22px "Jua"','한글 RE:COMMAND').then(draw,draw);
+ else draw();
+}
 export class WorldArt{
  constructor(renderer){this.r=renderer;this.actors=[];this.passing=[];this.props=[];this.actorReady=false;this.propReady=false;this.failed=[];if(typeof Image==='undefined')return;this.load('./assets/actors-atlas.png',this.actors,ART_KEYS,[0,.255,.556,.78,1],[0,.25,.5,.75,1],'actors');this.load('./assets/environment-atlas.png',this.props,PROP_KEYS,[0,.275,.51,.76,1],[0,.27,.51,.79,1],'props');}
  load(src,target,keys,rows,cols,kind){const img=new Image();img.crossOrigin='anonymous';img.onload=()=>{try{const next=[];for(let i=0;i<16;i++){const row=Math.floor(i/4),col=i%4,x=Math.round(cols[col]*img.naturalWidth),y=Math.round(rows[row]*img.naturalHeight),w=Math.round(cols[col+1]*img.naturalWidth)-x,h=Math.round(rows[row+1]*img.naturalHeight)-y;let heroCell;next[i]=this.r.texture('world-art-'+kind+'-'+i,(c)=>{

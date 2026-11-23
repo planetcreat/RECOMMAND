@@ -3,7 +3,7 @@ import {revealTravelerName,acceptTravelerName,travelerName,readTravelerName} fro
 import {installBackupBridge} from './backup-bridge.js';
 import {Renderer,Geometry} from './engine.js';
 import {SoftwareRenderer} from './software.js';
-import {WorldArt} from './art.js';
+import {WorldArt,UI_CANVAS_FONT,whenUiFontReady} from './art.js';
 import {CombatVFX} from './vfx.js';
 import {clamp,distance,normalize,resolveMove,MotionPresenter,CharacterMotor,FixedStepClock,motionTelemetry} from './math.js';
 import {LATE_PLANETS,RELAY_TEXT} from './late-story.js';
@@ -387,7 +387,9 @@ const lateFallback=lateRenderer.texture('late-fallback-actor',c=>{
  c.fillStyle='#20304066';c.beginPath();c.ellipse(64,119,27,6,0,0,Math.PI*2);c.fill();c.fillStyle=isSnow?'#536c89':'#76608e';c.beginPath();c.moveTo(43,45);c.lineTo(85,45);c.lineTo(96,111);c.lineTo(32,111);c.fill();c.fillStyle='#e0cfb5';c.beginPath();c.ellipse(64,29,18,23,0,0,Math.PI*2);c.fill();c.fillStyle='#25354a';c.fillRect(43,5,42,16);
 });
 const lateLabelTextures=new Map();
-for(const o of lateConfig.objects){if(o.kind==='secret')continue;lateLabelTextures.set(o.id,lateRenderer.texture('late-label-'+o.id,c=>{c.font='20px Malgun Gothic';c.textAlign='center';c.shadowColor='#132034';c.shadowBlur=7;c.fillStyle=isSnow?'#29485d':'#ece4cf';if(isSnow){c.shadowColor='#fff';c.shadowBlur=5;}c.fillText(o.name,256,36);},512,64));}
+whenUiFontReady(()=>{
+ for(const o of lateConfig.objects){if(o.kind==='secret')continue;lateLabelTextures.set(o.id,lateRenderer.texture('late-label-'+o.id,c=>{c.font='20px '+UI_CANVAS_FONT;c.textAlign='center';c.shadowColor='#132034';c.shadowBlur=7;c.fillStyle=isSnow?'#29485d':'#ece4cf';if(isSnow){c.shadowColor='#fff';c.shadowBlur=5;}c.fillText(o.name,256,36);},512,64));}
+});
 function lateGroundDetails(){
  const g=new Geometry(),c=isSnow?[.59,.79,.88]:[.77,.64,.93];
  if(isSnow){
@@ -430,7 +432,8 @@ function lateGroundDetails(){
  for(const o of lateConfig.objects){
   if(o.kind==='npc')lateRenderer.sprite(lateArt.actor(o.actor,lateFallback),o.x,0,o.z,1.85,2.6);
   if(o.kind==='secret'||o.kind==='portal'&&!lateState.ending)continue;
-  if(distance(o,latePlayer)<17)lateRenderer.sprite(lateLabelTextures.get(o.id),o.x,o.kind==='gate'?6.9:o.kind==='npc'?3.4:2.7,o.z,5.9,.72);
+  const label=lateLabelTextures.get(o.id);
+  if(label&&distance(o,latePlayer)<17)lateRenderer.sprite(label,o.x,o.kind==='gate'?6.9:o.kind==='npc'?3.4:2.7,o.z,5.9,.72);
  }
  if(isSnow){for(const [x,z]of[[-18,5],[18,-5],[-19,-19],[19,-30]])lateArt.drawProp('cargo',x+3.4,0,z+1,2);for(const side of[-1,1])for(let i=0;i<5;i++)lateArt.drawProp('rock',side*18,0,-3-i*10,2.3);}
 }
@@ -464,7 +467,7 @@ function lateMapDraw(){
  const c=lateEl('lateMap').getContext('2d');if(!c)return;c.clearRect(0,0,180,180);c.fillStyle=isSnow?'#213a5077':'#161a3488';c.beginPath();c.arc(90,90,83,0,Math.PI*2);c.fill();
  const point=(x,z)=>[90+x*2.4,24+(z+46)*2.04];c.strokeStyle='#c2d9dd33';c.beginPath();c.moveTo(...point(0,16));c.lineTo(...point(0,-44));c.stroke();
  for(const o of lateConfig.objects){if(o.kind==='secret'||o.kind==='portal'&&!lateState.ending)continue;const[x,y]=point(o.x,o.z);c.fillStyle=o.kind==='npc'?'#e3d2a8':lateState.heard.includes(o.id)?'#9bcfc7':'#bedce6';c.beginPath();c.arc(x,y,o.kind==='gate'?4:2.6,0,Math.PI*2);c.fill();}
- const[x,y]=point(latePlayer.x,latePlayer.z);c.fillStyle='#fff3c5';c.beginPath();c.arc(x,y,3.3,0,Math.PI*2);c.fill();c.font='10px sans-serif';c.textAlign='center';c.fillStyle='#c8d9dd';c.fillText('N',90,15);
+ const[x,y]=point(latePlayer.x,latePlayer.z);c.fillStyle='#fff3c5';c.beginPath();c.arc(x,y,3.3,0,Math.PI*2);c.fill();c.font='10px '+UI_CANVAS_FONT;c.textAlign='center';c.fillStyle='#c8d9dd';c.fillText('N',90,15);
 }
 function lateUpdateHUD(){
  lateSet('travelerName',isSnow?travelerName(lateState):latePriorName);

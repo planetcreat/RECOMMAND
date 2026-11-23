@@ -9,6 +9,20 @@ test('isolated QA launcher and chapter share a namespace and leave real saves an
  assert(h.storage.has('recommand-qa:motion-review:recommand-briefing-v1'));
  assert.match(h.elements.qaNotice.textContent,/기존 플레이 기록과 분리/);
 });
+test('offline launcher shares its bundled Jua font with each chapter',()=>{
+ const h=launcherHarness({seenAll:true});
+ assert.equal((h.html.match(/data:font\/ttf;base64,/g)||[]).length,1);
+ const font=h.elements.uiFont.textContent;
+ assert.match(font,/font-family: "Jua"/);
+ assert.match(font,/SIL OPEN FONT LICENSE/);
+ const bytes=font.match(/data:font\/ttf;base64,([A-Za-z0-9+/=]+)/)[1];
+ assert(Buffer.from(bytes,'base64').equals(fs.readFileSync(new URL('../dist/assets/Jua-Regular.ttf',import.meta.url))));
+ for(const button of h.buttons){
+  button.onclick();
+  assert(h.elements.gameFrame.srcdoc.includes('<style id="uiFont">'+font+'</style>'));
+  assert(!h.elements.gameFrame.srcdoc.includes('__RECOMMAND_UI_FONT_CSS__'));
+ }
+});
 test('software renderer is gated by a valid QA scope and is carried to every chapter',()=>{
  const h=launcherHarness({search:'?qa=garden-soft&renderer=software'});
  for(const button of h.buttons){
