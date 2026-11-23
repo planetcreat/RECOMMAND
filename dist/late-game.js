@@ -312,12 +312,29 @@ if(isSnow){
 if(isSnow){
  // Bury the feet below the wind-scoured surface so the sides meet the snow.
  const buriedFoot=-.34;
+ function snowCrystal(x,z,tipY,lean,rimRadius){
+  const sides=lateSoft?4:6,rootColor=[.43,.56,.63],iceColor=[.67,.79,.83];
+  // Both bands use the same rim vertices. Only the top leans away from the root.
+  const corners=Array.from({length:sides},(_,i)=>{
+   const angle=i*2*Math.PI/sides,dx=Math.cos(angle),dz=Math.sin(angle);
+   return {
+    root:[x+dx*1.5,buriedFoot,z+dz*1.5],
+    rim:[x+dx*rimRadius,.65,z+dz*rimRadius],
+    tip:[x+lean+dx*.12,tipY,z+dz*.12],
+    shade:.78+.22*Math.cos(angle-1)
+   };
+  });
+  for(const [i,a] of corners.entries()){
+   const b=corners[(i+1)%sides];
+   lateArchitecture.quad(a.root,b.root,b.rim,a.rim,rootColor.map(color=>color*a.shade));
+   lateArchitecture.quad(a.rim,b.rim,b.tip,a.tip,iceColor.map(color=>color*a.shade));
+  }
+ }
  for(const side of[-1,1])for(let i=0;i<9;i++){
   const x=side*(20+i%2*3),z=14-i*6.5;
-  const height=4.2+.85*Math.cos(i*1.63+side);
+  const tipY=4.77+.85*Math.cos(i*1.63+side);
   const lean=.45*Math.sin(i*2.1+side);
-  lateArchitecture.cone(x,buriedFoot,z,1.5,.65-buriedFoot,[.43,.56,.63],6,1.2);
-  lateArchitecture.cone(x+lean,.57,z,1.75+.18*Math.cos(i*1.2-side),height,[.67,.79,.83],7,.12);
+  snowCrystal(x,z,tipY,lean,1.35+.11*Math.cos(i*1.2-side));
   lateObstacles.push({x,z,r:1.35});
  }
  for(const [x,z]of[[-18,5],[18,-5],[-19,-19],[19,-30]]){

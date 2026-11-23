@@ -5,15 +5,17 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import {clamp} from '../dist/math.js';
 import {LATE_PLANETS} from '../dist/late-story.js';
+import {Geometry} from '../dist/engine.js';
+
+const worldSource=fs.readFileSync(new URL('../dist/late-game.js',import.meta.url),'utf8').replaceAll('\r\n','\n');
 
 function stationPanels(){
- const source=fs.readFileSync(new URL('../dist/late-game.js',import.meta.url),'utf8').replaceAll('\r\n','\n');
- const start=source.indexOf('function latePath(');
- const end=source.indexOf('\nif(isSnow){\n // Bury the feet',start);
+ const start=worldSource.indexOf('function latePath(');
+ const end=worldSource.indexOf('\nif(isSnow){\n // Bury the feet',start);
  assert(start>=0&&end>start);
  const panels=[];
  const lateArchitecture={quad(a,b,c,d){panels.push([a,b,c,d]);}};
- vm.runInNewContext(source.slice(start,end),{isSnow:false,lateConfig:LATE_PLANETS.hwanseong,lateArchitecture,clamp});
+ vm.runInNewContext(worldSource.slice(start,end),{isSnow:false,lateConfig:LATE_PLANETS.hwanseong,lateArchitecture,clamp});
  return panels;
 }
 
@@ -42,6 +44,35 @@ test('station corridor narrows at the south end and connects to the north approa
   const xs=panel.map(point=>point[0]),zs=panel.map(point=>point[2]);
   return Math.min(...xs)<0&&Math.max(...xs)>0&&Math.min(...zs)<-42.6&&Math.max(...zs)>-42.6;
  }));
+});
+
+test('snow crystal roots and faces share a seam in both detail modes',()=>{
+ const start=worldSource.indexOf('\nif(isSnow){\n // Bury the feet');
+ const end=worldSource.indexOf('\nfor(const o of lateConfig.objects.filter',start);
+ assert(start>=0&&end>start);
+ for(const lateSoft of [false,true]){
+  let faces=[];
+  const formations=[];
+  const lateArchitecture=new Geometry();
+  lateArchitecture.quad=(...args)=>faces.push(args.slice(0,4));
+  const lateObstacles={push(obstacle){formations.push({obstacle,faces});faces=[];}};
+  vm.runInNewContext(worldSource.slice(start,end),{isSnow:true,lateSoft,lateConfig:LATE_PLANETS.mumyeong,lateArchitecture,lateObstacles});
+  const crystals=formations.filter(({obstacle})=>obstacle.r===1.35);
+  assert.equal(crystals.length,18);
+  for(const {obstacle,faces} of crystals){
+   const heights=[...new Set(faces.flat().map(point=>point[1]))].sort((a,b)=>a-b);
+   assert.equal(heights.length,3,'crystal root and upper faces need a common height');
+   const [root,seam,tip]=heights;
+   assert(root<-.25);
+   assert(tip>seam);
+   const rim=lower=>new Set(faces.filter(face=>face.some(point=>point[1]===(lower?root:tip)))
+    .flat().filter(point=>point[1]===seam).map(point=>point.join(',')));
+   assert.equal(rim(true).size,lateSoft?4:6);
+   assert.deepEqual(rim(true),rim(false));
+   assert(faces.flat().filter(point=>point[1]===root).every(point=>
+    Math.hypot(point[0]-obstacle.x,point[2]-obstacle.z)<1.51));
+  }
+ }
 });
 
 test('late chapters preserve separate records and reject fabricated endings',()=>{for(const planet of ['mumyeong','hwanseong']){const s=newLateState(planet);assert.deepEqual(decodeLate(JSON.stringify(s),planet),s);s.boss=true;assert.throws(()=>decodeLate(s,planet));}});
