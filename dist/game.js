@@ -7,7 +7,7 @@ import {PLANETS,BOSS,SCOUT,OLD_SURVEY,ECHO_SITES,canOfferSurvey,beginPulseSequen
 import {clamp,distance,normalize,inSector,resolveMove,seeded,MotionPresenter,CharacterMotor,FixedStepClock,motionTelemetry} from './math.js';
 import {canRewrite,discoveredTriggers} from './story.js';
 import {CombatVFX} from './vfx.js';
-import {decorateGarden} from './environment.js';
+import {decorateGarden,buildGardenRoad} from './environment.js';
 import {WorldArt,visualTerrain} from './art.js';
 import {makeBossModel} from './boss-models.js';
 const $=id=>document.getElementById(id),TAU=Math.PI*2,SAVE='recommand-save-v1';
@@ -111,7 +111,7 @@ for(const s of [...seals,...memories,...ECHO_SITES]){
 props.disc(0,.08,11,3,[.35,.43,.36]);props.ring(0,.1,11,2.7,[.74,.73,.48],64,.12);
 for(const x of[-2.6,2.6]){portalGeo.cone(x,.15,11,.5,3.5,[.38,.47,.4],6,.35);portalGeo.cone(x,3.65,11,.48,.8,[.66,.75,.51],6);obstacles.push({x,z:11,r:.5});}
 props.cone(OLD_SURVEY.x,groundY(OLD_SURVEY.x,OLD_SURVEY.z),OLD_SURVEY.z,.9,.4,[.4,.47,.39],6,.8);obstacles.push({...OLD_SURVEY,r:.7});
-const roadGeo=new Geometry();for(const[a,b]of roads){const dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz),nx=-dz/len*1.45,nz=dx/len*1.45;for(let t=0;t<len;t+=2){const t2=Math.min(len,t+2),point=(t,side)=>{const x=a[0]+dx*t/len+nx*side,z=a[1]+dz*t/len+nz*side;return[x,groundY(x,z)+.08,z];};roadGeo.quad(point(t,-1),point(t,1),point(t2,1),point(t2,-1),[.43,.48,.32]);}}const roadMesh=R.upload(roadGeo);
+const roadGeo=buildGardenRoad(new Geometry(),roads,{height:groundY,terrain:visualTerrain,soft:SOFT});const roadMesh=R.upload(roadGeo);
 const gardenLamps=decorateGarden(props,{height:groundY,pathDistance:pathDist,routes:roads,landmarks:[npc,portal,fracture,SCOUT,OLD_SURVEY,...ECHO_SITES,...memories,...seals.map(p=>({...p,clearance:8})),{x:13,z:-69,clearance:9}],obstacles,soft:SOFT});
 const worldMesh=R.upload(ground),propMesh=R.upload(props),gridMesh=R.upload(gridGeo),treeMesh=R.upload(treeGeo),portalMesh=R.upload(portalGeo);
 // A quiet environmental clue: no marker, no label, no objective counter.
