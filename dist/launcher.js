@@ -18,6 +18,7 @@ const qaSoftware=!!qaScope&&rendererOptions.length===1&&rendererOptions[0]==='so
 const journeyStorage=qaScope?createScopedStorage(localStorage,qaScope):localStorage;
 if(qaScope){const note=document.getElementById('qaNotice');if(note){note.hidden=false;note.textContent='별도 검증 저장 · '+qaScope+' · 기존 플레이 기록과 분리'+(qaSoftware?' · CPU 3D':'');}}
 const frame=document.getElementById('gameFrame'),status=document.getElementById('launcherStatus'),modal=document.getElementById('briefing');
+const fontCss=document.getElementById('uiFont').textContent;
 const seen=readBriefingSeen(k=>journeyStorage.getItem(k));let selected=null,childReady=false,loadTimer,pages=[],pageIndex=0,pendingChapter=null,replaying=false,voiceOn=false;
 const musicPrefs=readMusicSettings(k=>journeyStorage.getItem(k));
 const music=new PlanetMusic({contextFactory:()=>new (window.AudioContext||window.webkitAudioContext)(),repeat:(f,ms)=>window.setInterval(f,ms),cancel:id=>window.clearInterval(id),delay:(f,ms)=>setTimeout(f,ms),onError:()=>{document.getElementById('musicStatus').textContent='음악을 재생할 수 없습니다. 음악 켜기를 다시 눌러 주세요.';document.getElementById('musicToggle').textContent='음악 켜기';}});
@@ -32,7 +33,7 @@ musicVolume.oninput=()=>{music.setVolume(Number(musicVolume.value)/100);saveMusi
 function selectMusic(chapter){music.select(chapter);if(musicPrefs.enabled&&!music.enabled){musicPrefs.enabled=false;void music.enable(true).then(ok=>{if(ok)musicLabel();});}musicLabel();}
 const backupUI=createJourneyBackupUI({document,window,store:journeyStorage,frame,names,current:()=>selected,ready:()=>childReady,reload:loadChapter,status:setStatus});
 function setStatus(message){status.hidden=false;document.getElementById('loadRetry').hidden=!selected;document.getElementById('loadMessage').textContent=message;}
-function loadChapter(name){childReady=false;selected=name;clearTimeout(loadTimer);setStatus('행성을 여는 중입니다…');document.getElementById('welcome').hidden=true;frame.hidden=false;frame.srcdoc=chapterDocument(chapters[name],assets,qaScope,qaSoftware);document.title=names[name]+' · RE:COMMAND '+version;loadTimer=setTimeout(()=>setStatus('시작이 지연되고 있습니다. Chrome 또는 Edge에서 실행하거나 다시 열기를 눌러 주세요.'),15000);}
+function loadChapter(name){childReady=false;selected=name;clearTimeout(loadTimer);setStatus('행성을 여는 중입니다…');document.getElementById('welcome').hidden=true;frame.hidden=false;const html=chapters[name].replace('__RECOMMAND_UI_FONT_CSS__',()=>fontCss);frame.srcdoc=chapterDocument(html,assets,qaScope,qaSoftware);document.title=names[name]+' · RE:COMMAND '+version;loadTimer=setTimeout(()=>setStatus('시작이 지연되고 있습니다. Chrome 또는 Edge에서 실행하거나 다시 열기를 눌러 주세요.'),15000);}
 function openChapter(name){if(backupUI.blocked||backupUI.isOpen())return;if(!Object.hasOwn(chapters,name))return;selectMusic(name);const next=pendingBriefing(name,seen);if(next.length){showBriefing(next,name,false);return;}loadChapter(name);}
 const narrator=new NarrationPlayer({makeAudio:src=>new window.Audio(src),duck:v=>music.duck(v),status:state=>{document.getElementById('voiceStatus').textContent=state==='playing'?'한국어 나레이션을 재생 중입니다.':state==='ended'?'음성 안내를 마쳤습니다.':'음성을 재생하지 못했습니다. 글로 계속할 수 있습니다.';}});
 function cancelVoice(){narrator.stop();}

@@ -1,4 +1,5 @@
 import fs from 'node:fs';import vm from 'node:vm';
+import {inlineUiFont} from './build-font.mjs';
 const read=p=>fs.readFileSync(p,'utf8');
 const atlas='data:image/png;base64,'+fs.readFileSync('dist/assets/combat-atlas.png').toString('base64');
 function bundle(entry,modules,css,output){
@@ -11,7 +12,8 @@ function bundle(entry,modules,css,output){
  source=source.replace("else location.href=(chapter==='yuon'?'index':chapter)+'.html';","else location.href=({yuon:'RECOMMAND',swaehae:'SWAEHAE',mumyeong:'MUMYEONG',hwanseong:'HWANSEONG'})[chapter]+'.html';");
  new vm.Script(source);
  html=html.replace('<script src="boot.js"></script>',()=>'<script>'+read('dist/boot.js')+'</script>');
- html=html.replace('<link rel="stylesheet" href="'+css+'">',()=>'<style>'+read('dist/'+css)+'</style>');
+ const pageCss=read('dist/'+css).replace(/^@import url\("ui-font\.css"\);\r?\n/,'');
+ html=html.replace('<link rel="stylesheet" href="'+css+'">',()=>inlineUiFont+'<style>'+pageCss+'</style>');
  html=html.replace(/<script type="module" src="[^"]+"><\/script>/,()=>'<script type="module">'+source.replace(/<\/script/gi,'<\\/script')+'</script>');
  const chapterFiles={index:'RECOMMAND',swaehae:'SWAEHAE',mumyeong:'MUMYEONG',hwanseong:'HWANSEONG'};
  html=html.replace(/href="(index|swaehae|mumyeong|hwanseong)\.html"/g,(_,chapter)=>`href="${chapterFiles[chapter]}.html"`);

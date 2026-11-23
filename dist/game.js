@@ -8,7 +8,7 @@ import {clamp,distance,normalize,inSector,resolveMove,seeded,MotionPresenter,Cha
 import {canRewrite,discoveredTriggers} from './story.js';
 import {CombatVFX} from './vfx.js';
 import {decorateGarden,buildGardenRoad} from './environment.js';
-import {WorldArt,visualTerrain} from './art.js';
+import {WorldArt,visualTerrain,UI_CANVAS_FONT,whenUiFontReady} from './art.js';
 import {makeBossModel} from './boss-models.js';
 const $=id=>document.getElementById(id),TAU=Math.PI*2,SAVE='recommand-save-v1';
 let R;
@@ -153,8 +153,12 @@ function sprite(kind,variant=0,frame=0,back=false){
 }
 const heroSprites=[sprite('hero',0,0,false),sprite('hero',0,1,false),sprite('hero',0,0,true),sprite('hero',0,1,true)],npcTex=sprite('npc'),scoutTex=sprite('npc',1),bossTex=sprite('boss'),glowTex=sprite('glow');
 const slimeTextures=Array.from({length:3},(_,i)=>[sprite('slime',i,0),sprite('slime',i,1)]);
-function label(text,color='#e8e5bd'){return R.texture('label'+text,(c,w,h)=>{c.font='500 22px "Malgun Gothic",sans-serif';c.textAlign='center';c.shadowColor='#0b2529';c.shadowBlur=5;c.fillStyle=color;c.fillText(text,w/2,34);},512,64);}
-const labels={remains:label('수호자의 기억'),scout:label(SCOUT.name),survey:label(OLD_SURVEY.name),echoes:ECHO_SITES.map(e=>label(e.name)),npc:label('루미 · 기록자'),portal:label('별의 관문'),boss:label(BOSS.name,'#f0d39b'),seals:seals.map(s=>label(s.name)),memories:memories.map(s=>label(s.name))};
+function label(text,color='#e8e5bd'){return R.texture('label'+text,(c,w,h)=>{c.font='22px '+UI_CANVAS_FONT;c.textAlign='center';c.shadowColor='#0b2529';c.shadowBlur=5;c.fillStyle=color;c.fillText(text,w/2,34);},512,64);}
+let labels={echoes:[],seals:[],memories:[]};
+whenUiFontReady(()=>{
+ labels={remains:label('수호자의 기억'),scout:label(SCOUT.name),survey:label(OLD_SURVEY.name),echoes:ECHO_SITES.map(e=>label(e.name)),npc:label('루미 · 기록자'),portal:label('별의 관문'),boss:label(BOSS.name,'#f0d39b'),seals:seals.map(s=>label(s.name)),memories:memories.map(s=>label(s.name))};
+});
+function drawLabel(texture,x,y,z,width,height){if(texture)R.sprite(texture,x,y,z,width,height);}
 const enemies=[];
 for(let i=0;i<3;i++)for(let j=0;j<3;j++){const a=j/3*TAU;enemies.push({id:i*3+j,x:seals[i].x+Math.cos(a)*4,z:seals[i].z+Math.sin(a)*4,home:{x:seals[i].x+Math.cos(a)*4,z:seals[i].z+Math.sin(a)*4},hp:48,max:48,type:i,wind:0,cd:.5,jitter:j,hit:0});}
 const boss={id:99,x:13,z:-69,home:{x:13,z:-69},hp:300,max:300,type:3,wind:0,cd:2,hit:0};enemies.push(boss);
@@ -319,16 +323,16 @@ function draw(alpha=1,dt=1/60){
  for(const lamp of gardenLamps)if(visible(lamp))R.sprite(glowTex,lamp.x,lamp.y-.5,lamp.z,1.1,1.1,.35+Math.sin(time*2+lamp.x)*.05);
  if(state.memories.every(Boolean)&&Math.sin(time*.8)>.98)R.sprite(glowTex,fracture.x,.87,fracture.z,.15,.15,.35);
  const draws=[];
- draws.push(()=>R.sprite(worldArt.actor('scout',scoutTex),SCOUT.x,groundY(SCOUT.x,SCOUT.z),SCOUT.z,1.9,2.5));draws.push(()=>R.sprite(labels.scout,SCOUT.x,3.1,SCOUT.z,5.5,.65));
- if(distance(player,OLD_SURVEY)<7)draws.push(()=>R.sprite(labels.survey,OLD_SURVEY.x,1.3,OLD_SURVEY.z,4.5,.55));
- if(state.sidequest===1)for(let i=0;i<2;i++){const s=ECHO_SITES[i];if(visible(s))draws.push(()=>R.sprite(labels.echoes[i],s.x,3,s.z,4.5,.6));}
+ draws.push(()=>R.sprite(worldArt.actor('scout',scoutTex),SCOUT.x,groundY(SCOUT.x,SCOUT.z),SCOUT.z,1.9,2.5));draws.push(()=>drawLabel(labels.scout,SCOUT.x,3.1,SCOUT.z,5.5,.65));
+ if(distance(player,OLD_SURVEY)<7)draws.push(()=>drawLabel(labels.survey,OLD_SURVEY.x,1.3,OLD_SURVEY.z,4.5,.55));
+ if(state.sidequest===1)for(let i=0;i<2;i++){const s=ECHO_SITES[i];if(visible(s))draws.push(()=>drawLabel(labels.echoes[i],s.x,3,s.z,4.5,.6));}
  draws.push(()=>R.sprite(worldArt.actor('lumi',npcTex),npc.x,groundY(npc.x,npc.z),npc.z,1.9,2.5));
- draws.push(()=>R.sprite(labels.npc,npc.x,3.1,npc.z,5,.62));
- draws.push(()=>R.sprite(labels.portal,0,4.4,11,5,.62));
- for(let i=0;i<3;i++){const s=seals[i];if(!visible(s))continue;draws.push(()=>{R.sprite(glowTex,s.x,1.5+Math.sin(time*2)*.15,s.z,3,3,state.seals[i]?.85:.32);R.sprite(labels.seals[i],s.x,3.3,s.z,5,.62);});}
- for(let i=0;i<2;i++){const s=memories[i];if(visible(s))draws.push(()=>{R.sprite(glowTex,s.x,1.5,s.z,1.6,1.6,.5);R.sprite(labels.memories[i],s.x,3,s.z,5,.62);});}
- for(const e of enemies){if(e.hp<=0||!visible(e))continue;const isBoss=e===boss,w=isBoss?4.8:2.2,h=isBoss?5.2:2;draws.push(()=>{if(isBoss)R.drawDynamic(makeBossModel('ormun',e.x,groundY(e.x,e.z),e.z,time,e,SOFT));else R.sprite(worldArt.actor('slime'+e.type+(Math.floor(time*2+(e.jitter||0))%2?'b':''),slimeTextures[e.type][Math.floor(time*4+(e.jitter||0))%2]),e.x,groundY(e.x,e.z)+Math.sin(time*4)*.06,e.z,w,h,e.hit>0?.45:1);if(isBoss)R.sprite(labels.boss,e.x,6.1,e.z,6,.75);if(e.hp<e.max||e.wind>0){const tex=R.texture('hp'+e.id+'-'+Math.ceil(e.hp/10),c=>{c.fillStyle='#143632';c.fillRect(10,45,108,12);c.fillStyle=isBoss?'#dfb271':'#bfd495';c.fillRect(12,47,104*e.hp/e.max,8);});R.sprite(tex,e.x,h+.4,e.z,isBoss?4:2.6,.65);}});}
- if(state.boss&&visible(boss))draws.push(()=>{R.sprite(glowTex,boss.x,groundY(boss.x,boss.z)+1.2+Math.sin(time*1.5)*.1,boss.z,2.3,2.3,.75);R.sprite(labels.remains,boss.x,groundY(boss.x,boss.z)+3,boss.z,5,.65);});
+ draws.push(()=>drawLabel(labels.npc,npc.x,3.1,npc.z,5,.62));
+ draws.push(()=>drawLabel(labels.portal,0,4.4,11,5,.62));
+ for(let i=0;i<3;i++){const s=seals[i];if(!visible(s))continue;draws.push(()=>{R.sprite(glowTex,s.x,1.5+Math.sin(time*2)*.15,s.z,3,3,state.seals[i]?.85:.32);drawLabel(labels.seals[i],s.x,3.3,s.z,5,.62);});}
+ for(let i=0;i<2;i++){const s=memories[i];if(visible(s))draws.push(()=>{R.sprite(glowTex,s.x,1.5,s.z,1.6,1.6,.5);drawLabel(labels.memories[i],s.x,3,s.z,5,.62);});}
+ for(const e of enemies){if(e.hp<=0||!visible(e))continue;const isBoss=e===boss,w=isBoss?4.8:2.2,h=isBoss?5.2:2;draws.push(()=>{if(isBoss)R.drawDynamic(makeBossModel('ormun',e.x,groundY(e.x,e.z),e.z,time,e,SOFT));else R.sprite(worldArt.actor('slime'+e.type+(Math.floor(time*2+(e.jitter||0))%2?'b':''),slimeTextures[e.type][Math.floor(time*4+(e.jitter||0))%2]),e.x,groundY(e.x,e.z)+Math.sin(time*4)*.06,e.z,w,h,e.hit>0?.45:1);if(isBoss)drawLabel(labels.boss,e.x,6.1,e.z,6,.75);if(e.hp<e.max||e.wind>0){const tex=R.texture('hp'+e.id+'-'+Math.ceil(e.hp/10),c=>{c.fillStyle='#143632';c.fillRect(10,45,108,12);c.fillStyle=isBoss?'#dfb271':'#bfd495';c.fillRect(12,47,104*e.hp/e.max,8);});R.sprite(tex,e.x,h+.4,e.z,isBoss?4:2.6,.65);}});}
+ if(state.boss&&visible(boss))draws.push(()=>{R.sprite(glowTex,boss.x,groundY(boss.x,boss.z)+1.2+Math.sin(time*1.5)*.1,boss.z,2.3,2.3,.75);drawLabel(labels.remains,boss.x,groundY(boss.x,boss.z)+3,boss.z,5,.65);});
  const frame=pose.frame;
  draws.push(()=>R.sprite(worldArt.hero(pose,heroSprites[frame]),pose.x,groundY(pose.x,pose.z)+pose.bob,pose.z,1.9*pose.width,2.6*pose.height,player.inv>0&&Math.floor(time*16)%2?.45:1));
  // Alpha cutoff writes depth, so opaque sprite pixels occlude correctly with 3D trees.
@@ -341,7 +345,7 @@ function drawMap(){
  const c=$('minimap').getContext('2d');c.clearRect(0,0,200,200);c.save();c.beginPath();c.arc(100,100,97,0,TAU);c.clip();c.fillStyle='#153a38';c.fillRect(0,0,200,200);
  const xy=(x,z)=>[100+x*.82,100+z*.82];
  c.strokeStyle='#79927466';c.lineWidth=3;for(const[a,b]of roads){c.beginPath();c.moveTo(...xy(...a));c.lineTo(...xy(...b));c.stroke();}
- c.font='9px sans-serif';c.textAlign='center';c.fillStyle='#c7cfa8';c.fillText('N',100,17);
+ c.font='9px '+UI_CANVAS_FONT;c.textAlign='center';c.fillStyle='#c7cfa8';c.fillText('N',100,17);
  for(let i=0;i<3;i++){const[x,y]=xy(seals[i].x,seals[i].z);c.fillStyle=state.seals[i]?'#d5e3a0':'#d8bd79';c.save();c.translate(x,y);c.rotate(Math.PI/4);c.fillRect(-3,-3,6,6);c.restore();}
  for(let i=0;i<2;i++){const[x,y]=xy(memories[i].x,memories[i].z);c.fillStyle=state.memories[i]?'#859f91':'#9cdbd5';c.fillRect(x-2,y-2,4,4);}
  for(const e of enemies)if(e.hp>0){const[x,y]=xy(e.x,e.z);c.fillStyle=e===boss?'#e0aa7a':'#bd8177';c.beginPath();c.arc(x,y,e===boss?4:1.7,0,TAU);c.fill();}
