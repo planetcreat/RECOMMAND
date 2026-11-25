@@ -26,7 +26,10 @@ for(const [tag,clip] of Object.entries(narrationManifest)){
  narrationClips[tag]='data:audio/mpeg;base64,'+bytes.toString('base64');
 }
 const runtime=['storage-scope.js','save.js','tide.js','late-state.js','journey-backup.js','journey-backup-ui.js'].map(f=>read(f).replace(/^import .*;\r?\n/gm,'').replace(/\bexport /g,'')).join('\n')+'\n'+read('narration.js').replace(/\bexport /g,'')+'\n'+read('music.js').replace(/\bexport /g,'')+'\n'+read('briefing.js').replace(/\bexport /g,'')+'\n'+read('launcher.js').replace(/^import .*;\r?\n/gm,'');
-const script=`const chapters=${JSON.stringify(chapters)},assets=${JSON.stringify(assets)},names=${JSON.stringify(names)},version=${JSON.stringify(version)},narrationClips=${JSON.stringify(narrationClips)};\n`+runtime;
+const musicClips=Object.fromEntries(entries.map(([chapter])=>[
+ chapter,fs.readFileSync('dist/audio/music/'+chapter+'.ogg').toString('base64')
+]));
+const script=`const chapters=${JSON.stringify(chapters)},assets=${JSON.stringify(assets)},names=${JSON.stringify(names)},version=${JSON.stringify(version)},narrationClips=${JSON.stringify(narrationClips)},musicClips=${JSON.stringify(musicClips)};\n`+runtime;
 new vm.Script(script);
 const buttons=entries.map(([id,,name])=>`<button data-chapter="${id}" disabled>${name}</button>`).join('');
 const html=`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="네 행성을 탐험하고, 오래된 명령을 다시 쓰는 2.5D 액션 어드벤처."><title>RE:COMMAND ${version} · 네 행성</title>${inlineUiFont}<style>${read('launcher.css')}</style></head><body>

@@ -4,7 +4,29 @@
 
 ## 음악
 
-통합 실행판의 네 행성은 각각 「남겨진 숨」, 「닻 아래의 물결」, 「눈에 남은 이름」, 「대답이 닿는 궤도」를 연주한다. 이 프로젝트에서 작성한 화음과 선율 데이터를 Web Audio API로 재생하며 외부 음악 파일을 내려받지 않는다. 기본은 꺼짐이다. 오른쪽 위 배경음악 메뉴에서 켜기·끄기와 음량을 조절한다. 음악 설정만 `recommand-music-v1`에 보관하며 게임 진행 기록과 분리한다.
+통합 실행판은 네 곡의 스테레오 Opus 음원을 내장하고 Web Audio에서 루프 재생한다. 기본은 꺼짐이다. 오른쪽 위 배경음악 메뉴에서 켜기·끄기와 음량을 조절한다. 음악 설정은 `recommand-music-v1`에 보관하며 게임 진행 기록과 분리한다.
+
+- 유온 「남겨진 숨」은 82 BPM의 업라이트 피아노와 플루트 중심이다.
+- 쇄해 「닻 아래의 물결」은 느린 두 박을 하프 세 음으로 나누고 첼로 선율을 얹었다. BPM은 큰 박 기준 58이다.
+- 무명 「눈에 남은 이름」은 57 BPM의 세 박에 피아노와 첼로, 가끔 울리는 종을 배치했다.
+- 환성 「대답이 닿는 궤도」는 52 BPM으로 낮은 현을 길게 남기고 피아노를 띄엄띄엄 배치했다.
+
+선율·화성·믹스는 이 프로젝트에서 작성했다. 개별 악기 녹음은 Versilian Studios의 [VSCO 2 Community Edition](https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e)에서 가져왔다. 사용한 업라이트 피아노는 Simon Dalzell(Ivy Audio)이 녹음했다. 이 라이브러리의 녹음 배포 조건은 [CC0 1.0](https://github.com/sgossner/VSCO-2-CE/blob/440300901dfe9275fd84e0b7763af1f8443ae62e/LICENSE)이다. 참고곡 MP3는 배포물에 포함되지 않는다.
+
+일반 실행판 빌드는 믹스 완료 파일 `dist/audio/music/*.ogg`를 내장한다. 다시 믹싱할 때만 `node render-music.mjs <샘플 폴더> [ffmpeg]`를 사용한다. 샘플 폴더에는 고정 버전 원본에서 아래 녹음을 이름에 맞춰 둔다.
+
+| 로컬 이름 | VSCO 2 CE 원본 경로 |
+|---|---|
+| piano-low.wav | `Keys/Upright Piano/Player_dyn1_rr1_018.wav` |
+| piano-high.wav | `Keys/Upright Piano/Player_dyn2_rr1_030.wav` |
+| harp-low.wav | `Strings/Harp/KSHarp_C3_mf.wav` |
+| harp-high.wav | `Strings/Harp/KSHarp_D4_mf.wav` |
+| cello-low.wav | `Strings/Cello Section/susvib/susvib_D2_v1_1.wav` |
+| cello-mid.wav | `Strings/Cello Section/susvib/susvib_C3_v1_1.wav` |
+| cello-high.wav | `Strings/Cello Section/susvib/susvib_G3_v1_1.wav` |
+| flute-mid.wav | `Woodwinds/Flute/susvib/LDFlute_susvib_A4_v1_1.wav` |
+| flute-high.wav | `Woodwinds/Flute/susvib/LDFlute_susvib_E5_v1_1.wav` |
+| glock.wav | `Percussion/Glock/glock_medium_C6.wav` |
 
 행성 이동 때 이전 곡을 줄이고 새 곡을 올린다. 숨긴 탭에서는 연주 예약과 오디오 컨텍스트를 정지한다. 음악은 통합판에 제공하며 개별 행성 HTML과 보스전 별도 음악은 후속 작업이다.
 

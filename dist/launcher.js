@@ -1,7 +1,7 @@
 import {createScopedStorage,chapterDocument} from './storage-scope.js';
 import {createJourneyBackupUI} from './journey-backup-ui.js';
 import {PROLOGUE,BRIEFINGS,BRIEFING_KEY,readBriefingSeen,pendingBriefing} from './briefing.js';
-import {PlanetMusic,PLANET_SCORES,MUSIC_KEY,readMusicSettings} from './music.js';
+import {PlanetMusic,PLANET_TRACKS,MUSIC_KEY,readMusicSettings} from './music.js';
 import {NarrationPlayer} from './narration.js';
 // chapters, assets and names are embedded by build-launcher.mjs.
 const launchParams=new URLSearchParams(window.location?.search||'');
@@ -21,12 +21,12 @@ const frame=document.getElementById('gameFrame'),status=document.getElementById(
 const fontCss=document.getElementById('uiFont').textContent;
 const seen=readBriefingSeen(k=>journeyStorage.getItem(k));let selected=null,childReady=false,loadTimer,pages=[],pageIndex=0,pendingChapter=null,replaying=false,voiceOn=false;
 const musicPrefs=readMusicSettings(k=>journeyStorage.getItem(k));
-const music=new PlanetMusic({contextFactory:()=>new (window.AudioContext||window.webkitAudioContext)(),repeat:(f,ms)=>window.setInterval(f,ms),cancel:id=>window.clearInterval(id),delay:(f,ms)=>setTimeout(f,ms),onError:()=>{document.getElementById('musicStatus').textContent='음악을 재생할 수 없습니다. 음악 켜기를 다시 눌러 주세요.';document.getElementById('musicToggle').textContent='음악 켜기';}});
+const music=new PlanetMusic({contextFactory:()=>new (window.AudioContext||window.webkitAudioContext)(),clips:musicClips,delay:(f,ms)=>setTimeout(f,ms),onError:()=>{document.getElementById('musicStatus').textContent='음악을 재생할 수 없습니다. 음악 켜기를 다시 눌러 주세요.';document.getElementById('musicToggle').textContent='음악 켜기';document.getElementById('musicToggle').setAttribute?.('aria-pressed','false');}});
 music.setVolume(musicPrefs.volume);
 const musicToggle=document.getElementById('musicToggle'),musicVolume=document.getElementById('musicVolume');
 musicVolume.value=Math.round(musicPrefs.volume*100);
 function saveMusic(){try{journeyStorage.setItem(MUSIC_KEY,JSON.stringify({enabled:music.enabled,volume:music.volume}));}catch{}}
-function musicLabel(){musicToggle.textContent=music.enabled?'음악 끄기':'음악 켜기';musicToggle.setAttribute?.('aria-pressed',String(music.enabled));document.getElementById('musicStatus').textContent=(music.enabled?'재생 · ':'선택한 곡 · ')+PLANET_SCORES[music.chapter].title;}
+function musicLabel(){musicToggle.textContent=music.enabled?'음악 끄기':'음악 켜기';musicToggle.setAttribute?.('aria-pressed',String(music.enabled));document.getElementById('musicStatus').textContent=(music.enabled?'재생 · ':'선택한 곡 · ')+PLANET_TRACKS[music.chapter];}
 musicLabel();
 musicToggle.onclick=async()=>{musicPrefs.enabled=false;const ok=await music.enable(!music.enabled);if(ok)musicLabel();saveMusic();};
 musicVolume.oninput=()=>{music.setVolume(Number(musicVolume.value)/100);saveMusic();};
