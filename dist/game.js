@@ -6,7 +6,7 @@ import {snapshot,decode} from './save.js';
 import {PLANETS,BOSS,SCOUT,OLD_SURVEY,ECHO_SITES,canOfferSurvey,beginPulseSequence,advancePulseSequence} from './content.js';
 import {clamp,distance,normalize,inSector,resolveMove,seeded,MotionPresenter,CharacterMotor,FixedStepClock,motionTelemetry} from './math.js';
 import {canRewrite,discoveredTriggers} from './story.js';
-import {CombatVFX} from './vfx.js';
+import {CombatVFX,combatSpritePose} from './vfx.js';
 import {decorateGarden,buildGardenRoad} from './environment.js';
 import {WorldArt,visualTerrain,UI_CANVAS_FONT,whenUiFontReady} from './art.js';
 import {makeBossModel} from './boss-models.js';
@@ -334,7 +334,8 @@ function draw(alpha=1,dt=1/60){
  for(const e of enemies){if(e.hp<=0||!visible(e))continue;const isBoss=e===boss,w=isBoss?4.8:2.2,h=isBoss?5.2:2;draws.push(()=>{if(isBoss)R.drawDynamic(makeBossModel('ormun',e.x,groundY(e.x,e.z),e.z,time,e,SOFT));else R.sprite(worldArt.actor('slime'+e.type+(Math.floor(time*2+(e.jitter||0))%2?'b':''),slimeTextures[e.type][Math.floor(time*4+(e.jitter||0))%2]),e.x,groundY(e.x,e.z)+Math.sin(time*4)*.06,e.z,w,h,e.hit>0?.45:1);if(isBoss)drawLabel(labels.boss,e.x,6.1,e.z,6,.75);if(e.hp<e.max||e.wind>0){const tex=R.texture('hp'+e.id+'-'+Math.ceil(e.hp/10),c=>{c.fillStyle='#143632';c.fillRect(10,45,108,12);c.fillStyle=isBoss?'#dfb271':'#bfd495';c.fillRect(12,47,104*e.hp/e.max,8);});R.sprite(tex,e.x,h+.4,e.z,isBoss?4:2.6,.65);}});}
  if(state.boss&&visible(boss))draws.push(()=>{R.sprite(glowTex,boss.x,groundY(boss.x,boss.z)+1.2+Math.sin(time*1.5)*.1,boss.z,2.3,2.3,.75);drawLabel(labels.remains,boss.x,groundY(boss.x,boss.z)+3,boss.z,5,.65);});
  const frame=pose.frame;
- draws.push(()=>R.sprite(worldArt.hero(pose,heroSprites[frame]),pose.x,groundY(pose.x,pose.z)+pose.bob,pose.z,1.9*pose.width,2.6*pose.height,player.inv>0&&Math.floor(time*16)%2?.45:1));
+ const combatPose=combatSpritePose(effects,alpha,pose.dashBlend,player.inv,time);
+ draws.push(()=>R.sprite(worldArt.hero(pose,heroSprites[frame]),pose.x,groundY(pose.x,pose.z)+pose.bob,pose.z,1.9*pose.width*combatPose.width,2.6*pose.height*combatPose.height,combatPose.opacity));
  // Alpha cutoff writes depth, so opaque sprite pixels occlude correctly with 3D trees.
  for(const d of draws)d();
  for(let i=0;i<26;i++){const x=camX+Math.sin(i*19.7+time*.09)*25,z=camZ+Math.cos(i*13.1+time*.08)*28;R.sprite(glowTex,x,1.5+Math.sin(time*.5+i),z,.25,.25,.55);}

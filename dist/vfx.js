@@ -1,6 +1,20 @@
 import {Geometry} from './engine.js';
 // Presentation only. No collision, health, cooldown or gameplay random stream is touched.
 export const FX_PALETTES={slash:[.65,.95,.86],wave:[.35,.85,.88],enemy:[.95,.3,.19],boss:[1,.65,.24]};
+export function combatSpritePose(effects,alpha,dashBlend,invulnerable,clock){
+ const unit=value=>Math.min(1,Math.max(0,value));
+ let pulse=0;
+ for(let i=effects.length-1;i>=0;i--){
+  const effect=effects[i];
+  if(effect.kind!=='slash'&&effect.kind!=='wave')continue;
+  const progress=unit(1-(effect.life+(1-unit(alpha))/60)/effect.max);
+  pulse=Math.sin(Math.PI*progress**.68)**2*(effect.kind==='slash'?1:.72);
+  break;
+ }
+ const dash=unit(dashBlend/.86),dashFade=.35*dash*dash*(3-2*dash);
+ const flash=.48*(.5+.5*Math.sin(clock*38))*unit(invulnerable/.12);
+ return {width:1+.14*pulse,height:1-.095*pulse,opacity:1-Math.max(dashFade,flash)};
+}
 export function effectFrame(effect){return Math.min(3,Math.max(0,Math.floor((1-effect.life/effect.max)*4)));}
 export function floorQuad(x,y,z,r,angle=0){const c=Math.cos(angle),s=Math.sin(angle);return[[-1,1],[1,1],[1,-1],[-1,-1]].map(([a,b])=>[x+(a*c-b*s)*r,y,z+(a*s+b*c)*r]);}
 export function uprightQuad(x,y,z,w,h,angle=0,tilt=0){const c=Math.cos(angle),s=Math.sin(angle);return[[-.5,0],[.5,0],[.5,1],[-.5,1]].map(([a,b])=>[x+a*w*c+b*h*tilt*s,y+b*h,z+a*w*s-b*h*tilt*c]);}

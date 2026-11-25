@@ -4,7 +4,7 @@ import {installBackupBridge} from './backup-bridge.js';
 import {Renderer,Geometry} from './engine.js';
 import {SoftwareRenderer} from './software.js';
 import {WorldArt,UI_CANVAS_FONT,whenUiFontReady} from './art.js';
-import {CombatVFX} from './vfx.js';
+import {CombatVFX,combatSpritePose} from './vfx.js';
 import {clamp,distance,normalize,resolveMove,MotionPresenter,CharacterMotor,FixedStepClock,motionTelemetry} from './math.js';
 import {LATE_PLANETS,RELAY_TEXT} from './late-story.js';
 import {LATE_KEYS,newLateState,decodeLate,noteEvidence,reconstruct,canEnterLateBoss,canWitness,journeySummary,canShare,loadLate,writeLate} from './late-state.js';
@@ -339,11 +339,35 @@ if(isSnow){
   snowCrystal(x,z,tipY,lean,1.35+.11*Math.cos(i*1.2-side));
   lateObstacles.push({x,z,r:1.35});
  }
- for(const [x,z]of[[-18,5],[18,-5],[-19,-19],[19,-30]]){
-  lateArchitecture.cone(x,buriedFoot,z,2.4,3.2-buriedFoot,[.44,.55,.61],4,2.4);
-  lateArchitecture.cone(x,3.2,z,3,2,[.85,.9,.91],4);
-  lateArchitecture.cone(x,1,z+1.7,.4,1.5,[.23,.37,.45],4,.4);
+ const outcrops=[[-18,5,2.05,.45],[18,-5,2.7,1.2],[-19,-19,1.65,2.1],[19,-30,2.35,2.8]];
+ for(const [x,z,height,angle] of outcrops){
+  const point=(u,y,v)=>[x+u*Math.cos(angle)-v*Math.sin(angle),y,z+u*Math.sin(angle)+v*Math.cos(angle)];
+  const foot=[point(-2.2,buriedFoot,-.9),point(-.4,buriedFoot,-1.8),point(1.97,buriedFoot,-.6),
+   point(1.4,buriedFoot,1.25),point(-1.35,buriedFoot,1.46)];
+  const crest=[point(-1.54,.48,-.53),point(-.46,height*.69,-1.21),point(1.18,height,-.27),
+   point(.64,height*.48,.91),point(-.92,.35,.98)];
+  const colors=[[.53,.66,.72],[.42,.53,.61],[.34,.45,.54],[.48,.6,.66],[.57,.68,.72]];
+  const top=point(.04,height*.74,-.13);
+  for(let i=0;i<foot.length;i++){
+   const j=(i+1)%foot.length;
+   lateArchitecture.quad(foot[i],foot[j],crest[j],crest[i],colors[i]);
+   lateArchitecture.tri(crest[i],crest[j],top,i===2?[.58,.72,.79]:[.82,.89,.92]);
+  }
+  // Smaller fragments lie along the downwind side of the exposed rock.
+  for(const [u,v,r,h] of [[1.8,-.48,.4,.39],[2.3,.4,.46,.26],[-1.7,-1.6,.38,.24]]){
+   const [px,y,pz]=point(u,-.24,v);
+   lateArchitecture.cone(px,y,pz,r,h,[.61,.73,.78],4,r*.28);
+  }
   lateObstacles.push({x,z,r:2.1});
+ }
+ // Grounded snowbanks replace the temperate rock atlas along the snowfield.
+ for(const [x,z,r,h] of [[-17.7,-3.8,1.45,.72],[-19,-14.2,1.9,.52],[-16.8,-33,1.2,.8],
+  [17.4,2.1,1.3,.43],[19,-13,1.65,.8],[17.1,-24.4,1.26,.53],[18.4,-37.3,1.9,.61]]){
+  const peak=[x+r*.22,h,z-r*.32];
+  const rim=[[x-r,-.23,z-r*.14],[x-r*.26,-.23,z-r],[x+r,-.23,z-r*.37],
+   [x+r*.88,-.23,z+r*.46],[x-r*.48,-.23,z+r*.71]];
+  for(let i=0;i<rim.length;i++)lateArchitecture.tri(rim[i],rim[(i+1)%rim.length],peak,
+   i===1?[.86,.91,.93]:[.71+i*.017,.81+i*.012,.87+i*.009]);
  }
 }else{
  for(const side of[-1,1])for(let i=0;i<10;i++){
@@ -435,7 +459,6 @@ function lateGroundDetails(){
   const label=lateLabelTextures.get(o.id);
   if(label&&distance(o,latePlayer)<17)lateRenderer.sprite(label,o.x,o.kind==='gate'?6.9:o.kind==='npc'?3.4:2.7,o.z,5.9,.72);
  }
- if(isSnow){for(const [x,z]of[[-18,5],[18,-5],[-19,-19],[19,-30]])lateArt.drawProp('cargo',x+3.4,0,z+1,2);for(const side of[-1,1])for(let i=0;i<5;i++)lateArt.drawProp('rock',side*18,0,-3-i*10,2.3);}
 }
 function lateArenaDraw(){
  const b=lateArena,g=new Geometry(),colors=isSnow?[.61,.79,.9]:[.72,.57,.9];
@@ -459,8 +482,8 @@ function lateDraw(alpha=1,dt=1/60){
  motionTelemetry(lateEl('lateWorld'),latePlayer,pose,lateSimulationClock);
  lateRenderer.begin(lateCamera.x,lateCamera.z,.011);lateRenderer.mesh(lateTerrainMesh);
  if(lateArena)lateArenaDraw();else{lateRenderer.mesh(lateArchitectureMesh);lateGroundDetails();}
- const inv=lateArena?.inv||latePlayer.inv;
- lateRenderer.sprite(lateArt.hero(pose,lateFallback),pose.x,pose.bob,pose.z,1.9*pose.width,2.65*pose.height,pose.dashBlend>.5?.65:(inv>0&&Math.sin(lateClock*35)>0?.5:1));
+ const combatPose=combatSpritePose(lateEffects,alpha,pose.dashBlend,lateArena?.inv||latePlayer.inv,lateClock);
+ lateRenderer.sprite(lateArt.hero(pose,lateFallback),pose.x,pose.bob,pose.z,1.9*pose.width*combatPose.width,2.65*pose.height*combatPose.height,combatPose.opacity);
  lateVFX.draw(lateEffects,[],lateClock);lateRenderer.finish();
 }
 function lateMapDraw(){
