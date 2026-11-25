@@ -2,8 +2,28 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import {standaloneQa} from '../dist/storage-scope.js';
 
 const outputs=['RECOMMAND.html','SWAEHAE.html','MUMYEONG.html','HWANSEONG.html'];
+test('standalone QA scopes saves and carries its renderer and name to the next file',()=>{
+ const raw=new Map([['save','original']]);
+ const store={getItem:key=>raw.get(key),setItem:(key,value)=>raw.set(key,value)};
+ const link={href:'MUMYEONG.html',getAttribute(){return this.href;},setAttribute(_,value){this.href=value;}};
+ const document={documentElement:{dataset:{}},querySelectorAll:()=>[link],
+  createElement:()=>({setAttribute(){},style:{}}),body:{append(){}}};
+ assert.equal(standaloneQa(document,{search:'?renderer=software'},store).storage,store);
+ assert.deepEqual(document.documentElement.dataset,{});
+ assert.throws(()=>standaloneQa(document,{search:'?qa=one&qa=two'},store),/QA/);
+ const qa=standaloneQa(document,{search:'?qa=deck&renderer=software'},store);
+ qa.storage.setItem('save','isolated');
+ assert.equal(qa.storage.getItem('save'),'isolated');
+ assert.equal(raw.get('save'),'original');
+ assert.equal(raw.get('recommand-qa:deck:save'),'isolated');
+ assert.equal(document.documentElement.dataset.qaRenderer,'software');
+ assert.equal(link.href,'MUMYEONG.html?qa=deck&renderer=software');
+ assert.equal(qa.href('HWANSEONG.html'),'HWANSEONG.html?qa=deck&renderer=software');
+});
+
 test('standalone previous-planet links point to shipped case-sensitive HTML files',()=>{
  for(const file of outputs){
   const html=fs.readFileSync(new URL('../release/'+file,import.meta.url),'utf8');

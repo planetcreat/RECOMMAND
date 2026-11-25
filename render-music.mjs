@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 
-const [sampleDirectory,ffmpeg='ffmpeg']=process.argv.slice(2);
-if(!sampleDirectory)throw Error('Usage: node render-music.mjs <VSCO sample directory> [ffmpeg]');
+const [sampleDirectory,ffmpeg='ffmpeg',planet]=process.argv.slice(2);
+if(!sampleDirectory)throw Error('Usage: node render-music.mjs <VSCO sample directory> [ffmpeg] [planet]');
 const rate=32000;
 const instruments={
  piano:{notes:[[57,'piano-low'],[69,'piano-high']],pan:-.28,attack:.012,release:.55},
@@ -80,6 +80,8 @@ function convert(args,input){
  return result.stdout;
 }
 
+if(planet&&!Object.hasOwn(pieces,planet))throw Error('Unknown music planet: '+planet);
+
 for(const instrument of Object.values(instruments)){
  instrument.samples=instrument.notes.map(([midi,file])=>{
   const raw=convert(['-v','error','-i',path.join(sampleDirectory,file+'.wav'),'-ac','1','-ar',String(rate),'-f','f32le','pipe:1']);
@@ -121,6 +123,10 @@ function arrangement(name,score){
   }
   clock+=localBeat*score.beats;
  }
+ if(name==='hwanseong'){
+  // The closing and opening bars share C. Let the bowed note carry across them.
+  events.push({instrument:'cello',midi:48,start:clock-.94,seconds:1.65,velocity:.21,extraPan:.12});
+ }
  return {events,samples:Math.round(clock*rate)};
 }
 
@@ -149,7 +155,8 @@ function mix(name,score){
  }
  const master=new Float32Array(samples*2),taps=[.043,.071,.102,.147,.219,.307,.419,.587,.751,.964].map(t=>Math.round(t*rate));
  let sum=0,peak=0,leftTail=0,rightTail=0;
- for(let i=0;i<samples;i++){
+ const warmup=name==='hwanseong'?128:0;
+ for(let i=-warmup;i<samples;i++){
   let a=0,b=0;
   for(const [j,tap] of taps.entries()){
    const index=(i+samples-tap)%samples,gain=1-j*.07;
@@ -157,11 +164,13 @@ function mix(name,score){
    b+=(j%2?right[index]:left[index])*gain;
   }
   leftTail+=.16*(a-leftTail);rightTail+=.16*(b-rightTail);
+  if(i<0)continue;
   const l=left[i]+leftTail*score.space*.2,r=right[i]+rightTail*score.space*.2;
   master[i*2]=l;master[i*2+1]=r;sum+=l*l+r*r;peak=Math.max(peak,Math.abs(l),Math.abs(r));
  }
  const gain=Math.min(.072/Math.sqrt(sum/master.length),.58/peak);
- const edge=Math.round(rate*.014);
+ // Pad only the encoder boundary; the instruments and room tail remain continuous.
+ const edge=Math.round(rate*(name==='hwanseong'?.005:.014));
  for(let i=0;i<samples;i++){
   const fade=Math.min(1,i/edge,(samples-1-i)/edge);
   master[i*2]*=gain*fade;master[i*2+1]*=gain*fade;
@@ -172,6 +181,7 @@ function mix(name,score){
 const output=new URL('./dist/audio/music/',import.meta.url);
 fs.mkdirSync(output,{recursive:true});
 for(const [name,score] of Object.entries(pieces)){
+ if(planet&&name!==planet)continue;
  const {master,samples,peak,rms}=mix(name,score);
  const file=new URL(name+'.ogg',output);
  const encoded=convert(['-v','error','-f','f32le','-ar',String(rate),'-ac','2','-i','pipe:0',
