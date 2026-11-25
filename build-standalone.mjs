@@ -1,5 +1,6 @@
 import fs from 'node:fs';import vm from 'node:vm';
 import {inlineUiFont} from './build-font.mjs';
+import {createScopedStorage,standaloneQa} from './dist/storage-scope.js';
 const read=p=>fs.readFileSync(p,'utf8');
 const atlas='data:image/png;base64,'+fs.readFileSync('dist/assets/combat-atlas.png').toString('base64');
 function bundle(entry,modules,css,output){
@@ -7,9 +8,16 @@ function bundle(entry,modules,css,output){
  let source=modules.map(f=>read('dist/'+f).replace(/^import .*;\r?\n/gm,'').replace(/\bexport /g,'')).join('\n');
  source=source.replace("img.src='./assets/combat-atlas.png';",()=>"img.src="+JSON.stringify(atlas)+';');
  for(const name of ['actors-atlas','environment-atlas']){const data='data:image/png;base64,'+fs.readFileSync('dist/assets/'+name+'.png').toString('base64');source=source.replace('./assets/'+name+'.png',()=>data);}
- if(entry==='index.html')source=source.replace("location.href='swaehae.html'","location.href='SWAEHAE.html'");
- source=source.replace("location.href='mumyeong.html'","location.href='MUMYEONG.html'");
- source=source.replace("else location.href=(chapter==='yuon'?'index':chapter)+'.html';","else location.href=({yuon:'RECOMMAND',swaehae:'SWAEHAE',mumyeong:'MUMYEONG',hwanseong:'HWANSEONG'})[chapter]+'.html';");
+ if(entry==='index.html')source=source.replace("location.href='swaehae.html'","location.href=standaloneRun.href('SWAEHAE.html')");
+ source=source.replace("location.href='mumyeong.html'","location.href=standaloneRun.href('MUMYEONG.html')");
+ source=source.replace("else location.href=(chapter==='yuon'?'index':chapter)+'.html';","else location.href=standaloneRun.href(({yuon:'RECOMMAND',swaehae:'SWAEHAE',mumyeong:'MUMYEONG',hwanseong:'HWANSEONG'})[chapter]+'.html');");
+ source=createScopedStorage.toString()+'\n'+standaloneQa.toString()+'\n'+
+  `const standaloneStorage=new Proxy({}, {get(_,key){
+   const store=window.localStorage,value=store[key];
+   return typeof value==='function'?value.bind(store):value;
+  }});
+  const standaloneRun=standaloneQa(document,location,standaloneStorage);
+  const localStorage=standaloneRun.storage;\n`+source;
  new vm.Script(source);
  html=html.replace('<script src="boot.js"></script>',()=>'<script>'+read('dist/boot.js')+'</script>');
  const pageCss=read('dist/'+css).replace(/^@import url\("ui-font\.css"\);\r?\n/,'');

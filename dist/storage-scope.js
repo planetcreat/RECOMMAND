@@ -13,6 +13,25 @@ export function createScopedStorage(store,scope){
  };
 }
 
+export function standaloneQa(document,location,store){
+ const params=new URLSearchParams(location.search),names=params.getAll('qa');
+ if(!names.length)return {storage:store,href:page=>page};
+ const scope=names[0];
+ if(names.length!==1||!/^[a-z0-9-]{1,48}$/.test(scope))throw Error('QA 주소의 이름을 확인해 주세요. 영문 소문자·숫자·하이픈 1~48자로 한 번만 지정합니다.');
+ const renderers=params.getAll('renderer');
+ const software=renderers.length===1&&renderers[0]==='software';
+ document.documentElement.dataset.qaScope=scope;
+ if(software)document.documentElement.dataset.qaRenderer='software';
+ const href=page=>page+'?qa='+scope+(software?'&renderer=software':'');
+ for(const link of document.querySelectorAll('a[href$=".html"]'))link.setAttribute('href',href(link.getAttribute('href')));
+ const notice=document.createElement('p');
+ notice.setAttribute('role','status');
+ notice.style.cssText='position:fixed;bottom:0;right:0;z-index:30;margin:0;padding:6px 12px;background:#233b49;color:#f4e7b0;font:12px var(--ui-font);pointer-events:none';
+ notice.textContent='별도 검증 저장 · '+scope+(software?' · CPU 3D':'');
+ document.body.append(notice);
+ return {storage:createScopedStorage(store,scope),href};
+}
+
 export function chapterDocument(html,assets,scope='',software=false){
  let result=html.replace(/__RECOMMAND_ASSET_(\d+)__/g,(_,i)=>assets[Number(i)]);
  if(scope){
