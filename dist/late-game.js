@@ -370,11 +370,49 @@ if(isSnow){
    i===1?[.86,.91,.93]:[.71+i*.017,.81+i*.012,.87+i*.009]);
  }
 }else{
+ const steel=[.37,.35,.47],brass=[.61,.52,.38],lens=[.67,.63,.82];
  for(const side of[-1,1])for(let i=0;i<10;i++){
-  const x=side*24,z=15-i*6.5;lateArchitecture.cone(x,0,z,.6,1.1,[.35,.32,.46],6,.4);lateArchitecture.cone(x,1.1,z,.2,3.6,[.79,.66,.44],7,.1);lateArchitecture.cone(x,4.7,z,.45,.65,[.73,.67,.91],8);lateObstacles.push({x,z,r:.6});
+  const x=side*24,z=15-i*6.5;
+  const type=(i+(side<0?0:2))%5;
+  lateArchitecture.cone(x,0,z,.6,.24,steel,6,.53);
+  lateArchitecture.disc(x,.248,z,.53,steel,6);
+  if(type<2){
+   // Low ventilation housings and thin fins keep the rim readable from the deck.
+   const h=type===0?.83:1.34;
+   lateArchitecture.cone(x,.24,z,.48,h,steel,4,.43);
+   lateArchitecture.disc(x,.25+h,z,.43,brass,4);
+   for(const offset of[-.21,0,.21]){
+    const face=x-side*(.45-Math.abs(offset));
+    lateArchitecture.quad([face,.43,z+offset-.045],[face,.43,z+offset+.045],
+     [face,.11+h,z+offset+.045],[face,.11+h,z+offset-.045],lens);
+   }
+  }else if(type<4){
+   // Lean the antenna outward, leaving its footprint on the existing footing.
+   const h=type===2?3.6:4.7,top=x+side*.72;
+   lateArchitecture.quad([x-.17,.24,z],[x+.17,.24,z],[top+.10,h,z],[top-.10,h,z],brass);
+   lateArchitecture.quad([x,.24,z-.16],[x,.24,z+.16],[top,h,z+.09],[top,h,z-.09],steel);
+   lateArchitecture.cone(top,h-.18,z,.24,.36,lens,6,.14);
+   lateArchitecture.disc(top,h+.182,z,.14,lens,6);
+  }else{
+   lateArchitecture.cone(x,.24,z,.26,2.15,steel,6,.21);
+   lateArchitecture.cone(x,2.24,z,.29,.22,brass,6,.34);
+   lateArchitecture.cone(x,2.46,z,.32,.23,lens,6,.24);
+   lateArchitecture.cone(x,2.69,z,.27,.15,steel,6,.16);
+   lateArchitecture.disc(x,2.845,z,.16,steel,6);
+  }
+  lateObstacles.push({x,z,r:.6});
  }
  for(const o of lateConfig.objects.filter(o=>o.kind==='relay')){
-  lateArchitecture.ring(o.x,.1,o.z,3.7,[.68,.58,.83],48,.08);lateArchitecture.cone(o.x,0,o.z,1.3,1.1,[.34,.3,.46],8,.9);
+  const accent={garden:[.44,.68,.63],sea:[.49,.66,.80],snow:[.72,.77,.84]}[o.id];
+  lateArchitecture.ring(o.x,.1,o.z,3.7,[.68,.58,.83],48,.08);
+  lateArchitecture.cone(o.x,0,o.z,1.3,.23,steel,8,1.2);
+  lateArchitecture.cone(o.x,.23,o.z,1.07,.73,steel,8,.87);
+  lateArchitecture.cone(o.x,.96,o.z,.94,.14,brass,8,.9);
+  lateArchitecture.disc(o.x,1.103,o.z,.90,steel,8);
+  for(let i=0;i<4;i++){
+   const angle=i*Math.PI/2;
+   lateArchitecture.ring(o.x,.105,o.z,3.45,accent,8,.16,angle-.24,angle+.24);
+  }
  }
 }
 for(const o of lateConfig.objects.filter(o=>['echo','console','gate'].includes(o.kind))){

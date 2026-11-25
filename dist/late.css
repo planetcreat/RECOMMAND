@@ -6,3 +6,30 @@ body:has(#lateStart:not([hidden])) :is(.late-title, #lateMap, #lateObjective, #l
 body:has(#lateDialogue:not([hidden])) :is(#lateMap, #lateObjective, #lateQuest, #latePrompt, .late-controls, .late-touch) {
   display: none;
 }
+
+/* The arrival screen scrolls below the header, while dialogs still cover both. */
+body:has(#lateStart:not([hidden])) .late-header {
+  min-height: 58px;
+  align-items: center;
+  background: #102033ed;
+}
+#lateStart {
+  top: 72px;
+  z-index: 4;
+  grid-template-rows: minmax(0, 1fr);
+}
+#lateStart .late-dialog {
+  max-height: 100%;
+  min-height: 0;
+  padding-inline-end: 12px;
+  scrollbar-gutter: stable;
+}
+@media (max-width: 800px) {
+  #lateStart { top: 58px; }
+}
+@media (max-height: 420px) {
+  #lateStart { padding-block: 10px; }
+  #lateStart h2 { margin-top: 10px; }
+  #lateStart h3 { margin-bottom: 14px; }
+  #lateStart .start-buttons { margin-top: 14px; }
+}
