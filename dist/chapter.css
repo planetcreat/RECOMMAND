@@ -4,3 +4,12 @@
 .chapter-actions{display:flex;gap:8px}.boat-quest{position:fixed;left:30px;bottom:65px;width:265px;padding:14px 17px;background:#143342e8;border-left:2px solid #79c9b4;pointer-events:none}.boat-quest>span{font-size:12px;color:#dcd5ab}.boat-quest p{font-size:11px;color:#bed7d1;line-height:1.8;margin:7px 0}.boat-quest small{font-size:10px;color:#e5ca8e}.boat-quest small:empty{display:none}@media(max-width:760px){.boat-quest{left:16px;bottom:65px;width:200px;padding:10px 12px}.boat-quest p{font-size:10px}.chapter-actions{gap:5px}.chapter-header button{padding:8px 10px}}@media(pointer:coarse){.boat-quest{bottom:170px}}
 
 .boss-hud{position:fixed;top:85px;right:30px;width:310px;padding:18px;background:#102f40ec;border-top:2px solid #d7b36b;pointer-events:none}.boss-hud>span{color:#f2d595;font-size:14px}.boss-meter,.hero-meter{height:7px;background:#081d28;margin-top:12px;overflow:hidden}.hero-meter{height:4px;margin-top:5px}.boss-meter i,.hero-meter i{display:block;height:100%;background:#db9c64;width:100%}.hero-meter i{background:#80d8bc}.boss-hud h2{font-size:14px;line-height:1.7;color:#f3ddaa}.boss-hud p{font-size:11px;line-height:1.8;color:#c7dfd8}.boss-hud small{font-size:10px;color:#c0d8d1}.sea-touch-actions{display:grid!important;grid-template-columns:repeat(2,auto)!important;gap:4px}@media(max-width:760px){.boss-hud{top:80px;right:15px;width:190px;padding:12px}.boss-hud>span{font-size:11px}.boss-hud h2{font-size:11px}.boss-hud p,.boss-hud small{font-size:9px}}
+
+
+body:has(#chapterDialog:not(.hidden)) :is(#harborObjective, #boatQuest, #chapterPrompt, .chapter-controls, .chapter-touch) {
+  display: none;
+}
+
+.chapter-dialog {
+  bottom: clamp(16px, 8vh, 85px);
+}
