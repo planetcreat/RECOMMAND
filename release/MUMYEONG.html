@@ -171,7 +171,44 @@ body:has(#lateStart:not([hidden])) .late-header {
  setTimeout(()=>{if(!ready)fail('게임을 불러오는 데 시간이 걸리고 있습니다. 연결을 확인하거나 다운로드한 PLAY-RECOMMAND.html을 브라우저에서 열어 주세요.');},15000);
  if(location.protocol==='file:'&&document.querySelector('script[type="module"][src]'))fail('이 파일은 여러 구성 파일을 사용하는 웹용 실행 파일입니다. release 폴더의 PLAY-RECOMMAND.html 또는 RECOMMAND.html을 열어 주세요.');
 })();
-</script><script type="module">// Parent launcher asks for a save checkpoint while its modal is open.
+</script><script type="module">function createScopedStorage(store,scope){
+ if(!/^[a-z0-9-]{1,48}$/.test(scope))throw new Error('Invalid QA save scope');
+ const prefix='recommand-qa:'+scope+':';
+ const keys=()=>Array.from({length:store.length},(_,i)=>store.key(i)).filter(k=>k?.startsWith(prefix));
+ return{
+  get length(){return keys().length;},
+  key(i){const key=keys()[i];return key===undefined?null:key.slice(prefix.length);},
+  getItem(key){return store.getItem(prefix+String(key));},
+  setItem(key,value){store.setItem(prefix+String(key),String(value));},
+  removeItem(key){store.removeItem(prefix+String(key));},
+  clear(){for(const key of keys())store.removeItem(key);}
+ };
+}
+function standaloneQa(document,location,store){
+ const params=new URLSearchParams(location.search),names=params.getAll('qa');
+ if(!names.length)return {storage:store,href:page=>page};
+ const scope=names[0];
+ if(names.length!==1||!/^[a-z0-9-]{1,48}$/.test(scope))throw Error('QA 주소의 이름을 확인해 주세요. 영문 소문자·숫자·하이픈 1~48자로 한 번만 지정합니다.');
+ const renderers=params.getAll('renderer');
+ const software=renderers.length===1&&renderers[0]==='software';
+ document.documentElement.dataset.qaScope=scope;
+ if(software)document.documentElement.dataset.qaRenderer='software';
+ const href=page=>page+'?qa='+scope+(software?'&renderer=software':'');
+ for(const link of document.querySelectorAll('a[href$=".html"]'))link.setAttribute('href',href(link.getAttribute('href')));
+ const notice=document.createElement('p');
+ notice.setAttribute('role','status');
+ notice.style.cssText='position:fixed;bottom:0;right:0;z-index:30;margin:0;padding:6px 12px;background:#233b49;color:#f4e7b0;font:12px var(--ui-font);pointer-events:none';
+ notice.textContent='별도 검증 저장 · '+scope+(software?' · CPU 3D':'');
+ document.body.append(notice);
+ return {storage:createScopedStorage(store,scope),href};
+}
+const standaloneStorage=new Proxy({}, {get(_,key){
+   const store=window.localStorage,value=store[key];
+   return typeof value==='function'?value.bind(store):value;
+  }});
+  const standaloneRun=standaloneQa(document,location,standaloneStorage);
+  const localStorage=standaloneRun.storage;
+// Parent launcher asks for a save checkpoint while its modal is open.
 function installBackupBridge({window,parent,chapter,flush,pause,resume}){
  if(!parent||parent===window)return()=>true;
  let held=null,flushing=false;
@@ -747,7 +784,7 @@ function lateStart(load){
  lateSave();lateUpdateHUD();
  if(isSnow&&lateState.boss&&!lateState.nameAccepted)lateNameAcceptance(()=>{});
 }
-function lateTravel(chapter){if(isSnow&&lateState.boss&&!lateState.nameAccepted){lateNameAcceptance(()=>lateTravel(chapter));return;}lateSave();if(window.parent!==window)parent.postMessage({type:'recommand-switch',chapter},'*');else location.href=({yuon:'RECOMMAND',swaehae:'SWAEHAE',mumyeong:'MUMYEONG',hwanseong:'HWANSEONG'})[chapter]+'.html';}
+function lateTravel(chapter){if(isSnow&&lateState.boss&&!lateState.nameAccepted){lateNameAcceptance(()=>lateTravel(chapter));return;}lateSave();if(window.parent!==window)parent.postMessage({type:'recommand-switch',chapter},'*');else location.href=standaloneRun.href(({yuon:'RECOMMAND',swaehae:'SWAEHAE',mumyeong:'MUMYEONG',hwanseong:'HWANSEONG'})[chapter]+'.html');}
 function lateNearest(){return lateConfig.objects.filter(o=>o.kind!=='secret'&&distance(o,latePlayer)<3.5&&(o.kind!=='portal'||lateState.ending)).sort((a,b)=>distance(a,latePlayer)-distance(b,latePlayer))[0];}
 function lateSecret(){return lateConfig.objects.find(o=>o.kind==='secret'&&distance(o,latePlayer)<1.7);}
 function lateInteract(){

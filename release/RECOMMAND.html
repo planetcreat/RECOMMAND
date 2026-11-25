@@ -165,7 +165,44 @@ renderY = worldY − k × (dx² + dz²)</pre><p>이 식은 구의 근처를 흉�
  setTimeout(()=>{if(!ready)fail('게임을 불러오는 데 시간이 걸리고 있습니다. 연결을 확인하거나 다운로드한 PLAY-RECOMMAND.html을 브라우저에서 열어 주세요.');},15000);
  if(location.protocol==='file:'&&document.querySelector('script[type="module"][src]'))fail('이 파일은 여러 구성 파일을 사용하는 웹용 실행 파일입니다. release 폴더의 PLAY-RECOMMAND.html 또는 RECOMMAND.html을 열어 주세요.');
 })();
-</script><script type="module">// Parent launcher asks for a save checkpoint while its modal is open.
+</script><script type="module">function createScopedStorage(store,scope){
+ if(!/^[a-z0-9-]{1,48}$/.test(scope))throw new Error('Invalid QA save scope');
+ const prefix='recommand-qa:'+scope+':';
+ const keys=()=>Array.from({length:store.length},(_,i)=>store.key(i)).filter(k=>k?.startsWith(prefix));
+ return{
+  get length(){return keys().length;},
+  key(i){const key=keys()[i];return key===undefined?null:key.slice(prefix.length);},
+  getItem(key){return store.getItem(prefix+String(key));},
+  setItem(key,value){store.setItem(prefix+String(key),String(value));},
+  removeItem(key){store.removeItem(prefix+String(key));},
+  clear(){for(const key of keys())store.removeItem(key);}
+ };
+}
+function standaloneQa(document,location,store){
+ const params=new URLSearchParams(location.search),names=params.getAll('qa');
+ if(!names.length)return {storage:store,href:page=>page};
+ const scope=names[0];
+ if(names.length!==1||!/^[a-z0-9-]{1,48}$/.test(scope))throw Error('QA 주소의 이름을 확인해 주세요. 영문 소문자·숫자·하이픈 1~48자로 한 번만 지정합니다.');
+ const renderers=params.getAll('renderer');
+ const software=renderers.length===1&&renderers[0]==='software';
+ document.documentElement.dataset.qaScope=scope;
+ if(software)document.documentElement.dataset.qaRenderer='software';
+ const href=page=>page+'?qa='+scope+(software?'&renderer=software':'');
+ for(const link of document.querySelectorAll('a[href$=".html"]'))link.setAttribute('href',href(link.getAttribute('href')));
+ const notice=document.createElement('p');
+ notice.setAttribute('role','status');
+ notice.style.cssText='position:fixed;bottom:0;right:0;z-index:30;margin:0;padding:6px 12px;background:#233b49;color:#f4e7b0;font:12px var(--ui-font);pointer-events:none';
+ notice.textContent='별도 검증 저장 · '+scope+(software?' · CPU 3D':'');
+ document.body.append(notice);
+ return {storage:createScopedStorage(store,scope),href};
+}
+const standaloneStorage=new Proxy({}, {get(_,key){
+   const store=window.localStorage,value=store[key];
+   return typeof value==='function'?value.bind(store):value;
+  }});
+  const standaloneRun=standaloneQa(document,location,standaloneStorage);
+  const localStorage=standaloneRun.storage;
+// Parent launcher asks for a save checkpoint while its modal is open.
 function installBackupBridge({window,parent,chapter,flush,pause,resume}){
  if(!parent||parent===window)return()=>true;
  let held=null,flushing=false;
@@ -910,7 +947,7 @@ function interact(){
  if(!state.boss){toast('수호자의 공격 신호를 보고 회피하세요.');return;}
  showDialog('수호자의 마지막 기록',['[보존 명령 제0001호. 발령자: 당신.]\n[외부 간섭을 차단한다. 거주민의 이탈을 허용하지 않는다.]','수호자는 숲을 지키고 있었다. 당신이 명령한 방식으로.\n과거의 이유는 아직 알 수 없다. 하지만 지금의 선택은 당신에게 있다.'],finalChoice);
  }
- if(o.kind==='portal'){player.hp=100;if(!state.complete)showDialog('별의 관문',['관문이 희미한 온기를 전한다. 생명력이 회복되었다.\n멀리 세 별의 신호가 들린다. 지금은 유온의 목소리에 귀를 기울이자.']);else showDialog('쇄해로 이어지는 신호',['바람 사이로 물이 차오르는 소리가 들린다.\n“제방은 안전합니다. 출항은 허가되지 않았습니다.”','루미는 기록장을 덮는다.\n“이번에는, 문이 닫힌 이유부터 물어봐요.”\n다음 장: 쇄해 · 닫힌 길의 바다'],()=>{save();location.href='SWAEHAE.html';});}
+ if(o.kind==='portal'){player.hp=100;if(!state.complete)showDialog('별의 관문',['관문이 희미한 온기를 전한다. 생명력이 회복되었다.\n멀리 세 별의 신호가 들린다. 지금은 유온의 목소리에 귀를 기울이자.']);else showDialog('쇄해로 이어지는 신호',['바람 사이로 물이 차오르는 소리가 들린다.\n“제방은 안전합니다. 출항은 허가되지 않았습니다.”','루미는 기록장을 덮는다.\n“이번에는, 문이 닫힌 이유부터 물어봐요.”\n다음 장: 쇄해 · 닫힌 길의 바다'],()=>{save();location.href=standaloneRun.href('SWAEHAE.html');});}
 }
 function setStudy(v){study=v;keys.clear();$('study').classList.toggle('hidden',!v);}
 function togglePause(){if(!started||dialog||study)return;paused=!paused;keys.clear();$('pause').textContent=paused?'계속하기':'일시정지';if(paused)toast('일시정지 · 버튼 또는 Esc로 계속');}
