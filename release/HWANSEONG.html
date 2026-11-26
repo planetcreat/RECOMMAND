@@ -147,6 +147,31 @@ body:has(#lateStart:not([hidden])) .late-header {
   #lateStart h3 { margin-bottom: 14px; }
   #lateStart .start-buttons { margin-top: 14px; }
 }
+
+/* Use the same body and control sizes in the snowfield and orbit. */
+.late-brand, .late-actions button, .late-prompt, .late-toast { font-size: .9375rem; }
+.late-brand small, .eyebrow, .late-controls, .dialog-footer small,
+#saveNotice, .late-boss small { font-size: .875rem; }
+.late-objective h2, .late-boss h2, .journal-entry h3 { font-size: 1.0625rem; }
+.late-objective p, .late-quest p, .late-title > p, .late-boss p,
+.journal-entry p { font-size: .9375rem; }
+.late-dialog p, #lateStart p { font-size: 1.125rem; line-height: 1.72; }
+#lateStart h3 { font-size: 1rem; }
+#lateStart #saveNotice { font-size: .875rem; }
+.late-dialog button, .late-touch button { font-size: .9375rem; }
+.late-prompt { width: max-content; max-width: 88vw; }
+@media (max-width: 800px) {
+  .late-objective { width: clamp(148px, 46vw, 245px); }
+  .late-actions button, .late-brand { font-size: .875rem; }
+  .start-buttons { flex-wrap: wrap; }
+}
+@media (max-width: 480px) {
+  .late-title { max-width: 43vw; }
+  .late-header { gap: 6px; }
+  .late-brand { letter-spacing: 1px; }
+  .late-touch { flex-wrap: wrap; }
+  .late-touch button { padding: 7px; }
+}
 </style></head><body>
 <canvas id="lateWorld" tabindex="0" aria-label="환성의 휘어진 세계"></canvas><div class="late-vignette"></div>
 <header class="late-header"><a class="late-brand" href="MUMYEONG.html" data-previous>RE:COMMAND <small>이전 행성으로</small></a><div class="late-actions"><button id="latePractice" hidden>보스 연습</button><button id="lateRecords">발견 기록</button><button id="lateFiles">진행 보관</button><button id="latePause">일시정지</button></div></header>
@@ -1240,7 +1265,7 @@ const lateFallback=lateRenderer.texture('late-fallback-actor',c=>{
 });
 const lateLabelTextures=new Map();
 whenUiFontReady(()=>{
- for(const o of lateConfig.objects){if(o.kind==='secret')continue;lateLabelTextures.set(o.id,lateRenderer.texture('late-label-'+o.id,c=>{c.font='20px '+UI_CANVAS_FONT;c.textAlign='center';c.shadowColor='#132034';c.shadowBlur=7;c.fillStyle=isSnow?'#29485d':'#ece4cf';if(isSnow){c.shadowColor='#fff';c.shadowBlur=5;}c.fillText(o.name,256,36);},512,64));}
+ for(const o of lateConfig.objects){if(o.kind==='secret')continue;lateLabelTextures.set(o.id,lateRenderer.texture('late-label-'+o.id,c=>{c.font='26px '+UI_CANVAS_FONT;c.textAlign='center';c.shadowColor='#132034';c.shadowBlur=7;c.fillStyle=isSnow?'#29485d':'#ece4cf';if(isSnow){c.shadowColor='#fff';c.shadowBlur=5;}c.fillText(o.name,256,38,480);},512,64));}
 });
 function lateGroundDetails(){
  const g=new Geometry(),c=isSnow?[.59,.79,.88]:[.77,.64,.93];
@@ -1318,7 +1343,7 @@ function lateMapDraw(){
  const c=lateEl('lateMap').getContext('2d');if(!c)return;c.clearRect(0,0,180,180);c.fillStyle=isSnow?'#213a5077':'#161a3488';c.beginPath();c.arc(90,90,83,0,Math.PI*2);c.fill();
  const point=(x,z)=>[90+x*2.4,24+(z+46)*2.04];c.strokeStyle='#c2d9dd33';c.beginPath();c.moveTo(...point(0,16));c.lineTo(...point(0,-44));c.stroke();
  for(const o of lateConfig.objects){if(o.kind==='secret'||o.kind==='portal'&&!lateState.ending)continue;const[x,y]=point(o.x,o.z);c.fillStyle=o.kind==='npc'?'#e3d2a8':lateState.heard.includes(o.id)?'#9bcfc7':'#bedce6';c.beginPath();c.arc(x,y,o.kind==='gate'?4:2.6,0,Math.PI*2);c.fill();}
- const[x,y]=point(latePlayer.x,latePlayer.z);c.fillStyle='#fff3c5';c.beginPath();c.arc(x,y,3.3,0,Math.PI*2);c.fill();c.font='10px '+UI_CANVAS_FONT;c.textAlign='center';c.fillStyle='#c8d9dd';c.fillText('N',90,15);
+ const[x,y]=point(latePlayer.x,latePlayer.z);c.fillStyle='#fff3c5';c.beginPath();c.arc(x,y,3.3,0,Math.PI*2);c.fill();c.font='12px '+UI_CANVAS_FONT;c.textAlign='center';c.fillStyle='#c8d9dd';c.fillText('N',90,15);
 }
 function lateUpdateHUD(){
  lateSet('travelerName',isSnow?travelerName(lateState):latePriorName);

@@ -130,6 +130,28 @@ body:has(#chapterDialog:not(.hidden)) :is(#harborObjective, #boatQuest, #chapter
 
 #chapterSaveNotice { color: #edd39c; }
 #chapterSaveNotice:empty { display: none; }
+
+/* Story, objectives and interaction prompts share readable sizes. */
+.chapter-header button, #chapterPrompt { font-size: .9375rem; }
+.chapter-header a span, .chapter-title p, .chapter-title small, .chapter-controls,
+.chapter-objective > span, .chapter-dialog > span { font-size: .8125rem; }
+.chapter-objective h2, .boss-hud h2, .boat-quest > span { font-size: 1.0625rem; }
+.chapter-objective p, .boat-quest p, .boat-quest small,
+.boss-hud p, .boss-hud small { font-size: .9375rem; }
+.chapter-dialog h2 { font-size: 1.25rem; }
+.chapter-dialog p { font-size: 1.125rem; line-height: 1.72; }
+.chapter-dialog button, .chapter-touch button { font-size: .9375rem; }
+#chapterPrompt { max-width: 90vw; white-space: normal; text-align: center; }
+@media (max-width: 760px) {
+  .chapter-objective { width: clamp(148px, 46vw, 245px); }
+  .chapter-header button { font-size: .875rem; padding-inline: 8px; }
+}
+@media (max-width: 420px) {
+  .chapter-title { max-width: 43vw; }
+  .chapter-title h1 small { display: none; }
+  .chapter-header { column-gap: 6px; }
+  .chapter-header a { letter-spacing: 1px; }
+}
 </style></head>
 <body><canvas id="chapterWorld" tabindex="0" aria-label="쇄해의 제방 항구"></canvas><div class="sea-vignette"></div>
 <header class="chapter-header"><a href="RECOMMAND.html">RE:COMMAND <span>유온으로 돌아가기</span></a><div class="chapter-actions"><button id="seaNextPlanet" class="hidden">무명으로 출발</button><button id="seaPractice" class="hidden">보스 연습</button><button id="chapterJournal">발견 기록</button><button id="chapterPause">일시정지</button></div></header>
@@ -901,7 +923,7 @@ function seaSprite(key,color,hat=false){return seaRenderer.texture('sea-person-'
 const seaHero=seaSprite('hero','#466974'),seaNaru=seaSprite('naru','#7e7860',true),seaChild=seaSprite('child','#8c8f60');
 let seaLabels=[];
 whenUiFontReady(()=>{
- seaLabels=seaObjects.map(o=>seaRenderer.texture('sea-label-'+o.kind+o.index,c=>{c.font='22px '+UI_CANVAS_FONT;c.textAlign='center';c.shadowColor='#0b2330';c.shadowBlur=5;c.fillStyle='#f0d9a2';c.fillText(o.name,256,36);},512,64));
+ seaLabels=seaObjects.map(o=>seaRenderer.texture('sea-label-'+o.kind+o.index,c=>{c.font='27px '+UI_CANVAS_FONT;c.textAlign='center';c.shadowColor='#0b2330';c.shadowBlur=5;c.fillStyle='#f0d9a2';c.fillText(o.name,256,38,480);},512,64));
 });
 const seaGlow=seaRenderer.texture('sea-glow',c=>{const a=c.createRadialGradient(64,64,0,64,64,60);a.addColorStop(0,'#fff0ba');a.addColorStop(.25,'#dac38299');a.addColorStop(1,'#e3ce9700');c.fillStyle=a;c.fillRect(0,0,128,128);});
 function drawSeaHero(alpha,invulnerable){

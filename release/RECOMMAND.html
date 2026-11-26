@@ -117,7 +117,7 @@ button, input, select, textarea {
 </style><style>
 /* Keep the world behind the intro while giving the start controls the foreground. */
 body:has(#overlay:not(.hidden)) :is(#hud > :not(#toast), #minimap, #touch),
-body:has(#dialog:not(.hidden)) :is(.bottom, #minimap, #touch) {
+body:has(#dialog:not(.hidden)) :is(.planet, .objective, .side-quest, #location, .bottom, #minimap, #touch) {
   display: none;
 }
 
@@ -140,6 +140,31 @@ body:has(#overlay:not(.hidden)) #toast {
 @media (max-width: 380px) {
   #overlay .intro { margin-inline: 20px; max-width: calc(100% - 40px); }
   #overlay .primary { min-width: 0; width: 100%; }
+}
+
+/* Body and action text in the compact HUD. */
+.brand, .header-actions button, #interact, .skills b { font-size: .9375rem; }
+.brand span, .version, .eyebrow, .planet p, #location, .keys, .player-label,
+.skills small, .skills kbd, #study pre, .intro-note { font-size: .8125rem; }
+.objective h2, .side-quest h2, #bossInfo h2 { font-size: 1.0625rem; }
+.objective p, .side-quest p, #study p, #study label, #study a { font-size: .9375rem; }
+#dialog p { font-size: 1.125rem; line-height: 1.72; }
+#dialog h2 { font-size: 1.25rem; }
+#dialogNext, #choices button, .save-tools button, #reset { font-size: .9375rem; }
+#dialogNext kbd { font-size: .8125rem; }
+.bar { height: 19px; }
+.bar span { font-size: .75rem; line-height: 17px; }
+#study pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  header { gap: 8px; }
+  .header-actions button { padding: 6px 7px; font-size: .875rem; }
+  .objective { width: clamp(155px, 46vw, 245px); }
+  .intro .eyebrow, #location { font-size: .8125rem; }
+}
+@media (max-width: 420px) {
+  .planet h1 span { display: none; }
+  .planet { max-width: 39vw; }
+  #continue { min-width: 0; width: 100%; }
 }
 </style></head>
 <body><canvas id="world" tabindex="0" aria-label="행성 탐험 게임"></canvas><div id="vignette"></div>
@@ -973,7 +998,7 @@ function sprite(kind,variant=0,frame=0,back=false){
 }
 const heroSprites=[sprite('hero',0,0,false),sprite('hero',0,1,false),sprite('hero',0,0,true),sprite('hero',0,1,true)],npcTex=sprite('npc'),scoutTex=sprite('npc',1),bossTex=sprite('boss'),glowTex=sprite('glow');
 const slimeTextures=Array.from({length:3},(_,i)=>[sprite('slime',i,0),sprite('slime',i,1)]);
-function label(text,color='#e8e5bd'){return R.texture('label'+text,(c,w,h)=>{c.font='22px '+UI_CANVAS_FONT;c.textAlign='center';c.shadowColor='#0b2529';c.shadowBlur=5;c.fillStyle=color;c.fillText(text,w/2,34);},512,64);}
+function label(text,color='#e8e5bd'){return R.texture('label'+text,(c,w,h)=>{c.font='27px '+UI_CANVAS_FONT;c.textAlign='center';c.shadowColor='#0b2529';c.shadowBlur=5;c.fillStyle=color;c.fillText(text,w/2,37,480);},512,64);}
 let labels={echoes:[],seals:[],memories:[]};
 whenUiFontReady(()=>{
  labels={remains:label('수호자의 기억'),scout:label(SCOUT.name),survey:label(OLD_SURVEY.name),echoes:ECHO_SITES.map(e=>label(e.name)),npc:label('루미 · 기록자'),portal:label('별의 관문'),boss:label(BOSS.name,'#f0d39b'),seals:seals.map(s=>label(s.name)),memories:memories.map(s=>label(s.name))};
@@ -1174,7 +1199,7 @@ function drawMap(){
  const c=$('minimap').getContext('2d');c.clearRect(0,0,200,200);c.save();c.beginPath();c.arc(100,100,97,0,TAU);c.clip();c.fillStyle='#153a38';c.fillRect(0,0,200,200);
  const xy=(x,z)=>[100+x*.82,100+z*.82];
  c.strokeStyle='#79927466';c.lineWidth=3;for(const[a,b]of roads){c.beginPath();c.moveTo(...xy(...a));c.lineTo(...xy(...b));c.stroke();}
- c.font='9px '+UI_CANVAS_FONT;c.textAlign='center';c.fillStyle='#c7cfa8';c.fillText('N',100,17);
+ c.font='12px '+UI_CANVAS_FONT;c.textAlign='center';c.fillStyle='#c7cfa8';c.fillText('N',100,17);
  for(let i=0;i<3;i++){const[x,y]=xy(seals[i].x,seals[i].z);c.fillStyle=state.seals[i]?'#d5e3a0':'#d8bd79';c.save();c.translate(x,y);c.rotate(Math.PI/4);c.fillRect(-3,-3,6,6);c.restore();}
  for(let i=0;i<2;i++){const[x,y]=xy(memories[i].x,memories[i].z);c.fillStyle=state.memories[i]?'#859f91':'#9cdbd5';c.fillRect(x-2,y-2,4,4);}
  for(const e of enemies)if(e.hp>0){const[x,y]=xy(e.x,e.z);c.fillStyle=e===boss?'#e0aa7a':'#bd8177';c.beginPath();c.arc(x,y,e===boss?4:1.7,0,TAU);c.fill();}
