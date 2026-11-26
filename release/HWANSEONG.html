@@ -181,7 +181,7 @@ body:has(#lateStart:not([hidden])) .late-header {
 <section id="lateQuest" class="late-card late-quest" hidden><span class="eyebrow" id="questName"></span><p id="questHint"></p></section>
 <section id="lateBossHud" class="late-card late-boss" hidden aria-label="환성 보스 전투"><span id="lateBossName"></span><div class="late-meter"><i id="lateBossHealth"></i></div><div class="late-meter hero"><i id="lateHeroHealth"></i></div><small id="lateBossNumbers"></small><h2 id="lateBossPhase"></h2><p id="lateBossMessage"></p><small id="lateBossSkills"></small></section>
 <div id="latePrompt" class="late-prompt"></div><div id="lateToast" role="status" class="late-toast" hidden></div><div class="late-controls">WASD / 방향키 이동 · E 대화·조사 · J 검격 · L 파동 · K / Space 회피<br>M 지도 · Esc 일시정지 · 진행은 행성별로 자동 저장됩니다.</div>
-<div id="lateStart" class="late-modal"><div class="late-dialog"><span class="eyebrow">CHAPTER 04 · ASK AGAIN TOMORROW.</span><h2>환성</h2><h3>돌아온 목소리의 궤도</h3><p id="startDescription">땅 위에 서 있는데 발 아래로 별이 흐른다. 궤도의 세 통신환은 서로 다른 속도로 돌아가고 있다.</p><div class="start-buttons"><button id="lateContinue">기억 이어가기</button><button id="lateNew">여기서 시작하기</button></div><p id="saveNotice"></p></div></div>
+<div id="lateStart" class="late-modal"><div class="late-dialog"><span class="eyebrow">CHAPTER 04 · ASK AGAIN TOMORROW.</span><h2>환성</h2><h3>돌아온 목소리의 궤도</h3><p id="startDescription">땅 위에 서 있는데 발 아래로 별이 흐른다. 멀리서 통신환 하나가 천천히 돌아간다.</p><div class="start-buttons"><button id="lateContinue">기억 이어가기</button><button id="lateNew">여기서 시작하기</button></div><p id="saveNotice"></p></div></div>
 <div id="lateDialogue" class="late-modal" hidden role="dialog" aria-modal="true" aria-labelledby="lateSpeaker"><section class="late-card late-dialog"><span class="eyebrow" id="dialogTag">HWANSEONG · FIELD RECORD</span><h2 id="lateSpeaker"></h2><p id="lateText"></p><div id="lateChoices" class="late-choices"></div><div class="dialog-footer"><small id="latePage"></small><button id="lateNext">계속 E / Enter</button></div></section></div>
 <div id="lateJournal" class="late-modal" hidden role="dialog" aria-modal="true" aria-labelledby="journalTitle"><section class="late-card late-dialog"><span class="eyebrow">WHAT WE ACTUALLY HEARD</span><h2 id="journalTitle">발견 기록</h2><div id="journalEntries" class="journal-grid"></div><div class="dialog-footer"><small>모르는 기록은 채우지 않습니다.</small><button id="closeLateJournal">돌아가기</button></div></section></div>
 <div id="lateFilePanel" class="late-modal" hidden role="dialog" aria-modal="true" aria-labelledby="fileTitle"><section class="late-card late-dialog"><span class="eyebrow">KEEP YOUR JOURNEY</span><h2 id="fileTitle">진행 보관</h2><p>현재 행성의 진행을 파일로 보관하거나 가져올 수 있습니다. 읽지 못한 기록도 원본 그대로 내보낼 수 있습니다.</p><div class="late-choices"><button id="lateExport">현재 진행 내보내기</button><button id="lateExportRaw">저장 원본 보관</button><button id="lateImport">진행 가져오기</button><input type="file" id="lateSaveFile" accept=".json,application/json" hidden></div><p id="lateFileStatus" role="status"></p><div id="lateImportChoices" class="late-choices"></div><div class="dialog-footer"><small>다른 행성의 저장은 변경하지 않습니다.</small><button id="closeLateFiles">돌아가기</button></div></section></div>
@@ -612,6 +612,14 @@ function tickBoat(s,dt){if(s.boat.stage!=='sailing'||tideState(s.gates)!=='circu
 function boatPosition(elapsed){const points=[[-4.7,9],[-4.7,-19],[4.7,-19],[4.7,9],[-4.7,9]],lengths=[28,9.4,28,9.4];let d=Math.max(0,Math.min(1,elapsed/BOAT_SECONDS))*74.8;for(let i=0;i<4;i++){if(d<=lengths[i]||i===3){const t=Math.min(1,d/lengths[i]);return{x:points[i][0]+(points[i+1][0]-points[i][0])*t,z:points[i][1]+(points[i+1][1]-points[i][1])*t,angle:Math.atan2(points[i+1][1]-points[i][1],points[i+1][0]-points[i][0])};}d-=lengths[i];}}
 function boatHint(s){if(!s.boat.met)return '';return{unknown:tideIntel(s)?'물이 빠질 때 드러나는 표식을 찾아보자.':'세 흐름을 관측하면 배가 돌아올 길을 알 수 있을까?',charted:'두 수문을 닫고 되돌림 수로를 안전하게 수리하자.',repaired:'두 수문을 열고 도하 옆 선착장에서 배를 띄우자.',sailing:tideState(s.gates)==='circulation'?'종이배가 되돌림 수로를 따라 항해 중이다.':'물이 멈췄다. 두 수문을 열면 배가 다시 움직인다.',returned:'돌아온 배를 도하와 함께 확인하자.',complete:'물길의 기억 · 획득 완료'}[s.boat.stage];}
 function tideState(gates){return gates[0]?(gates[1]?'circulation':'filling'):(gates[1]?'draining':'sealed');}
+const TIDE_DISPLAY={sealed:[.14,0,0,1],filling:[.36,-1.4,-.18,1],draining:[.04,.18,1.4,1],circulation:[.24,-1.35,1.35,0]};
+function harborTideVisual(status,previous,dt=0){
+ const target=TIDE_DISPLAY[status];
+ const elapsed=Number.isFinite(dt)?Math.min(.1,Math.max(0,dt)):0;
+ const blend=1-Math.exp(-3.4*elapsed);
+ const [level,west,east,bridge]=previous?target.map((value,i)=>previous.values[i]+(value-previous.values[i])*blend):target;
+ return {values:[level,west,east,bridge],phase:[(previous?.phase[0]??0)+west*elapsed,(previous?.phase[1]??0)+east*elapsed]};
+}
 function tideDescription(gates){return{sealed:'두 수문이 닫혀 있다. 항구 쪽 수압만 높아진다.',filling:'서쪽 저류지로 물이 들어간다. 오래된 벽면의 눈금이 잠긴다.',draining:'동쪽 배수로로 물이 빠진다. 물 아래에 묻혔던 되돌림 표식이 나타난다.',circulation:'물이 고이지 않고 순환한다. 중앙 보행교의 잠금이 풀렸다.'}[tideState(gates)];}
 function observeTide(state){const i=['filling','draining','circulation'].indexOf(tideState(state.gates));if(i>=0)state.observations[i]=true;return state;}
 function tideIntel(state){return state.observations.every(Boolean);}
@@ -652,9 +660,13 @@ const SWAEHAE_SCENES={
 // Chapters III and IV: observations and voluntary responses, never collectible counts.
 const LATE_PLANETS={
  mumyeong:{id:'mumyeong',number:3,name:'무명',roman:'Mumyeong',subtitle:'지워진 이름의 설원',boss:'백면의 기록관 · 네벨',next:'hwanseong',previous:'swaehae',color:'#b9d9e8',tag:'A NAME IS NOT AN ORDER.',
- arrival:['눈이 소리를 삼킨다. 집마다 문패는 남아 있는데, 이름이 있어야 할 자리만 비어 있다.','루미: “여기는 기록이 없어진 게 아니에요. 서로 다른 기록이 같은 자리를 차지하고 있어요.”','바람을 맡는 사람과 종을 지키는 사람이 같은 밤을 다르게 기억한다. 증언을 들은 뒤 남아 있는 장면과 대조해 보자.'],
+ arrival:['눈길은 마을 어귀까지 이어진다. 집 앞에서 누군가 문패의 눈을 털고 있다.','루미: “저쪽 종탑에 사람이 있어요. 먼저 인사하고 가요.”'],
  objects:[
  {id:'keeper',x:4,z:5,kind:'npc',actor:'elder',name:'시온 · 종을 지키는 사람'},
+ {id:'carver',x:-8,z:6,kind:'npc',actor:'worker',name:'단우 · 문패 수리공',topics:[
+  ['문패의 빈칸을 묻는다','“이쪽에 이름을, 아래쪽에는 돌아오는 길의 표시를 새겼어요. 눈보라가 지나고 나면 집 모양이 다 똑같거든요.”','단우는 빈 나무판에 손을 올린다. “어떤 집은 이름 대신, 주인이 직접 고른 흠집만 남겨 달라고 했어요.”'],
+  ['겨울을 나는 방법을 묻는다','“먼저 돌아온 사람이 자기 집의 눈을 털고, 그다음 집의 문턱까지 길을 냅니다. 종이 안 들리는 날엔 발자국 하나가 이웃을 데려오기도 해요.”']
+ ]},
  {id:'walker',x:-11,z:-8,kind:'npc',actor:'worker',name:'하제 · 눈길을 걷는 사람'},
  {id:'bell',x:10,z:-14,kind:'echo',name:'정지된 종탑'},
  {id:'footprints',x:-14,z:-24,kind:'echo',name:'끊긴 발자국'},
@@ -670,8 +682,12 @@ const LATE_PLANETS={
  victory:['네벨의 가면이 갈라진다. 안쪽에는 얼굴 대신 서로 겹친 문장들이 있다.','[이름이 없으면 요청을 판별할 수 없다. 판별할 수 없는 목소리는 보존 대상에서 제외한다.]','루미: “이름을 되찾는 것만으로는 똑같아지겠네요. 이름 없이 한 말도, 들을 수 있어야 해요.”'],
  endings:{restore:['주인공은 명령석에서 자신의 이름을 분리하고 주민들의 기록만 복원했다.','하제가 종탑 기록 옆에 빈 의자를 끌어온다. 시온은 한참 앉아 있다가 적는다. “나는 빛을 먼저 보았다. 종을 늦게 울린 것은 아니었다.” 하제도 자기 자리에 앉아 그날 발밑의 떨림을 적는다.\n무명 완료 · 「지워지지 않는 흔적」'],witness:['루미: “이름이 없던 동안에도, 저는 당신한테 말을 걸었어요.”','주인공: “나를 알아보지 못해도 괜찮아. 오늘의 대답부터 기억해 줄래?”','작은 종이 울린다. 누군가의 허가를 기다리는 경보가 아니라, 돌아온 사람을 알리는 소리다.\n무명 완료 · 「이름 없이 부르는 사이」']}}
  ,hwanseong:{id:'hwanseong',number:4,name:'환성',roman:'Hwanseong',subtitle:'돌아온 목소리의 궤도',boss:'최초 명령 · 아르케',previous:'mumyeong',color:'#ddc7ff',tag:'ASK AGAIN TOMORROW.',
- arrival:['땅 위에 서 있는데 발 아래로 별이 흐른다. 궤도의 세 통신환은 서로 다른 속도로 돌아가고 있다.','루미: “다른 행성에서 오는 목소리예요. 우리가 한 일도…… 아직 끝나지 않은 일도요.”','이곳의 관리핵은 여행자가 실제로 남긴 명령을 되풀이한다. 세 응답대를 시험하며 그 반응이 어디서 왔는지 확인하자.'],
+ arrival:['땅 위에 서 있는데 발 아래로 별이 흐른다. 멀리서 통신환 하나가 천천히 돌아간다.','루미: “갑판을 따라가면 소리가 난 곳에 닿을 거예요.”'],
  objects:[{id:'lumi',x:4,z:7,kind:'npc',actor:'lumi',name:'루미'},
+ {id:'technician',x:9,z:-8,kind:'npc',actor:'worker',name:'서린 · 통신환 정비사',topics:[
+  ['통신환이 따로 도는 이유를 묻는다','“행성마다 회신이 돌아오는 시간이 달라요. 세 환을 맞춰 돌리면 가장 느린 곳은 말을 시작할 기회조차 놓칩니다.”'],
+  ['원탁의 쓰임을 묻는다','“옛 정비 장부에는 행성별로 빈 의자가 하나씩 있었어요. 언제든 누가 돌아와 앉으라는 뜻이었죠. 어느 날부터 모든 회선이 가운데 의자 하나로 연결됐고요.”']
+ ]},
  {id:'garden',x:-13,z:-7,kind:'relay',name:'유온 응답대'},
  {id:'sea',x:13,z:-17,kind:'relay',name:'쇄해 응답대'},
  {id:'snow',x:-12,z:-30,kind:'relay',name:'무명 응답대'},
@@ -685,13 +701,30 @@ const LATE_PLANETS={
 
 const RELAY_TEXT={garden:{title:'유온 · 울림의 응답',test:'동일한 파동이 세 번 커진다. 세 번째가 끝나기 전에 중심으로 돌아가면 아직 공격 중이다.',question:'응답 회선을 어느 쪽으로 돌릴까?',choices:['주민에게 지금의 보호 경계를 묻는다','여행자의 기존 보호 명령을 송신한다']},sea:{title:'쇄해 · 돌아오는 응답',test:'토출 때 바깥을 지키던 홈이 회수 때 위험해진다. 흐름이 뒤집히는 순간 갈라진 원에서 E로 한 회선을 우회할 수 있다.',question:'항로의 다음 출항을 누가 정할까?',choices:['주민이 출항 여부를 답할 수 있게 한다','안전 판정을 관리핵에 계속 맡긴다']},snow:{title:'무명 · 이름 없는 응답',test:'빛만 남은 잔상은 닿지 않는다. 바닥의 자국이 실제 공격이다. 이름이나 밝기로 진위를 정하지 않는다.',question:'발신자를 판별할 수 없는 목소리는?',choices:['이름이 없어도 먼저 말을 듣는다','이름이 확인될 때까지 보류한다']}};
 
+const ORBIT_FINAL_CALLS=[
+ {title:'유온에서 온 호출',planet:'유온',voice:'“아이들이 숲길을 열어 달래요. 숲을 오래 지킨 사람들은 아직 이르다고 하고요. 어느 길부터 살펴볼지, 오늘 저녁에 함께 정하려고요.”',trace:'숲길을 다시 살피자는 제안과 조금 더 기다리자는 기록이 함께 걸려 있다. 지금 대답할 사람은 회선에 없다.'},
+ {title:'쇄해에서 온 호출',planet:'쇄해',voice:'나루: “오늘 바람이면 출항을 미루고 싶어요. 그래도 제 말만으로 닻을 묶어 두진 않을 겁니다. 부두에 있는 사람들한테도 물을게요.”',trace:'부두의 바람 기록과 출항을 보류한 표지가 들어온다. 결정할 시간도 사람도 아직 남아 있다.'},
+ {title:'무명에서 온 호출',planet:'무명',voice:'“제 이름은 지금 적지 않을래요. 그래도 제가 들은 건 남기고 싶어요. 그날 밤 종소리 뒤에도 누군가 걸어오는 소리가 났어요.”',trace:'발신자 칸이 비어 있다. 누군가 보내다 만 파형만 남았다. 빈칸을 채우지 않고 기다릴 수 있다.'}
+];
+const ORBIT_FINAL_ARRIVAL=[
+ '아르케의 고리가 멈춘다. 발밑에서 규칙적으로 울리던 진동도 가라앉는다.',
+ '잠시 뒤, 세 통신환이 갑판 위에 차례로 켜진다. 서로 다른 호출이 모두 같은 자리, 여행자의 입력란으로 밀려든다.',
+ '관리핵: “서로 다른 요청이 수신되었습니다. 하나의 명령으로 정리할까요?”\n루미: “잠깐만요. 아직 한 사람도 끝까지 말하지 못했어요.”',
+ '세 응답대를 찾아 중간에서 끊긴 회선을 들어 보자.'
+];
+const ORBIT_FINAL_ASSEMBLY=[
+ '세 회선이 원탁으로 돌아온다. 숲과 부두에서 온 기록, 이름 칸이 비어 있는 신호가 각자의 자리에서 잠시 겹친다.',
+ '관리핵: “각 회선을 열어 둘 경우, 이후의 안전은 보장할 수 없습니다.”\n기록 속의 나: “나는 그 말을 듣고 문을 닫았다.”',
+ '주인공: “알아. 이번에는 여기서 대답을 기다릴 수 있어.”\n루미가 원탁에서 한 걸음 물러선다. 선택할 자리가 비워진다.'
+];
+
 // Mandatory story scenes. Never included in first-visit briefings.
 const NAME_RECORD=['세 장면의 시간이 하나의 기록으로 겹친다. 지워진 칸 아래에서 오래된 서명이 떠오른다.','[서명 복구. 명령권자, 이든.]','루미: “이든…… 이게, 당신의 이름이었군요.”','주인공은 대답하지 못한다. 기록에 남은 이름을 알게 되었지만, 그 이름으로 무엇을 선택했던 사람인지는 아직 다 알지 못한다.'];
 const NAME_ACCEPTANCE=['루미: “그 이름으로 불러도 돼요? 기록 속 명령권자 말고, 지금 제 옆에 있는 당신을요.”','주인공: “과거의 내가 어떤 사람이었는지는 아직 다 모르겠어. 그래도…… 이든이라고 불러 줘.”','루미: “네, 이든. 이제 이곳에 어떤 말을 남길지, 같이 들어 봐요.”'];
 
 const LATE_KEYS={mumyeong:'recommand-mumyeong-v1',hwanseong:'recommand-hwanseong-v1'};
 const boolArray=(v,n)=>Array.isArray(v)&&v.length===n&&v.every(x=>typeof x==='boolean');
-function newLateState(planet){if(!LATE_KEYS[planet])throw Error('알 수 없는 행성입니다.');return{format:'RECOMMAND-LATE',v:1,planet,arrived:false,nameRevealed:false,nameAccepted:false,heard:[],compared:[false,false,false],chime:false,asked:false,relays:[false,false,false],invited:[false,false,false],tomorrow:false,lumi:false,boss:false,ending:null,player:{x:0,z:10,hp:100}};}
+function newLateState(planet){if(!LATE_KEYS[planet])throw Error('알 수 없는 행성입니다.');return{format:'RECOMMAND-LATE',v:1,planet,arrived:false,nameRevealed:false,nameAccepted:false,heard:[],compared:[false,false,false],chime:false,asked:false,relays:[false,false,false],invited:[false,false,false],tomorrow:false,lumi:false,boss:false,ending:null,player:{x:0,z:10,hp:100},...(planet==='hwanseong'?{finalSignals:[false,false,false]}:{})};}
 function decodeLate(raw,planet){
  const s=typeof raw==='string'?JSON.parse(raw):raw;
  if(!s||s.format!=='RECOMMAND-LATE'||s.v!==1||s.planet!==planet||!LATE_KEYS[planet])throw Error('이 행성의 진행 파일이 아닙니다.');
@@ -707,7 +740,18 @@ function decodeLate(raw,planet){
  if(!s.arrived&&(s.heard.length||s.compared.some(Boolean)||s.relays.some(Boolean)||s.boss))throw Error('도착 이전의 기록이 섞여 있습니다.');
  for(const key of['nameRevealed','nameAccepted'])if(s[key]!==undefined&&typeof s[key]!=='boolean')throw Error('이름의 기록이 손상되었습니다.');
  if(s.nameRevealed&&(planet!=='mumyeong'||!s.compared.every(Boolean))||s.nameAccepted&&(!s.nameRevealed||!s.boss))throw Error('이름을 알게 된 순서가 맞지 않습니다.');
- return structuredClone({...s,nameRevealed:s.nameRevealed??false,nameAccepted:s.nameAccepted??false});
+ const record={...s,nameRevealed:s.nameRevealed??false,nameAccepted:s.nameAccepted??false};
+ if(planet==='hwanseong'){
+  const signals=s.finalSignals===undefined?Array(3).fill(!!s.ending):s.finalSignals;
+  if(!boolArray(signals,3)||!s.boss&&signals.some(Boolean)||s.ending&&!signals.every(Boolean))throw Error('환성의 마지막 수신 기록이 일치하지 않습니다.');
+  record.finalSignals=signals;
+ }
+ return structuredClone(record);
+}
+function recordFinalSignal(state,index){
+ if(state.planet!=='hwanseong'||!state.boss||state.ending||![0,1,2].includes(index)||state.finalSignals[index])return false;
+ state.finalSignals[index]=true;
+ return true;
 }
 function revealTravelerName(s){if(s.planet!=='mumyeong'||!s.compared.every(Boolean))return false;s.nameRevealed=true;return true;}
 function acceptTravelerName(s){if(s.planet!=='mumyeong'||!s.boss||!s.nameRevealed)return false;s.nameAccepted=true;return true;}
@@ -838,6 +882,9 @@ const lateSaveGuard=chapterSaveGuard(key=>localStorage.getItem(key),LATE_KEYS[la
 const lateLoad=loadLate(localStorage,latePlanet);
 let lateState=lateLoad.state||newLateState(latePlanet),lateStarted=false,latePaused=false,lateDialogue=null,lateOverlay=false,lateArena=null,lateClock=0,lateAutosave=0,lateToastClock=0,lateHUDClock=0,lateSaveError=false,backupCanSave=()=>true;
 let latePracticeMode=false,lateTrialReturn=null,lateImportPending=null;
+const orbitRelays=['garden','sea','snow'];
+const orbitSignalColors=[[.62,.88,.66],[.46,.82,.95],[.83,.79,.98]];
+let lateScoreScene=1,lateOrbitWake=-Infinity,orbitAudio;
 const latePriorName=readTravelerName(k=>localStorage.getItem(k));
 const latePlayer={x:lateState.player.x,z:lateState.player.z,hp:lateState.player.hp,face:{x:0,z:-1},walk:0,dash:0,dashing:0,inv:0,slash:0,wave:0};
 const lateMotor=new CharacterMotor(),lateMotion=new MotionPresenter(latePlayer);const lateCamera=lateMotion.camera;
@@ -856,6 +903,8 @@ function lateTalk(title,lines,after=null,choices=null,tag=null){
 function lateButton(parent,label,handler,primary=false){const b=document.createElement('button');b.textContent=label;if(primary)b.className='primary';b.onclick=handler;parent.append(b);return b;}
 function lateRenderDialogue(){
  const d=lateDialogue;if(!d)return;lateSet('lateSpeaker',d.title);lateSet('lateText',d.lines[d.index]);lateSet('latePage',(d.index+1)+' / '+d.lines.length);
+ // The two arrivals on this page keep their own timing after the final decision.
+ if(!isSnow&&d.lines===lateConfig.endings.shared&&d.index===d.lines.length-3)lateOrbitReplySounds();
  lateEl('lateDialogue').firstElementChild.scrollTop=0;lateEl('lateChoices').replaceChildren();const choices=d.choices&&d.index===d.lines.length-1;lateEl('lateNext').hidden=!!choices;
  if(choices){for(const c of d.choices)lateButton(lateEl('lateChoices'),c.label,()=>{lateCloseTalk();c.action();},c.primary);lateEl('lateChoices').firstElementChild?.focus({preventScroll:true});}
  else lateEl('lateNext').focus({preventScroll:true});
@@ -887,6 +936,12 @@ function lateInteract(){
  const secret=lateSecret();if(secret){lateInteractSecret(secret);return;}
  const o=lateNearest();if(!o)return;
  if(o.kind==='portal'){lateTravelMenu();return;}
+ if(o.topics){
+  const topics=o.topics.map(([label,...lines])=>({label,action:()=>lateTalk(o.name,lines)}));
+  topics.push({label:'다음에 다시 이야기한다',action:()=>{}});
+  lateTalk(o.name,[isSnow?'나무 문패를 다듬던 단우가 당신을 돌아본다.':'서린이 통신환에서 눈을 떼고 당신 쪽으로 몸을 돌린다.'],null,topics);
+  return;
+ }
  if(isSnow)lateSnowInteract(o);else lateOrbitInteract(o);
 }
 function lateSnowInteract(o){
@@ -922,11 +977,39 @@ function lateInteractSecret(o){
   lateTalk('내일을 위한 빈 의자',['관리핵의 중심에서 벗어난 작은 의자다. 그 앞에는 명령 입력란 대신 비어 있는 질문 한 줄이 있다.'],null,[{label:'내일은 어디로 가고 싶어?',primary:true,action:()=>lateTalk('루미 · 아직 정하지 않은 내일',['“오늘은 여기 남고 싶어요. 다 끝나는 걸 보고 싶거든요.”','“내일은 또 물어봐 줘요.”'],()=>{lateState.tomorrow=true;lateState.lumi=true;lateSave();})},{label:'지금은 관리핵으로 가자',action:()=>lateToast('질문은 빈 의자 앞에 남아 있다.')}]);
  }
 }
+function lateOrbitFinale(){return !isSnow&&lateState.boss&&!lateState.ending;}
+function lateOrbitReplySounds(){
+ try{
+  orbitAudio??=new (window.AudioContext||window.webkitAudioContext)();
+  void orbitAudio.resume().catch(()=>{});
+  const now=orbitAudio.currentTime;
+  for(const [frequency,delay] of [[587,.03],[880,.72]]){
+   const tone=orbitAudio.createOscillator(),gain=orbitAudio.createGain(),start=now+delay;
+   tone.type='sine';tone.frequency.value=frequency;
+   gain.gain.setValueAtTime(.001,start);gain.gain.exponentialRampToValueAtTime(.045,start+.035);
+   gain.gain.exponentialRampToValueAtTime(.001,start+.38);
+   tone.connect(gain);gain.connect(orbitAudio.destination);tone.onended=()=>{tone.disconnect();gain.disconnect();};
+   tone.start(start);tone.stop(start+.4);
+  }
+ }catch{/* The text and lights also carry the response. */}
+}
+function lateOrbitCall(index){
+ const call=ORBIT_FINAL_CALLS[index],received=lateJourney().completed[index];
+ lateTalk(call.title,[received?call.voice:call.trace],()=>{
+  if(recordFinalSignal(lateState,index)&&lateState.finalSignals.every(Boolean))lateToast('세 회선을 확인했습니다. 응답의 원탁으로 돌아가세요.');
+ },null,'INCOMING RESPONSE');
+}
+function lateOrbitAssembly(){
+ const missing=ORBIT_FINAL_CALLS.filter((_,i)=>!lateState.finalSignals[i]).map(call=>call.planet);
+ if(missing.length){lateTalk('응답의 원탁',['아직 끝까지 확인하지 못한 회선이 남아 있다.\n'+missing.join(' · ')]);return;}
+ lateTalk('환성 · 돌아온 목소리',ORBIT_FINAL_ASSEMBLY,lateFinalChoice,null,'THE LAST RESPONSE');
+}
 function lateOrbitInteract(o){
- const index=['garden','sea','snow'].indexOf(o.id);
- if(index>=0){lateRelay(index);return;}
+ const index=orbitRelays.indexOf(o.id);
+ if(index>=0){if(lateOrbitFinale()&&!lateState.finalSignals[index])lateOrbitCall(index);else lateRelay(index);return;}
  if(o.id==='lumi'){lateTalk('루미 · 돌아오는 목소리',['“여기서는 우리가 했던 일이 그대로 돌아와요. 위험한 것도, 누군가에게 물어봤던 것도요.”','“아직 연결되지 않은 목소리라면, 제가 대신 대답하지 않을게요. 항로는 열어 둘 수 있잖아요.”']);return;}
  if(o.id==='assembly'){
+  if(lateOrbitFinale()){lateOrbitAssembly();return;}
   const j=lateJourney(),names=['유온','쇄해','무명'];lateTalk('응답의 원탁',[
    names.map((name,i)=>name+' · '+(j[['garden','sea','snow'][i]]?'주민의 응답 회선 연결':j.completed[i]?'아직 여행자에게 남은 결정':'이 항로에서 확인된 완료 기록 없음')).join('\n'),
    '응답대의 시험은 이전 명령이 어떤 공격으로 돌아오는지 보여 준다. 시험을 마친 뒤 회선을 주민에게 돌릴지 선택할 수 있다.\n도착하지 않은 응답을 동의로 바꾸지는 않는다.'
@@ -934,7 +1017,11 @@ function lateOrbitInteract(o){
  }
  if(o.id==='gate'){
   if(!canEnterLateBoss(lateState)){lateTalk('최초 명령의 관리핵',['세 응답대가 아직 동기화되지 않았다. 유온·쇄해·무명의 반응 시험을 직접 통과하자.','세 시험 모두 공격을 피하고 빈틈이 끝날 때까지 버티면 완료된다. 시험 중 기록을 잃지 않는다.']);return;}
-  if(lateState.boss){lateFinalChoice();return;}
+  if(lateState.boss){
+   if(lateOrbitFinale())lateTalk('최초 명령의 관리핵',['최종 입력 회선이 응답의 원탁으로 돌아가고 있다. 갑판 반대편의 목소리를 따라가자.']);
+   else lateFinalChoice();
+   return;
+  }
   lateTalk(lateConfig.boss,['관리핵: [명령권자 귀환 확인. 과거 명령을 순서대로 실행한다.]','유온의 세 파동 → 쇄해의 토출과 회수 → 무명의 진짜 흔적.\n반응은 앞선 행성에 남긴 명령에 따라 달라진다.','주인공: “이번에는 멈추는 것만으로 끝내지 않겠어.”'],()=>lateEnterArena());
  }
 }
@@ -980,6 +1067,7 @@ function lateSnowEnding(){
  lateTalk('무명 · 이름과 목소리',['이름을 되찾아 다시 통제할 수도 있었다. 그러나 주민의 기억을 듣기 위해 그 이름을 돌려받을 필요는 없다.'],null,choices);
 }
 function lateFinalChoice(){
+ if(lateOrbitFinale()&&!lateState.finalSignals.every(Boolean))return;
  const choices=[{label:'공격 명령을 멈추고 응답을 기다린다',action:()=>lateFinish('guarded')}];
  if(canShare(lateState,lateJourney()))choices.push({label:'각자의 내일은, 각자의 선택으로',primary:true,action:()=>lateFinish('shared')});
  choices.push({label:'아직 듣지 못한 목소리에게 돌아간다',action:lateTravelMenu});
@@ -1020,7 +1108,13 @@ function lateTick(dt){
   if(lateArena.phase==='trialWon'){const index=lateTrialReturn.index;lateState.relays[index]=true;lateLeaveArena();lateSave();lateRelayChoice(index);return;}
   if(lateArena.phase==='won'){
    const practice=latePracticeMode;lateLeaveArena();if(practice){lateToast('보스 연습 완료 · 기존 결말과 기록은 유지됩니다.');return;}
-   lateState.boss=true;lateSave();lateTalk(lateConfig.boss,lateConfig.victory,isSnow?lateSnowEnding:lateFinalChoice);return;
+   lateState.boss=true;lateSave();
+   if(isSnow)lateTalk(lateConfig.boss,lateConfig.victory,lateSnowEnding);
+   else{
+    lateOrbitWake=lateClock;
+    lateTalk('환성 · 세 개의 호출',ORBIT_FINAL_ARRIVAL,null,null,'INCOMING RESPONSE');
+   }
+   return;
   }
  }
  let dx=Number(lateKeys.has('d')||lateKeys.has('arrowright'))-Number(lateKeys.has('a')||lateKeys.has('arrowleft')),dz=Number(lateKeys.has('s')||lateKeys.has('arrowdown'))-Number(lateKeys.has('w')||lateKeys.has('arrowup')),d=normalize(dx,dz);
@@ -1113,15 +1207,15 @@ function stationPath(minX,maxX,minZ,maxZ){
 if(isSnow){
  latePath(0,-13,4.5,59);
  for(const o of lateConfig.objects){
-  if(o.kind==='secret'||o.kind==='portal')continue;
+  if(o.kind==='secret'||o.kind==='portal'||o.topics)continue;
   latePath(o.x/2,o.z,Math.abs(o.x)+4,2.6);
  }
 }else{
  const halfWidth=2.25;
  stationPath(-halfWidth,halfWidth,-45.5,16.5);
  // At each junction, the main corridor owns the panels between its edges.
- for(const {x,z,kind} of lateConfig.objects){
-  if(x===0||kind==='secret'||kind==='portal')continue;
+ for(const {x,z,kind,topics} of lateConfig.objects){
+  if(x===0||kind==='secret'||kind==='portal'||topics)continue;
   const [left,right]=x<0?[x-2,-halfWidth]:[halfWidth,x+2];
   stationPath(left,right,z-1.3,z+1.3);
  }
@@ -1265,10 +1359,11 @@ const lateFallback=lateRenderer.texture('late-fallback-actor',c=>{
 });
 const lateLabelTextures=new Map();
 whenUiFontReady(()=>{
- for(const o of lateConfig.objects){if(o.kind==='secret')continue;lateLabelTextures.set(o.id,lateRenderer.texture('late-label-'+o.id,c=>{c.font='26px '+UI_CANVAS_FONT;c.textAlign='center';c.shadowColor='#132034';c.shadowBlur=7;c.fillStyle=isSnow?'#29485d':'#ece4cf';if(isSnow){c.shadowColor='#fff';c.shadowBlur=5;}c.fillText(o.name,256,38,480);},512,64));}
+ for(const o of lateConfig.objects){if(o.kind==='secret')continue;lateLabelTextures.set(o.id,lateRenderer.texture('late-label-'+o.id,c=>{c.font='36px '+UI_CANVAS_FONT;c.textAlign='center';c.shadowColor='#132034';c.shadowBlur=7;c.fillStyle=isSnow?'#29485d':'#ece4cf';if(isSnow){c.shadowColor='#fff';c.shadowBlur=5;}c.strokeStyle=isSnow?'#eef7fb':'#20243b';c.lineWidth=5;c.lineJoin='round';c.strokeText(o.name,256,41,480);c.fillText(o.name,256,41,480);},512,64));}
 });
 function lateGroundDetails(){
  const g=new Geometry(),c=isSnow?[.59,.79,.88]:[.77,.64,.93];
+ const finale=lateOrbitFinale();
  if(isSnow){
   for(const [x,z] of snowStakes){
    const flutter=Math.sin(lateClock*2.1+z)*.22;
@@ -1278,7 +1373,8 @@ function lateGroundDetails(){
   for(const o of lateConfig.objects){
    if(o.kind!=='relay')continue;
    const t=(lateClock*.24+Math.abs(o.x)*.1)%1;
-   g.disc(o.x*(1-t),.125,o.z+(-21-o.z)*t,.19,[.83,.81,.66],6);
+   const index=orbitRelays.indexOf(o.id);
+   if(!finale||lateState.finalSignals[index])g.disc(o.x*(1-t),.125,o.z+(-21-o.z)*t,finale?.24:.19,finale?orbitSignalColors[index]:[.83,.81,.66],6);
   }
  }
  for(const o of lateConfig.objects){
@@ -1294,8 +1390,20 @@ function lateGroundDetails(){
   }
   if(o.kind==='echo'){g.ring(o.x,1.8,o.z,.7,c,32,.09);g.cone(o.x,1.85,o.z,.19,.65,[.85,.88,.8],5);}
   if(o.kind==='console'){g.ring(o.x,.91,o.z,1.25,[.81,.74,.56],40,.07);g.cone(o.x,1,o.z,.14,.65,c,5);}
+  if(finale&&o.id==='assembly'){
+   lateState.finalSignals.forEach((received,index)=>{
+    if(received)g.ring(o.x,1.05+index*.42,o.z,1.55+index*.3,orbitSignalColors[index],32,.12);
+   });
+  }
   if(o.kind==='relay'){
-   const index=['garden','sea','snow'].indexOf(o.id),complete=lateState.relays[index];
+   const index=orbitRelays.indexOf(o.id),complete=lateState.relays[index];
+   if(finale){
+    const received=lateState.finalSignals[index],tone=orbitSignalColors[index];
+    const height=received?1.65:1.65+Math.sin(lateClock*2+index)*.22;
+    const wake=clamp((lateClock-lateOrbitWake-index*.35)/.6,0,1);
+    if(wake>0)g.ring(o.x,height,o.z,(received?2.08:1.7)*wake,tone,32,received?.16:.1);
+    if(!received&&wake>0)g.cone(o.x,2.18,o.z,.23,1.2*wake,tone,5);
+   }
    for(let k=0;k<3;k++){const a=lateClock*.3+k*Math.PI*2/3;g.cone(o.x+Math.cos(a)*1.7,1.8+Math.sin(a*2)*.3,o.z+Math.sin(a)*1.7,.25,.7,complete?[.59,.93,.82]:c,6);}
    g.ring(o.x,1.2,o.z,1.25,complete?[.57,.92,.8]:[.72,.64,.87],40,.12);
   }
@@ -1310,7 +1418,7 @@ function lateGroundDetails(){
   if(o.kind==='npc')lateRenderer.sprite(lateArt.actor(o.actor,lateFallback),o.x,0,o.z,1.85,2.6);
   if(o.kind==='secret'||o.kind==='portal'&&!lateState.ending)continue;
   const label=lateLabelTextures.get(o.id);
-  if(label&&distance(o,latePlayer)<17)lateRenderer.sprite(label,o.x,o.kind==='gate'?6.9:o.kind==='npc'?3.4:2.7,o.z,5.9,.72);
+  if(label&&distance(o,latePlayer)<17)lateRenderer.sprite(label,o.x,o.kind==='gate'?6.9:o.kind==='npc'?3.4:2.7,o.z,6.8,1.0);
  }
 }
 function lateArenaDraw(){
@@ -1342,19 +1450,35 @@ function lateDraw(alpha=1,dt=1/60){
 function lateMapDraw(){
  const c=lateEl('lateMap').getContext('2d');if(!c)return;c.clearRect(0,0,180,180);c.fillStyle=isSnow?'#213a5077':'#161a3488';c.beginPath();c.arc(90,90,83,0,Math.PI*2);c.fill();
  const point=(x,z)=>[90+x*2.4,24+(z+46)*2.04];c.strokeStyle='#c2d9dd33';c.beginPath();c.moveTo(...point(0,16));c.lineTo(...point(0,-44));c.stroke();
- for(const o of lateConfig.objects){if(o.kind==='secret'||o.kind==='portal'&&!lateState.ending)continue;const[x,y]=point(o.x,o.z);c.fillStyle=o.kind==='npc'?'#e3d2a8':lateState.heard.includes(o.id)?'#9bcfc7':'#bedce6';c.beginPath();c.arc(x,y,o.kind==='gate'?4:2.6,0,Math.PI*2);c.fill();}
+ const finale=lateOrbitFinale();
+ for(const o of lateConfig.objects){
+  if(o.kind==='secret'||o.kind==='portal'&&!lateState.ending)continue;
+  const[x,y]=point(o.x,o.z),index=orbitRelays.indexOf(o.id);
+  const pending=finale&&(index>=0&&!lateState.finalSignals[index]||o.id==='assembly'&&lateState.finalSignals.every(Boolean));
+  c.fillStyle=pending?'#ffe396':o.kind==='npc'?'#e3d2a8':lateState.heard.includes(o.id)?'#9bcfc7':'#bedce6';
+  c.beginPath();c.arc(x,y,pending?5:o.kind==='gate'?4:2.6,0,Math.PI*2);c.fill();
+ }
  const[x,y]=point(latePlayer.x,latePlayer.z);c.fillStyle='#fff3c5';c.beginPath();c.arc(x,y,3.3,0,Math.PI*2);c.fill();c.font='12px '+UI_CANVAS_FONT;c.textAlign='center';c.fillStyle='#c8d9dd';c.fillText('N',90,15);
 }
 function lateUpdateHUD(){
  lateSet('travelerName',isSnow?travelerName(lateState):latePriorName);
  const arena=!!lateArena;lateEl('lateBossHud').hidden=!arena;lateEl('lateObjective').hidden=arena;lateEl('lateMap').hidden=arena;lateEl('lateQuest').hidden=arena||!(isSnow?lateState.chime:lateState.tomorrow);
+ const finale=lateOrbitFinale()&&lateStarted&&!arena;
+ const received=finale?lateState.finalSignals.filter(Boolean).length:0;
+ const endingDialogue=finale&&(lateDialogue?.lines===lateConfig.endings.shared||lateDialogue?.lines===lateConfig.endings.guarded);
+ const score=finale?(endingDialogue||received===0?.42:received===3?.85:.62):1;
+ if(score!==lateScoreScene){
+  lateScoreScene=score;
+  if(window.parent!==window)window.parent.postMessage({type:'recommand-orbit-score',chapter:latePlanet,level:score},'*');
+ }
  lateEl('latePractice').hidden=!lateState.boss||arena;lateSet('latePause',latePaused?'계속하기':'일시정지');
  if(arena){const b=lateArena;lateSet('lateBossName',b.trial?RELAY_TEXT[b.trial].title+' · 반응 시험':lateConfig.boss);lateEl('lateBossHealth').style.width=(b.hp/b.max*100)+'%';lateEl('lateHeroHealth').style.width=b.hero+'%';lateSet('lateBossNumbers',b.trial?'노출 종료까지 생존 · 여행자 '+b.hero+' / 100':b.hp+' / '+b.max+' · 여행자 '+b.hero+' / 100');lateSet('lateBossPhase',latePhaseText(b));lateSet('lateBossMessage',b.trial?'공격할 필요 없이 반응 한 주기를 피하면 시험을 통과합니다.':b.message||'바닥에 자국이 남는 원을 피하고, 명령핵이 열릴 때 공격하세요.');lateSet('lateBossSkills','J 검격 · L 파동 '+(b.wave>0?b.wave.toFixed(1)+'초':'준비')+' · K 회피 '+(b.dash>0?b.dash.toFixed(1)+'초':'준비'));lateSet('latePrompt',distance(latePlayer,LATE_DEVICE)<3.1?'E · 갈라진 원 / 회수 예고 때 우회':'');return;}
  let objective,hint;
  if(isSnow){objective=lateState.ending?'무명 완료 · 환성으로 이어지는 항로':lateState.boss?'백면의 문에서 남은 말을 선택하세요.':lateState.compared.every(Boolean)?'백면의 문으로 향하세요.':lateState.heard.length>=2?'증언과 장면을 기억의 자리에서 대조하세요.':'시온과 하제의 증언을 들어 보세요.';hint='증언 '+lateState.heard.filter(x=>['keeper','walker'].includes(x)).length+' / 2 · 과거 장면 '+lateState.heard.filter(x=>!['keeper','walker'].includes(x)).length+' / 3\n대조 '+lateState.compared.filter(Boolean).length+' / 3';}
- else{const j=lateJourney();objective=lateState.ending?'환성 완료 · 내일을 위한 열린 항로':lateState.boss?'관리핵에서 최종 명령을 선택하세요.':lateState.relays.every(Boolean)?'최초 명령의 관리핵으로 향하세요.':'세 응답대에서 앞선 명령의 반응을 시험하세요.';hint='반응 시험 '+lateState.relays.filter(Boolean).length+' / 3 · 응답 회선 '+['garden','sea','snow'].filter((k,i)=>j[k]&&lateState.invited[i]).length+' / 3\n현재 기록을 바꾸면 귀환 후 반응에도 반영됩니다.';}
+ else if(finale){objective=received===3?'응답의 원탁에서 마지막 결정을 내리세요.':'세 응답대에서 돌아온 목소리를 확인하세요.';hint='마지막 수신 '+received+' / 3';}
+ else{const j=lateJourney();objective=lateState.ending?'환성 완료 · 내일을 위한 열린 항로':lateState.relays.every(Boolean)?'최초 명령의 관리핵으로 향하세요.':'세 응답대에서 앞선 명령의 반응을 시험하세요.';hint='반응 시험 '+lateState.relays.filter(Boolean).length+' / 3 · 응답 회선 '+orbitRelays.filter((k,i)=>j[k]&&lateState.invited[i]).length+' / 3\n현재 기록을 바꾸면 귀환 후 반응에도 반영됩니다.';}
  lateSet('objectiveText',objective);lateSet('objectiveHint',hint+(lateSaveError?'\n자동 저장 불가 · 진행 보관을 사용하세요.':''));
- [...lateEl('progressDots').children].forEach((e,i)=>e.classList.toggle('done',(isSnow?lateState.compared:lateState.relays)[i]));
+ [...lateEl('progressDots').children].forEach((e,i)=>e.classList.toggle('done',(isSnow?lateState.compared:finale?lateState.finalSignals:lateState.relays)[i]));
  lateSet('questName',isSnow?'누구도 부르지 않은 이름':'내일을 위한 빈 의자');lateSet('questHint',isSnow?(lateState.asked?'작은 종의 약속 · 오늘의 대답을 기억한다.':'루미에게 어디에 머물고 싶은지 물어보자.'):'“내일은 또 물어봐 줘요.”');
  const o=lateNearest();lateSet('latePrompt',lateDialogue||lateOverlay?'':o?'E · '+o.name:'');lateMapDraw();
 }
