@@ -143,7 +143,7 @@ body:has(#chapterDialog:not(.hidden)) :is(#harborObjective, #boatQuest, #chapter
  window.addEventListener('recommand-ready',()=>{ready=true;panel?.remove();panel=null;document.documentElement.dataset.recommandReady='true';});
  window.addEventListener('error',e=>{if(ready)return;const script=e.target?.tagName==='SCRIPT';fail(script?'게임 구성 파일을 받을 수 없습니다. 다운로드한 PLAY-RECOMMAND.html을 Chrome 또는 Edge에서 열어 주세요.':'게임 시작 중 오류가 발생했습니다. 다시 불러와도 같으면 표시된 오류를 알려 주세요. '+(e.message||''));},true);
  window.addEventListener('unhandledrejection',e=>{if(!ready)fail('게임 시작을 완료하지 못했습니다. '+String(e.reason?.message||e.reason||''));});
- setTimeout(()=>{if(!ready)fail('게임을 불러오는 데 시간이 걸리고 있습니다. 연결을 확인하거나 다운로드한 PLAY-RECOMMAND.html을 브라우저에서 열어 주세요.');},15000);
+ setTimeout(()=>{if(!ready&&document.documentElement.dataset.qaBlocked!=='true')fail('게임을 불러오는 데 시간이 걸리고 있습니다. 연결을 확인하거나 다운로드한 PLAY-RECOMMAND.html을 브라우저에서 열어 주세요.');},15000);
  if(location.protocol==='file:'&&document.querySelector('script[type="module"][src]'))fail('이 파일은 여러 구성 파일을 사용하는 웹용 실행 파일입니다. release 폴더의 PLAY-RECOMMAND.html 또는 RECOMMAND.html을 열어 주세요.');
 })();
 </script><script type="module">function createScopedStorage(store,scope){
@@ -163,7 +163,19 @@ function standaloneQa(document,location,store){
  const params=new URLSearchParams(location.search),names=params.getAll('qa');
  if(!names.length)return {storage:store,href:page=>page};
  const scope=names[0];
- if(names.length!==1||!/^[a-z0-9-]{1,48}$/.test(scope))throw Error('QA 주소의 이름을 확인해 주세요. 영문 소문자·숫자·하이픈 1~48자로 한 번만 지정합니다.');
+ if(names.length!==1||!/^[a-z0-9-]{1,48}$/.test(scope)){
+  document.documentElement.dataset.qaBlocked='true';
+  const notice=document.createElement('main');
+  notice.id='qaAddressError';
+  notice.setAttribute('role','alert');
+  notice.style.cssText='max-width:32rem;margin:12vh auto 0;padding:24px;color:#f4ead0;font:16px/1.7 var(--ui-font,sans-serif)';
+  const title=document.createElement('h1'),help=document.createElement('p');
+  title.textContent='QA 주소를 확인해 주세요';
+  help.textContent='주소 끝에 ?qa=이름을 한 번만 붙여 주세요. 이름은 영문 소문자, 숫자, 하이픈을 사용해 1~48자로 입력할 수 있습니다.';
+  notice.append(title,help);
+  document.body.replaceChildren(notice);
+  return null;
+ }
  const renderers=params.getAll('renderer');
  const software=renderers.length===1&&renderers[0]==='software';
  document.documentElement.dataset.qaScope=scope;
@@ -182,7 +194,8 @@ const standaloneStorage=new Proxy({}, {get(_,key){
    return typeof value==='function'?value.bind(store):value;
   }});
   const standaloneRun=standaloneQa(document,location,standaloneStorage);
-  const localStorage=standaloneRun.storage;
+  if(standaloneRun){
+const localStorage=standaloneRun.storage;
 // Parent launcher asks for a save checkpoint while its modal is open.
 function installBackupBridge({window,parent,chapter,flush,pause,resume}){
  if(!parent||parent===window)return()=>true;
@@ -383,14 +396,21 @@ class Renderer{
 // CPU projection fallback for devices without WebGL. Uses the same logical world and bend formula.
 class SoftwareRenderer{
  constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false});if(!this.ctx)throw Error('화면을 만들 수 없습니다.');this.backend='software';this.gl={getError:()=>0};this.textures=new Map();this.calls=0;this.queue=[];}
- upload(g){const chunks=new Map(),a=g.data;for(let i=0;i<a.length;i+=18){const x=(a[i]+a[i+6]+a[i+12])/3,z=(a[i+2]+a[i+8]+a[i+14])/3,cx=Math.floor(x/10),cz=Math.floor(z/10),key=cx+','+cz;if(!chunks.has(key))chunks.set(key,{x:cx*10+5,z:cz*10+5,data:[]});const chunk=chunks.get(key);for(let j=0;j<18;j++)chunk.data.push(a[i+j]);}return{chunks:[...chunks.values()].map(c=>({...c,data:new Float32Array(c.data)}))};}
+ upload(g){const chunks=new Map(),a=g.data;for(let i=0;i<a.length;i+=18){const x=(a[i]+a[i+6]+a[i+12])/3,z=(a[i+2]+a[i+8]+a[i+14])/3,cx=Math.floor(x/10),cz=Math.floor(z/10),key=cx+','+cz;if(!chunks.has(key))chunks.set(key,{x:cx*10+5,z:cz*10+5,data:[]});const chunk=chunks.get(key);for(let j=0;j<18;j++)chunk.data.push(a[i+j]);}return{layer:g.softwareLayer,chunks:[...chunks.values()].map(c=>({...c,data:new Float32Array(c.data)}))};}
  texture(key,draw,w=128,h=128){if(this.textures.has(key))return this.textures.get(key);const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);this.textures.set(key,c);return c;}
  begin(x,z,k){const c=this.canvas;const dpr=Math.min(devicePixelRatio||1,1);const w=Math.max(1,Math.floor(innerWidth*dpr)),h=Math.max(1,Math.floor(innerHeight*dpr));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}this.width=w;this.height=h;this.center=[x,z];this.curve=k;this.view=lookAt([x,18,z+22],[x,0,z-1]);this.focal=h/(2*Math.tan(Math.PI/6));this.queue.length=0;this.calls=0;const sky=this.ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#233c50');sky.addColorStop(.5,'#577d82');sky.addColorStop(1,'#7d9890');this.ctx.fillStyle=sky;this.ctx.fillRect(0,0,w,h);}
  project(x,y,z){return this.projectBent(x,y-this.curve*((x-this.center[0])**2+(z-this.center[1])**2),z);}
  projectMesh(x,y,z){return this.projectBent(...surfaceMeshPoint(x,y,z,...this.center,this.curve));}
  projectBent(x,by,z){const v=this.view;const depth=-(v[2]*x+v[6]*by+v[10]*z+v[14]);if(depth<=.3)return null;return{x:this.width/2+(v[0]*x+v[4]*by+v[8]*z+v[12])*this.focal/depth,y:this.height/2-(v[1]*x+v[5]*by+v[9]*z+v[13])*this.focal/depth,depth};}
  mesh(mesh){
- if(mesh.chunks){this.ground??=mesh;for(const chunk of mesh.chunks){if(Math.abs(chunk.x-this.center[0])>42||chunk.z-this.center[1]>30||chunk.z-this.center[1]<-48)continue;this.renderChunk(chunk.data,mesh===this.ground?0:1);}this.calls++;return;}this.renderChunk(mesh.data,1,mesh.alpha??1,mesh.additive);this.calls++;}
+ if(mesh.chunks){
+  if(mesh.layer===undefined)this.ground??=mesh;
+  const layer=mesh.layer??(mesh===this.ground?0:1);
+  for(const chunk of mesh.chunks){if(Math.abs(chunk.x-this.center[0])>42||chunk.z-this.center[1]>30||chunk.z-this.center[1]<-48)continue;this.renderChunk(chunk.data,layer);}
+  this.calls++;return;
+ }
+ this.renderChunk(mesh.data,1,mesh.alpha??1,mesh.additive);this.calls++;
+ }
  renderChunk(a,layer,alpha=1,additive=false){
  for(let i=0;i<a.length;i+=18){
  const p=this.projectMesh(a[i],a[i+1],a[i+2]),q=this.projectMesh(a[i+6],a[i+7],a[i+8]),r=this.projectMesh(a[i+12],a[i+13],a[i+14]);
@@ -734,7 +754,9 @@ function seaInteract(){if(seaPaused)return;if(seaDialog){seaAdvance();return;}
   seaTalk('역류의 문지기 · 벨로크',[...SWAEHAE_SCENES.foregate,...(seaState.boat.stage==='complete'?['물길의 기억이 겹친다. 종이배가 돌아왔던 홈과 같은 갈라진 원이다.\n'+BELROK_CLUE]:[]),'문지기가 고개를 든다. 방 안의 오래된 명령이 다시 울린다.\nJ 검격 · L 파동 · K / Space 회피'],enter);
  }
 }
-const seaGround=new Geometry(),seaProps=new Geometry(),seaBase=new Geometry();
+const seaBed=new Geometry(),seaGround=new Geometry(),seaProps=new Geometry(),seaBase=new Geometry();
+// Draw the submerged bed below the land even when the CPU sorts large triangles by centroid.
+seaBed.softwareLayer=-1;
 // Build the headland in cross sections. The outer strips follow the same coast as
 // the dry stone, so beach, submerged shelves and breakers meet along one contour.
 function harborPoint(u,v,margin=0,y=0){
@@ -745,7 +767,7 @@ function harborPoint(u,v,margin=0,y=0){
 }
 for(let x=-78;x<78;x+=6)for(let z=-108;z<60;z+=6){
  const light=.035*Math.sin(x*.21+z*.11)+.018*Math.cos(x*.34-z*.15);
- seaGround.quad([x,-1.12,z],[x+6,-1.12,z],[x+6,-1.12,z+6],[x,-1.12,z+6],[.07+light,.28+light,.37+light]);
+ seaBed.quad([x,-1.12,z],[x+6,-1.12,z],[x+6,-1.12,z+6],[x,-1.12,z+6],[.07+light,.28+light,.37+light]);
 }
 const harborOutline=[];
 for(let i=0;i<48;i++)harborOutline.push([1,-1+2*i/48]);
@@ -811,7 +833,7 @@ for(const {side,z,bank} of harborBerths){
   seaBase.cone(x,.7,z+offset,.24,.23,[.75,.64,.44],7,.24);
  }
 }
-const seaGroundMesh=seaRenderer.upload(seaGround),seaPropsMesh=seaRenderer.upload(seaProps),seaBaseMesh=seaRenderer.upload(seaBase);
+const seaBedMesh=seaRenderer.upload(seaBed),seaGroundMesh=seaRenderer.upload(seaGround),seaPropsMesh=seaRenderer.upload(seaProps),seaBaseMesh=seaRenderer.upload(seaBase);
 function seaSprite(key,color,hat=false){return seaRenderer.texture('sea-person-'+key,c=>{c.fillStyle='#102d3955';c.beginPath();c.ellipse(64,116,31,7,0,0,Math.PI*2);c.fill();c.fillStyle='#263b43';c.fillRect(44,92,15,23);c.fillRect(69,92,15,23);c.fillStyle=color;c.beginPath();c.moveTo(43,53);c.lineTo(85,53);c.lineTo(91,96);c.lineTo(36,96);c.fill();c.fillStyle='#e4c69c';c.beginPath();c.ellipse(64,37,20,24,0,0,Math.PI*2);c.fill();c.fillStyle=hat?'#bdad78':'#29414a';c.beginPath();c.ellipse(64,21,26,13,0,0,Math.PI*2);c.fill();if(hat)c.fillRect(31,27,66,7);c.fillStyle='#263c42';c.fillRect(53,38,4,5);c.fillRect(73,38,4,5);c.fillStyle='#dfc984';c.fillRect(42,58,45,5);});}
 const seaHero=seaSprite('hero','#466974'),seaNaru=seaSprite('naru','#7e7860',true),seaChild=seaSprite('child','#8c8f60');
 let seaLabels=[];
@@ -889,7 +911,7 @@ function drawHarborWater(g,level,clock,flow){
   }
  }
 }
-function seaDraw(alpha=1,dt=1/60){seaVisual=seaMotion.sample(seaPlayer,alpha,dt,{frozen:seaPaused||!!seaDialog,dashing:seaArena&&seaBoss.dashing>0});motionTelemetry(el('chapterWorld'),seaPlayer,seaVisual,seaSimulationClock);el('seaNextPlanet').classList.toggle('hidden',!seaState.boss.rewritten||seaArena);el('seaPractice').classList.toggle('hidden',!seaState.boss.defeated||seaArena);el('bossHud').classList.toggle('hidden',!seaArena);el('harborObjective').classList.toggle('hidden',seaArena);el('boatQuest').classList.toggle('hidden',seaArena||!seaState.boat.met);seaRenderer.begin(seaVisual.cameraX,seaVisual.cameraZ,.012);seaRenderer.mesh(seaGroundMesh);if(seaArena){drawBelrokArena(alpha);return;}seaRenderer.mesh(seaBaseMesh);if(!seaArt.propReady)seaRenderer.mesh(seaPropsMesh);const g=new Geometry(),status=tideState(seaState.gates),flow=status==='circulation'?1:status==='draining'?-1:0.3,waterY=status==='filling'?.36:status==='draining'?.04:.2;
+function seaDraw(alpha=1,dt=1/60){seaVisual=seaMotion.sample(seaPlayer,alpha,dt,{frozen:seaPaused||!!seaDialog,dashing:seaArena&&seaBoss.dashing>0});motionTelemetry(el('chapterWorld'),seaPlayer,seaVisual,seaSimulationClock);el('seaNextPlanet').classList.toggle('hidden',!seaState.boss.rewritten||seaArena);el('seaPractice').classList.toggle('hidden',!seaState.boss.defeated||seaArena);el('bossHud').classList.toggle('hidden',!seaArena);el('harborObjective').classList.toggle('hidden',seaArena);el('boatQuest').classList.toggle('hidden',seaArena||!seaState.boat.met);seaRenderer.begin(seaVisual.cameraX,seaVisual.cameraZ,.012);seaRenderer.mesh(seaBedMesh);seaRenderer.mesh(seaGroundMesh);if(seaArena){drawBelrokArena(alpha);return;}seaRenderer.mesh(seaBaseMesh);if(!seaArt.propReady)seaRenderer.mesh(seaPropsMesh);const g=new Geometry(),status=tideState(seaState.gates),flow=status==='circulation'?1:status==='draining'?-1:0.3,waterY=status==='filling'?.36:status==='draining'?.04:.2;
  // Foam starts beside each moored hull and thins as it drifts away from the landing.
  for(const {hull,z,side,water} of harborBerths){
   for(let k=0;k<2;k++){
@@ -966,4 +988,5 @@ el('seaNextPlanet').onclick=()=>{saveSea();location.href=standaloneRun.href('MUM
 if(window.parent&&window.parent!==window)backupCanSave=installBackupBridge({window,parent:window.parent,chapter:'swaehae',flush:()=>(()=>{saveSea();return !seaSaveFailed;})(),pause:()=>{const previous=seaPaused;seaPaused=true;seaKeys.clear();return previous;},resume:previous=>{seaPaused=previous;seaKeys.clear();}});
 
 el('travelerName').textContent=readTravelerName(k=>localStorage.getItem(k));
-</script></body></html>
+
+}</script></body></html>
