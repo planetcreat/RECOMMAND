@@ -10,6 +10,13 @@ export const BRIEFINGS={
  mumyeong:[{tag:'PLANET 03 · MUMYEONG',title:'무명 — 지워진 이름의 설원',body:'눈 속 마을에는 문패가 남아 있지만 이름이 비어 있습니다. 사람들은 같은 과거를 서로 다르게 기억합니다. 잊힌 것은 이름뿐일까요. 이 마을의 기록은 당신의 기억에도 닿아 있습니다.',goal:'첫걸음: 마을의 시온을 만나 이야기를 들어 보세요.'},{tag:'MUMYEONG · FIRST STEPS',title:'누구의 기억을 믿을 것인가',body:'한 사람의 말만으로 모든 일이 설명되지는 않습니다. 서로 다른 목소리 사이에 무엇이 남고 무엇이 빠졌는지, 당신이 들은 이야기를 되짚어 보세요.',goal:'누구의 이름도 서둘러 대신 정하지 마세요. 이곳에 남은 말들을 먼저 들어 보세요.'}],
  hwanseong:[{tag:'PLANET 04 · HWANSEONG',title:'환성 — 돌아온 목소리의 궤도',body:'땅 아래로 별이 흐르고, 먼 곳의 목소리가 궤도에 도착합니다. 당신이 지나온 곳에도 시간은 흘렀습니다. 그곳에 남긴 선택은 어떤 대답으로 돌아왔을까요.',goal:'첫걸음: 통신환에서 들려오는 목소리에 귀를 기울여 보세요.'},{tag:'HWANSEONG · FIRST STEPS',title:'대답을 기다리는 자리',body:'여정의 끝에서 다시 명령 앞에 섭니다. 당신 혼자 알고 있다고 생각했던 일에도 다른 목소리가 남아 있습니다. 루미 역시 이곳을 바라보고 있습니다.',goal:'지나온 선택과 지금 곁에 있는 사람을 돌아보세요. 마지막 판단은 당신에게 남아 있습니다.'}]
 };
+export const ARRIVAL_BRIEFINGS={
+ yuon:[{tag:'ARRIVAL · YUON',title:'유온 — 남겨진 숨의 정원',body:'낯선 정원에서 눈을 뜹니다.',goal:'가까이에 있는 루미에게 말을 걸어 보세요.'}],
+ swaehae:[{tag:'ARRIVAL · SWAEHAE',title:'쇄해 — 닫힌 길의 바다',body:'계단 끝으로 항구가 보입니다.',goal:'부두의 제방지기 나루를 만나 보세요.'}],
+ mumyeong:[{tag:'ARRIVAL · MUMYEONG',title:'무명 — 지워진 이름의 설원',body:'눈길 너머로 작은 마을이 보입니다.',goal:'마을 입구에서 종을 지키는 시온을 찾아보세요.'}],
+ hwanseong:[{tag:'ARRIVAL · HWANSEONG',title:'환성 — 돌아온 목소리의 궤도',body:'별빛이 비치는 갑판에 도착합니다.',goal:'갑판의 루미와 첫 응답대를 찾아보세요.'}]
+};
+
 export const BRIEFING_KEY='recommand-briefing-v1';
 export function readBriefingSeen(read){try{const value=JSON.parse(read(BRIEFING_KEY)||'{}');if(!value||typeof value!=='object'||Array.isArray(value))return{};return Object.fromEntries(['intro',...Object.keys(BRIEFINGS)].filter(k=>value[k]===true).map(k=>[k,true]));}catch{return{};}}
-export function pendingBriefing(chapter,seen){return [...(!seen.intro?PROLOGUE:[]),...(!seen[chapter]?(BRIEFINGS[chapter]||[]):[])];}
+export function pendingBriefing(chapter,seen){return [...(!seen.intro?PROLOGUE:[]),...(!seen[chapter]?(ARRIVAL_BRIEFINGS[chapter]||[]):[])];}

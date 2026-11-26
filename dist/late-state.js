@@ -1,7 +1,7 @@
 import {loadTide} from './tide.js';
 export const LATE_KEYS={mumyeong:'recommand-mumyeong-v1',hwanseong:'recommand-hwanseong-v1'};
 const boolArray=(v,n)=>Array.isArray(v)&&v.length===n&&v.every(x=>typeof x==='boolean');
-export function newLateState(planet){if(!LATE_KEYS[planet])throw Error('알 수 없는 행성입니다.');return{format:'RECOMMAND-LATE',v:1,planet,arrived:false,nameRevealed:false,nameAccepted:false,heard:[],compared:[false,false,false],chime:false,asked:false,relays:[false,false,false],invited:[false,false,false],tomorrow:false,lumi:false,boss:false,ending:null,player:{x:0,z:10,hp:100}};}
+export function newLateState(planet){if(!LATE_KEYS[planet])throw Error('알 수 없는 행성입니다.');return{format:'RECOMMAND-LATE',v:1,planet,arrived:false,nameRevealed:false,nameAccepted:false,heard:[],compared:[false,false,false],chime:false,asked:false,relays:[false,false,false],invited:[false,false,false],tomorrow:false,lumi:false,boss:false,ending:null,player:{x:0,z:10,hp:100},...(planet==='hwanseong'?{finalSignals:[false,false,false]}:{})};}
 export function decodeLate(raw,planet){
  const s=typeof raw==='string'?JSON.parse(raw):raw;
  if(!s||s.format!=='RECOMMAND-LATE'||s.v!==1||s.planet!==planet||!LATE_KEYS[planet])throw Error('이 행성의 진행 파일이 아닙니다.');
@@ -17,7 +17,18 @@ export function decodeLate(raw,planet){
  if(!s.arrived&&(s.heard.length||s.compared.some(Boolean)||s.relays.some(Boolean)||s.boss))throw Error('도착 이전의 기록이 섞여 있습니다.');
  for(const key of['nameRevealed','nameAccepted'])if(s[key]!==undefined&&typeof s[key]!=='boolean')throw Error('이름의 기록이 손상되었습니다.');
  if(s.nameRevealed&&(planet!=='mumyeong'||!s.compared.every(Boolean))||s.nameAccepted&&(!s.nameRevealed||!s.boss))throw Error('이름을 알게 된 순서가 맞지 않습니다.');
- return structuredClone({...s,nameRevealed:s.nameRevealed??false,nameAccepted:s.nameAccepted??false});
+ const record={...s,nameRevealed:s.nameRevealed??false,nameAccepted:s.nameAccepted??false};
+ if(planet==='hwanseong'){
+  const signals=s.finalSignals===undefined?Array(3).fill(!!s.ending):s.finalSignals;
+  if(!boolArray(signals,3)||!s.boss&&signals.some(Boolean)||s.ending&&!signals.every(Boolean))throw Error('환성의 마지막 수신 기록이 일치하지 않습니다.');
+  record.finalSignals=signals;
+ }
+ return structuredClone(record);
+}
+export function recordFinalSignal(state,index){
+ if(state.planet!=='hwanseong'||!state.boss||state.ending||![0,1,2].includes(index)||state.finalSignals[index])return false;
+ state.finalSignals[index]=true;
+ return true;
 }
 export function revealTravelerName(s){if(s.planet!=='mumyeong'||!s.compared.every(Boolean))return false;s.nameRevealed=true;return true;}
 export function acceptTravelerName(s){if(s.planet!=='mumyeong'||!s.boss||!s.nameRevealed)return false;s.nameAccepted=true;return true;}

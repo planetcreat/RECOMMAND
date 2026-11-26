@@ -15,6 +15,14 @@ export function tickBoat(s,dt){if(s.boat.stage!=='sailing'||tideState(s.gates)!=
 export function boatPosition(elapsed){const points=[[-4.7,9],[-4.7,-19],[4.7,-19],[4.7,9],[-4.7,9]],lengths=[28,9.4,28,9.4];let d=Math.max(0,Math.min(1,elapsed/BOAT_SECONDS))*74.8;for(let i=0;i<4;i++){if(d<=lengths[i]||i===3){const t=Math.min(1,d/lengths[i]);return{x:points[i][0]+(points[i+1][0]-points[i][0])*t,z:points[i][1]+(points[i+1][1]-points[i][1])*t,angle:Math.atan2(points[i+1][1]-points[i][1],points[i+1][0]-points[i][0])};}d-=lengths[i];}}
 export function boatHint(s){if(!s.boat.met)return '';return{unknown:tideIntel(s)?'물이 빠질 때 드러나는 표식을 찾아보자.':'세 흐름을 관측하면 배가 돌아올 길을 알 수 있을까?',charted:'두 수문을 닫고 되돌림 수로를 안전하게 수리하자.',repaired:'두 수문을 열고 도하 옆 선착장에서 배를 띄우자.',sailing:tideState(s.gates)==='circulation'?'종이배가 되돌림 수로를 따라 항해 중이다.':'물이 멈췄다. 두 수문을 열면 배가 다시 움직인다.',returned:'돌아온 배를 도하와 함께 확인하자.',complete:'물길의 기억 · 획득 완료'}[s.boat.stage];}
 export function tideState(gates){return gates[0]?(gates[1]?'circulation':'filling'):(gates[1]?'draining':'sealed');}
+const TIDE_DISPLAY={sealed:[.14,0,0,1],filling:[.36,-1.4,-.18,1],draining:[.04,.18,1.4,1],circulation:[.24,-1.35,1.35,0]};
+export function harborTideVisual(status,previous,dt=0){
+ const target=TIDE_DISPLAY[status];
+ const elapsed=Number.isFinite(dt)?Math.min(.1,Math.max(0,dt)):0;
+ const blend=1-Math.exp(-3.4*elapsed);
+ const [level,west,east,bridge]=previous?target.map((value,i)=>previous.values[i]+(value-previous.values[i])*blend):target;
+ return {values:[level,west,east,bridge],phase:[(previous?.phase[0]??0)+west*elapsed,(previous?.phase[1]??0)+east*elapsed]};
+}
 export function tideDescription(gates){return{sealed:'두 수문이 닫혀 있다. 항구 쪽 수압만 높아진다.',filling:'서쪽 저류지로 물이 들어간다. 오래된 벽면의 눈금이 잠긴다.',draining:'동쪽 배수로로 물이 빠진다. 물 아래에 묻혔던 되돌림 표식이 나타난다.',circulation:'물이 고이지 않고 순환한다. 중앙 보행교의 잠금이 풀렸다.'}[tideState(gates)];}
 export function observeTide(state){const i=['filling','draining','circulation'].indexOf(tideState(state.gates));if(i>=0)state.observations[i]=true;return state;}
 export function tideIntel(state){return state.observations.every(Boolean);}

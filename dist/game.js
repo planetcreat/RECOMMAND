@@ -22,6 +22,7 @@ const rand=seeded(2871), keys=new Set(), obstacles=[], particles=[], effects=[];
 const player={x:0,z:7,hp:100,xp:0,face:{x:0,z:-1},attack:0,dash:0,skill:0,inv:0,walk:0,dashTime:0};
 const playerMotion=new MotionPresenter(player),playerMotor=new CharacterMotor();
 const npc={x:3,z:0},portal={x:0,z:11},fracture={x:9,z:-5};
+const gardener={x:-7,z:-5,kind:'gardener',name:'세아 · 정원지기'};
 const seals=[{x:-19,z:-20,name:'뿌리의 제단'},{x:22,z:-33,name:'바람의 제단'},{x:-14,z:-55,name:'기억의 제단'}];
 const memories=[{x:22,z:-9,name:'쓰러진 기록석',text:'[이전 명령: 생태계 보존을 위해 거주민 접근을 차단한다.]\n차가운 문장 아래, 누군가 같은 필체로 덧붙였다.\n“보호와 감금은 무엇이 다른가?”'},{x:-32,z:-41,name:'낡은 관측기',text:'장치가 당신의 손에 반응한다.\n[명령권자 생체 서명 일치. 재명령 대기.]\n당신은 손을 뗀다. 처음 보는 장치인데, 사용법을 알고 있었다.'}];
 let state={quest:0,seals:[false,false,false],memories:[false,false],bond:false,fracture:false,boss:false,complete:false,ending:null,sidequest:0,echoes:[false,false],intel:false,surveyRecord:false,anomaly:false},started=false,paused=false,study=false,dialog=null,curve=.012,debug=false,grid=false,mapBig=false,time=0,toastTime=0,lastSave=0;
@@ -116,7 +117,7 @@ for(let x=-95;x<95;x+=groundStep)for(let z=-95;z<95;z+=groundStep){
 function shadow(g,x,z,r){g.disc(x,groundY(x,z)+.025,z,r,[.16,.29,.22]);}
 for(let i=0;i<360;i++){
  const x=rand()*166-83,z=rand()*166-83;
- if(pathDist(x,z)<4||Math.hypot(x,z)<8||distance({x,z},fracture)<2.5||distance({x,z},SCOUT)<3||distance({x,z},OLD_SURVEY)<2.5||ECHO_SITES.some(e=>distance({x,z},e)<3)||seals.some(s=>distance({x,z},s)<6)||distance({x,z},{x:13,z:-69})<8||memories.some(s=>distance({x,z},s)<3))continue;
+ if(pathDist(x,z)<4||Math.hypot(x,z)<8||distance({x,z},fracture)<2.5||distance({x,z},SCOUT)<3||distance({x,z},gardener)<3||distance({x,z},OLD_SURVEY)<2.5||ECHO_SITES.some(e=>distance({x,z},e)<3)||seals.some(s=>distance({x,z},s)<6)||distance({x,z},{x:13,z:-69})<8||memories.some(s=>distance({x,z},s)<3))continue;
  const h=3+rand()*3,r=1+rand()*.9;obstacles.push({x,z,r:.6});shadow(props,x+.6,z+.5,r*1.1);
  treeGeo.cone(x,groundY(x,z),z,.24,h*.45,[.28,.28,.19],6,.17);
  const col=rand()>.3?[.18,.35,.28]:[.33,.44,.28];
@@ -132,7 +133,7 @@ props.disc(0,.08,11,3,[.35,.43,.36]);props.ring(0,.1,11,2.7,[.74,.73,.48],64,.12
 for(const x of[-2.6,2.6]){portalGeo.cone(x,.15,11,.5,3.5,[.38,.47,.4],6,.35);portalGeo.cone(x,3.65,11,.48,.8,[.66,.75,.51],6);obstacles.push({x,z:11,r:.5});}
 props.cone(OLD_SURVEY.x,groundY(OLD_SURVEY.x,OLD_SURVEY.z),OLD_SURVEY.z,.9,.4,[.4,.47,.39],6,.8);obstacles.push({...OLD_SURVEY,r:.7});
 const roadGeo=buildGardenRoad(new Geometry(),roads,{height:groundY,terrain:visualTerrain,soft:SOFT});const roadMesh=R.upload(roadGeo);
-const gardenLamps=decorateGarden(props,{height:groundY,pathDistance:pathDist,routes:roads,landmarks:[npc,portal,fracture,SCOUT,OLD_SURVEY,...ECHO_SITES,...memories,...seals.map(p=>({...p,clearance:8})),{x:13,z:-69,clearance:9}],obstacles,soft:SOFT});
+const gardenLamps=decorateGarden(props,{height:groundY,pathDistance:pathDist,routes:roads,landmarks:[npc,portal,fracture,gardener,SCOUT,OLD_SURVEY,...ECHO_SITES,...memories,...seals.map(p=>({...p,clearance:8})),{x:13,z:-69,clearance:9}],obstacles,soft:SOFT});
 const worldMesh=R.upload(ground),propMesh=R.upload(props),gridMesh=R.upload(gridGeo),treeMesh=R.upload(treeGeo),portalMesh=R.upload(portalGeo);
 // A quiet environmental clue: no marker, no label, no objective counter.
 const brokenGeo=new Geometry();brokenGeo.cone(fracture.x,groundY(fracture.x,fracture.z),fracture.z,.62,.9,[.37,.45,.39],5,.4);
@@ -170,12 +171,12 @@ function sprite(kind,variant=0,frame=0,back=false){
 }
 const heroSprites=[sprite('hero',0,0,false),sprite('hero',0,1,false),sprite('hero',0,0,true),sprite('hero',0,1,true)],npcTex=sprite('npc'),scoutTex=sprite('npc',1),bossTex=sprite('boss'),glowTex=sprite('glow');
 const slimeTextures=Array.from({length:3},(_,i)=>[sprite('slime',i,0),sprite('slime',i,1)]);
-function label(text,color='#e8e5bd'){return R.texture('label'+text,(c,w,h)=>{c.font='27px '+UI_CANVAS_FONT;c.textAlign='center';c.shadowColor='#0b2529';c.shadowBlur=5;c.fillStyle=color;c.fillText(text,w/2,37,480);},512,64);}
+function label(text,color='#e8e5bd'){return R.texture('label'+text,(c,w,h)=>{c.font='36px '+UI_CANVAS_FONT;c.textAlign='center';c.shadowColor='#0b2529';c.shadowBlur=5;c.fillStyle=color;c.strokeStyle='#142629';c.lineWidth=5;c.lineJoin='round';c.strokeText(text,w/2,41,480);c.fillText(text,w/2,41,480);},512,64);}
 let labels={echoes:[],seals:[],memories:[]};
 whenUiFontReady(()=>{
- labels={remains:label('수호자의 기억'),scout:label(SCOUT.name),survey:label(OLD_SURVEY.name),echoes:ECHO_SITES.map(e=>label(e.name)),npc:label('루미 · 기록자'),portal:label('별의 관문'),boss:label(BOSS.name,'#f0d39b'),seals:seals.map(s=>label(s.name)),memories:memories.map(s=>label(s.name))};
+ labels={remains:label('수호자의 기억'),scout:label(SCOUT.name),gardener:label(gardener.name),survey:label(OLD_SURVEY.name),echoes:ECHO_SITES.map(e=>label(e.name)),npc:label('루미 · 기록자'),portal:label('별의 관문'),boss:label(BOSS.name,'#f0d39b'),seals:seals.map(s=>label(s.name)),memories:memories.map(s=>label(s.name))};
 });
-function drawLabel(texture,x,y,z,width,height){if(texture)R.sprite(texture,x,y,z,width,height);}
+function drawLabel(texture,x,y,z,width,height){if(texture&&Math.hypot(x-player.x,z-player.z)<24)R.sprite(texture,x,y,z,width*1.2,height*1.4);}
 const enemies=[];
 for(let i=0;i<3;i++)for(let j=0;j<3;j++){const a=j/3*TAU;enemies.push({id:i*3+j,x:seals[i].x+Math.cos(a)*4,z:seals[i].z+Math.sin(a)*4,home:{x:seals[i].x+Math.cos(a)*4,z:seals[i].z+Math.sin(a)*4},hp:48,max:48,type:i,wind:0,cd:.5,jitter:j,hit:0});}
 const boss={id:99,x:13,z:-69,home:{x:13,z:-69},hp:300,max:300,type:3,wind:0,cd:2,hit:0};enemies.push(boss);
@@ -189,7 +190,7 @@ function action(name){
  if(name==='dash'&&player.dash<=0){player.dash=1.6;player.dashTime=.2;player.inv=Math.max(player.inv,.25);sound(300,.12,'sine');}
  if(name==='skill'&&player.skill<=0){player.skill=5;effects.push({kind:'wave',x:player.x,z:player.z,life:.75,max:.75});for(const e of enemies)if(e.hp>0&&(e!==boss||state.seals.every(Boolean))&&distance(player,e)<=6)damageEnemy(e,36);sound(750,.4,'sine');}
 }
-function nearest(){const all=[{...npc,kind:'npc',name:'루미'},{...SCOUT,kind:'scout',name:SCOUT.name},{...OLD_SURVEY,kind:'survey',name:OLD_SURVEY.name},...ECHO_SITES.map((s,i)=>({...s,kind:'echo',i})),{...portal,kind:'portal',name:'별의 관문'},...seals.map((s,i)=>({...s,kind:'seal',i})),...memories.map((s,i)=>({...s,kind:'memory',i})),{x:boss.x,z:boss.z,kind:'boss',name:'수호자의 기억'}];if(distance(player,fracture)<1.3)all.push({...fracture,kind:'fracture',name:'갈라진 연결부'});return all.sort((a,b)=>distance(player,a)-distance(player,b)).find(o=>distance(player,o)<3.8);}
+function nearest(){const all=[gardener,{...npc,kind:'npc',name:'루미'},{...SCOUT,kind:'scout',name:SCOUT.name},{...OLD_SURVEY,kind:'survey',name:OLD_SURVEY.name},...ECHO_SITES.map((s,i)=>({...s,kind:'echo',i})),{...portal,kind:'portal',name:'별의 관문'},...seals.map((s,i)=>({...s,kind:'seal',i})),...memories.map((s,i)=>({...s,kind:'memory',i})),{x:boss.x,z:boss.z,kind:'boss',name:'수호자의 기억'}];if(distance(player,fracture)<1.3)all.push({...fracture,kind:'fracture',name:'갈라진 연결부'});return all.sort((a,b)=>distance(player,a)-distance(player,b)).find(o=>distance(player,o)<3.8);}
 function interact(){
  if(!started||paused||study||contextLost)return;if(dialog){advance();return;}const o=nearest();if(!o)return;
  if(o.kind==='npc'){
@@ -198,6 +199,12 @@ function interact(){
  else showDialog('루미',[state.complete?'당신은 숲을 살렸어요. 하지만 다른 별들은 아직 이전의 명령 아래 잠들어 있어요.':state.seals.every(Boolean)?'북쪽, 오래된 수호자가 눈을 떴어요.\n먼저 공격 신호를 보고 피하세요. 커다란 원이 차오르면 충격파가 옵니다.':'세 제단은 길을 따라 이어져 있어요.\n숲 바깥의 기록도 살펴보세요. 제단과는 다른 진실이 남아 있을지 몰라요.']);
  }
  if(o.kind==='survey'){state.surveyRecord=true;showDialog(OLD_SURVEY.name,[OLD_SURVEY.text],save);}
+ if(o.kind==='gardener'){
+  const lines=state.complete
+   ?['“보호 장치가 조용해지니 꽃을 심을 자리를 다시 고를 수 있겠네요. 물길부터 이웃들과 살펴볼래요.”']
+   :['세아는 흙에 손가락을 대 본다. “유온에서는 뿌리에 물이 닿았는지 잎을 만져 알아봐요. 제단은 한때 뿌리와 저장고 사이의 물을 나눴어요.”','“숲에 갈 수 없게 되고 나서는 물이 남는 곳도, 마르는 곳도 직접 볼 수 없었죠. 그래서 요즘은 집 앞 화분으로 계절을 짐작해요.”'];
+  showDialog(o.name,lines);return;
+ }
  if(o.kind==='scout'){
  if(!state.sidequest){
  if(canOfferSurvey(state))showDialog(SCOUT.name,['표석에는 진동이 없다고 적혀 있는데, 제단을 복구한 뒤 세 번 울렸다고요?\n그 관측은 기존 순찰 기록에 없어요.','북쪽 문지기와 같은 박자일 수 있어요. 남쪽과 동쪽 진동목을 함께 비교하면 확인할 수 있겠어요.'],offerSurvey);
@@ -348,6 +355,7 @@ function draw(alpha=1,dt=1/60){
  for(const lamp of gardenLamps)if(visible(lamp))R.sprite(glowTex,lamp.x,lamp.y-.5,lamp.z,1.1,1.1,.35+Math.sin(time*2+lamp.x)*.05);
  if(state.memories.every(Boolean)&&Math.sin(time*.8)>.98)R.sprite(glowTex,fracture.x,.87,fracture.z,.15,.15,.35);
  const draws=[];
+ if(visible(gardener))draws.push(()=>{R.sprite(worldArt.actor('worker',scoutTex),gardener.x,groundY(gardener.x,gardener.z),gardener.z,1.85,2.5);drawLabel(labels.gardener,gardener.x,3.1,gardener.z,5.5,.65);});
  draws.push(()=>R.sprite(worldArt.actor('scout',scoutTex),SCOUT.x,groundY(SCOUT.x,SCOUT.z),SCOUT.z,1.9,2.5));draws.push(()=>drawLabel(labels.scout,SCOUT.x,3.1,SCOUT.z,5.5,.65));
  if(distance(player,OLD_SURVEY)<7)draws.push(()=>drawLabel(labels.survey,OLD_SURVEY.x,1.3,OLD_SURVEY.z,4.5,.55));
  if(state.sidequest===1)for(let i=0;i<2;i++){const s=ECHO_SITES[i];if(visible(s))draws.push(()=>drawLabel(labels.echoes[i],s.x,3,s.z,4.5,.6));}

@@ -1,13 +1,48 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {newLateState,decodeLate,reconstruct,canShare,loadLate,writeLate} from '../dist/late-state.js';
+import {newLateState,decodeLate,reconstruct,canShare,loadLate,writeLate,recordFinalSignal} from '../dist/late-state.js';
 import {createLateBoss,tickLateBoss,hitLateBoss} from '../dist/late-combat.js';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {clamp} from '../dist/math.js';
-import {LATE_PLANETS} from '../dist/late-story.js';
+import {LATE_PLANETS,ORBIT_FINAL_CALLS,ORBIT_FINAL_ASSEMBLY} from '../dist/late-story.js';
 import {Geometry} from '../dist/engine.js';
 
 const worldSource=fs.readFileSync(new URL('../dist/late-game.js',import.meta.url),'utf8').replaceAll('\r\n','\n');
+
+test('Hwanseong finale records distinct replies after victory and preserves legacy endings',()=>{
+ const current=newLateState('hwanseong');
+ assert.equal(recordFinalSignal(current,1),false);
+ Object.assign(current,{arrived:true,relays:[true,true,true],boss:true});
+ assert.equal(recordFinalSignal(current,1),true);
+ assert.equal(recordFinalSignal(current,1),false);
+ assert.deepEqual(decodeLate(JSON.stringify(current),'hwanseong').finalSignals,[false,true,false]);
+ assert.throws(()=>decodeLate({...current,ending:'guarded'},'hwanseong'));
+ const {finalSignals,...legacy}=current;
+ assert.deepEqual(decodeLate(legacy,'hwanseong').finalSignals,[false,false,false]);
+ const completed=decodeLate({...legacy,ending:'guarded'},'hwanseong');
+ assert.equal(completed.ending,'guarded');
+ assert.deepEqual(completed.finalSignals,[true,true,true]);
+});
+
+test('Hwanseong runtime waits for all calls and respects prior consent for the shared ending',()=>{
+ const state=Object.assign(newLateState('hwanseong'),{arrived:true,boss:true,relays:[true,true,true],invited:[true,true,true],lumi:true,tomorrow:true});
+ const journey={completed:[true,false,true],garden:true,sea:false,snow:true};
+ let dialogue;
+ const env={lateState:state,lateConfig:LATE_PLANETS.hwanseong,isSnow:false,ORBIT_FINAL_CALLS,ORBIT_FINAL_ASSEMBLY,
+  lateTalk:(title,lines,after,choices)=>{dialogue={title,lines,after,choices};},lateToast(){},lateFinish(){},lateTravelMenu(){},latePriorName:'',
+  lateJourney:()=>journey,recordFinalSignal,canShare};
+ const first=worldSource.slice(worldSource.indexOf('function lateOrbitFinale('),worldSource.indexOf('function lateOrbitInteract('));
+ const last=worldSource.slice(worldSource.indexOf('function lateFinalChoice('),worldSource.indexOf('function lateFinish('));
+ vm.runInNewContext(first+last,env);
+ env.lateOrbitAssembly();assert.equal(dialogue.after,undefined);
+ for(const index of [1,2,0]){
+  env.lateOrbitCall(index);
+  assert.equal(dialogue.lines[0],index===1?ORBIT_FINAL_CALLS[index].trace:ORBIT_FINAL_CALLS[index].voice);
+  assert.equal(state.finalSignals[index],false);dialogue.after();
+ }
+ env.lateOrbitAssembly();assert.equal(dialogue.lines,ORBIT_FINAL_ASSEMBLY);dialogue.after();assert.equal(dialogue.choices.length,2);
+ journey.sea=true;env.lateFinalChoice();assert.equal(dialogue.choices.length,3);
+});
 
 function stationPanels(){
  const start=worldSource.indexOf('function latePath(');

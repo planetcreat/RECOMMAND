@@ -2,11 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {TIDE_SAVE_KEY,TIDE_INITIAL,decodeTide,boatAction,tickBoat,boatPosition,BOAT_SECONDS} from '../dist/tide.js';
+import {TIDE_SAVE_KEY,TIDE_INITIAL,decodeTide,boatAction,tickBoat,boatPosition,BOAT_SECONDS,harborTideVisual} from '../dist/tide.js';
 import {journeySummary} from '../dist/late-state.js';
 import {BELROK_CLUE} from '../dist/belrok.js';
 const initial=()=>structuredClone(TIDE_INITIAL);
 const ready=()=>({...initial(),introduced:true,observations:[true,true,true]});
+test('harbor display eases the bridge and carries current highlights through a reversal',()=>{
+ const sealed=harborTideVisual('sealed'),moving=harborTideVisual('filling',sealed,.1);
+ assert(moving.values[0]>sealed.values[0]&&moving.values[0]<.36);
+ const changed=harborTideVisual('circulation',moving,.1);
+ assert(changed.values[3]>0&&changed.values[3]<1);
+ assert(changed.phase[0]<moving.phase[0]&&changed.phase[1]>moving.phase[1]);
+ assert.deepEqual(harborTideVisual('draining',changed,0),changed);
+});
 test('legacy tide saves migrate without losing main progress or aliasing defaults',()=>{
  const old={v:1,arrival:true,introduced:true,gates:[true,true],observations:[true,false,true],foregate:true};
  const a=decodeTide(old),b=decodeTide(old);a.boat.met=true;
@@ -77,6 +85,14 @@ test('Swaehae never replaces unreadable saves after a new arrival dialogue',()=>
  game.close();game.blur(true);game.a.draw();
  assert.deepEqual([...game.storage],before);
  assert.match(game.els.get('chapterSaveNotice').textContent,/저장하지 않습니다/);
+});
+
+test('the dock worker describes daily life without completing a gate objective',()=>{
+ const game=chapterBoot({...initial(),arrival:true});
+ game.visit(8,11);assert.match(game.a.dialog().lines[0],/부두마다 다른 색 등을/);
+ game.close();
+ assert.equal(game.a.state.introduced,false);
+ assert.deepEqual([...game.a.state.gates],[false,false]);
 });
 
 test('boss strategy stays behind the completed hidden quest in both arrival and NPC dialogue',()=>{

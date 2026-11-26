@@ -14,7 +14,7 @@ export function readMusicSettings(read){
 export class PlanetMusic{
  constructor({contextFactory,clips,delay,onError=()=>{}}){
   this.factory=contextFactory;this.clips=clips;this.delay=delay;this.onError=onError;
-  this.volume=.35;this.enabled=false;this.hidden=false;this.ducked=false;this.chapter='yuon';
+  this.volume=.35;this.enabled=false;this.hidden=false;this.ducked=false;this.sceneLevel=1;this.chapter='yuon';
   this.epoch=0;this.buffers=new Map();
  }
 
@@ -38,10 +38,11 @@ export class PlanetMusic{
  }
 
  level(){
-  if(this.master)this.master.gain.setTargetAtTime(this.enabled&&!this.hidden?this.volume*(this.ducked?.24:1):0,this.context.currentTime,.15);
+  if(this.master)this.master.gain.setTargetAtTime(this.enabled&&!this.hidden?this.volume*this.sceneLevel*(this.ducked?.24:1):0,this.context.currentTime,.15);
  }
  setVolume(v){if(Number.isFinite(v))this.volume=Math.max(0,Math.min(1,v));this.level();}
  duck(v){this.ducked=!!v;this.level();}
+ setSceneLevel(value){this.sceneLevel=value;this.level();}
  select(chapter){
   if(!Object.hasOwn(PLANET_TRACKS,chapter)||chapter===this.chapter)return;
   this.chapter=chapter;

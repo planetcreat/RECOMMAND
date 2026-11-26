@@ -31,6 +31,14 @@ function harness(){
  return{music,ctx,ramps,sources,delays,decoded,holds,failures,get created(){return created;}};
 }
 
+test('finale music level composes with narration and resets without changing saved volume',async()=>{
+ const {music,ramps}=harness();
+ music.setVolume(.5);await music.enable(true);
+ music.setSceneLevel(.42);assert.equal(ramps.at(-1).v,.21);
+ music.duck(true);assert.equal(ramps.at(-1).v,.21*.24);
+ music.duck(false);music.setSceneLevel(1);assert.equal(ramps.at(-1).v,.5);
+});
+
 test('four distinct Opus recordings are embedded byte-for-byte in the offline launcher',()=>{
  const launcher=fs.readFileSync(new URL('../release/PLAY-RECOMMAND.html',import.meta.url),'utf8');
  const embedded=JSON.parse(launcher.match(/,musicClips=(\{[^\r\n]+\});/)[1]);
