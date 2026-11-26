@@ -13,7 +13,6 @@ test('standalone QA scopes saves and carries its renderer and name to the next f
   createElement:()=>({setAttribute(){},style:{}}),body:{append(){}}};
  assert.equal(standaloneQa(document,{search:'?renderer=software'},store).storage,store);
  assert.deepEqual(document.documentElement.dataset,{});
- assert.throws(()=>standaloneQa(document,{search:'?qa=one&qa=two'},store),/QA/);
  const qa=standaloneQa(document,{search:'?qa=deck&renderer=software'},store);
  qa.storage.setItem('save','isolated');
  assert.equal(qa.storage.getItem('save'),'isolated');
@@ -22,6 +21,19 @@ test('standalone QA scopes saves and carries its renderer and name to the next f
  assert.equal(document.documentElement.dataset.qaRenderer,'software');
  assert.equal(link.href,'MUMYEONG.html?qa=deck&renderer=software');
  assert.equal(qa.href('HWANSEONG.html'),'HWANSEONG.html?qa=deck&renderer=software');
+});
+
+test('invalid standalone QA replaces the entire game with Korean guidance before touching storage',()=>{
+ for(const search of ['?qa=one&qa=two','?qa=','?qa=Uppercase']){
+  let screen;
+  const document={documentElement:{dataset:{}},createElement:()=>({setAttribute(){},style:{},append(...children){this.children=children;}}),
+   body:{replaceChildren(value){screen=value;}}};
+  const storage=new Proxy({}, {get(){assert.fail('Blocked QA page touched storage');}});
+  assert.equal(standaloneQa(document,{search},storage),null);
+  assert.equal(document.documentElement.dataset.qaBlocked,'true');
+  assert.equal(screen.id,'qaAddressError');
+  assert.match(screen.children[1].textContent,/\?qa=이름/);
+ }
 });
 
 test('standalone previous-planet links point to shipped case-sensitive HTML files',()=>{

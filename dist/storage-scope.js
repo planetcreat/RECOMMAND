@@ -17,7 +17,19 @@ export function standaloneQa(document,location,store){
  const params=new URLSearchParams(location.search),names=params.getAll('qa');
  if(!names.length)return {storage:store,href:page=>page};
  const scope=names[0];
- if(names.length!==1||!/^[a-z0-9-]{1,48}$/.test(scope))throw Error('QA 주소의 이름을 확인해 주세요. 영문 소문자·숫자·하이픈 1~48자로 한 번만 지정합니다.');
+ if(names.length!==1||!/^[a-z0-9-]{1,48}$/.test(scope)){
+  document.documentElement.dataset.qaBlocked='true';
+  const notice=document.createElement('main');
+  notice.id='qaAddressError';
+  notice.setAttribute('role','alert');
+  notice.style.cssText='max-width:32rem;margin:12vh auto 0;padding:24px;color:#f4ead0;font:16px/1.7 var(--ui-font,sans-serif)';
+  const title=document.createElement('h1'),help=document.createElement('p');
+  title.textContent='QA 주소를 확인해 주세요';
+  help.textContent='주소 끝에 ?qa=이름을 한 번만 붙여 주세요. 이름은 영문 소문자, 숫자, 하이픈을 사용해 1~48자로 입력할 수 있습니다.';
+  notice.append(title,help);
+  document.body.replaceChildren(notice);
+  return null;
+ }
  const renderers=params.getAll('renderer');
  const software=renderers.length===1&&renderers[0]==='software';
  document.documentElement.dataset.qaScope=scope;

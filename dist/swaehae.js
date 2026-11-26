@@ -63,7 +63,9 @@ function seaInteract(){if(seaPaused)return;if(seaDialog){seaAdvance();return;}
   seaTalk('역류의 문지기 · 벨로크',[...SWAEHAE_SCENES.foregate,...(seaState.boat.stage==='complete'?['물길의 기억이 겹친다. 종이배가 돌아왔던 홈과 같은 갈라진 원이다.\n'+BELROK_CLUE]:[]),'문지기가 고개를 든다. 방 안의 오래된 명령이 다시 울린다.\nJ 검격 · L 파동 · K / Space 회피'],enter);
  }
 }
-const seaGround=new Geometry(),seaProps=new Geometry(),seaBase=new Geometry();
+const seaBed=new Geometry(),seaGround=new Geometry(),seaProps=new Geometry(),seaBase=new Geometry();
+// Draw the submerged bed below the land even when the CPU sorts large triangles by centroid.
+seaBed.softwareLayer=-1;
 // Build the headland in cross sections. The outer strips follow the same coast as
 // the dry stone, so beach, submerged shelves and breakers meet along one contour.
 function harborPoint(u,v,margin=0,y=0){
@@ -74,7 +76,7 @@ function harborPoint(u,v,margin=0,y=0){
 }
 for(let x=-78;x<78;x+=6)for(let z=-108;z<60;z+=6){
  const light=.035*Math.sin(x*.21+z*.11)+.018*Math.cos(x*.34-z*.15);
- seaGround.quad([x,-1.12,z],[x+6,-1.12,z],[x+6,-1.12,z+6],[x,-1.12,z+6],[.07+light,.28+light,.37+light]);
+ seaBed.quad([x,-1.12,z],[x+6,-1.12,z],[x+6,-1.12,z+6],[x,-1.12,z+6],[.07+light,.28+light,.37+light]);
 }
 const harborOutline=[];
 for(let i=0;i<48;i++)harborOutline.push([1,-1+2*i/48]);
@@ -140,7 +142,7 @@ for(const {side,z,bank} of harborBerths){
   seaBase.cone(x,.7,z+offset,.24,.23,[.75,.64,.44],7,.24);
  }
 }
-const seaGroundMesh=seaRenderer.upload(seaGround),seaPropsMesh=seaRenderer.upload(seaProps),seaBaseMesh=seaRenderer.upload(seaBase);
+const seaBedMesh=seaRenderer.upload(seaBed),seaGroundMesh=seaRenderer.upload(seaGround),seaPropsMesh=seaRenderer.upload(seaProps),seaBaseMesh=seaRenderer.upload(seaBase);
 function seaSprite(key,color,hat=false){return seaRenderer.texture('sea-person-'+key,c=>{c.fillStyle='#102d3955';c.beginPath();c.ellipse(64,116,31,7,0,0,Math.PI*2);c.fill();c.fillStyle='#263b43';c.fillRect(44,92,15,23);c.fillRect(69,92,15,23);c.fillStyle=color;c.beginPath();c.moveTo(43,53);c.lineTo(85,53);c.lineTo(91,96);c.lineTo(36,96);c.fill();c.fillStyle='#e4c69c';c.beginPath();c.ellipse(64,37,20,24,0,0,Math.PI*2);c.fill();c.fillStyle=hat?'#bdad78':'#29414a';c.beginPath();c.ellipse(64,21,26,13,0,0,Math.PI*2);c.fill();if(hat)c.fillRect(31,27,66,7);c.fillStyle='#263c42';c.fillRect(53,38,4,5);c.fillRect(73,38,4,5);c.fillStyle='#dfc984';c.fillRect(42,58,45,5);});}
 const seaHero=seaSprite('hero','#466974'),seaNaru=seaSprite('naru','#7e7860',true),seaChild=seaSprite('child','#8c8f60');
 let seaLabels=[];
@@ -218,7 +220,7 @@ function drawHarborWater(g,level,clock,flow){
   }
  }
 }
-function seaDraw(alpha=1,dt=1/60){seaVisual=seaMotion.sample(seaPlayer,alpha,dt,{frozen:seaPaused||!!seaDialog,dashing:seaArena&&seaBoss.dashing>0});motionTelemetry(el('chapterWorld'),seaPlayer,seaVisual,seaSimulationClock);el('seaNextPlanet').classList.toggle('hidden',!seaState.boss.rewritten||seaArena);el('seaPractice').classList.toggle('hidden',!seaState.boss.defeated||seaArena);el('bossHud').classList.toggle('hidden',!seaArena);el('harborObjective').classList.toggle('hidden',seaArena);el('boatQuest').classList.toggle('hidden',seaArena||!seaState.boat.met);seaRenderer.begin(seaVisual.cameraX,seaVisual.cameraZ,.012);seaRenderer.mesh(seaGroundMesh);if(seaArena){drawBelrokArena(alpha);return;}seaRenderer.mesh(seaBaseMesh);if(!seaArt.propReady)seaRenderer.mesh(seaPropsMesh);const g=new Geometry(),status=tideState(seaState.gates),flow=status==='circulation'?1:status==='draining'?-1:0.3,waterY=status==='filling'?.36:status==='draining'?.04:.2;
+function seaDraw(alpha=1,dt=1/60){seaVisual=seaMotion.sample(seaPlayer,alpha,dt,{frozen:seaPaused||!!seaDialog,dashing:seaArena&&seaBoss.dashing>0});motionTelemetry(el('chapterWorld'),seaPlayer,seaVisual,seaSimulationClock);el('seaNextPlanet').classList.toggle('hidden',!seaState.boss.rewritten||seaArena);el('seaPractice').classList.toggle('hidden',!seaState.boss.defeated||seaArena);el('bossHud').classList.toggle('hidden',!seaArena);el('harborObjective').classList.toggle('hidden',seaArena);el('boatQuest').classList.toggle('hidden',seaArena||!seaState.boat.met);seaRenderer.begin(seaVisual.cameraX,seaVisual.cameraZ,.012);seaRenderer.mesh(seaBedMesh);seaRenderer.mesh(seaGroundMesh);if(seaArena){drawBelrokArena(alpha);return;}seaRenderer.mesh(seaBaseMesh);if(!seaArt.propReady)seaRenderer.mesh(seaPropsMesh);const g=new Geometry(),status=tideState(seaState.gates),flow=status==='circulation'?1:status==='draining'?-1:0.3,waterY=status==='filling'?.36:status==='draining'?.04:.2;
  // Foam starts beside each moored hull and thins as it drifts away from the landing.
  for(const {hull,z,side,water} of harborBerths){
   for(let k=0;k<2;k++){

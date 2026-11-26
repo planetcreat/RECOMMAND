@@ -221,7 +221,8 @@ function lateTick(dt){
  if((lateAutosave+=dt)>=6){lateAutosave=0;lateSave();}
 }
 
-const lateTerrain=new Geometry(),lateArchitecture=new Geometry();
+const lateBackdrop=new Geometry(),lateTerrain=new Geometry(),lateArchitecture=new Geometry();
+lateBackdrop.softwareLayer=-1;
 if(isSnow){
  // Sediment bands and wind shadows run across grid boundaries. Keep the walkable
  // surface just below footprints and roads; let relief rise beyond the routes.
@@ -249,9 +250,9 @@ if(isSnow){
  // The deck has a real edge above a lower star field. Its concentric courses are
  // subdivided radially to follow the planet's curvature even on the inner floor.
  for(let x=-66;x<66;x+=6)for(let z=-100;z<45;z+=6){
-  lateTerrain.quad([x,-3,z],[x+6,-3,z],[x+6,-3,z+6],[x,-3,z+6],[.065,.085,.16]);
+  lateBackdrop.quad([x,-3,z],[x+6,-3,z],[x+6,-3,z+6],[x,-3,z+6],[.065,.085,.16]);
   const seed=Math.sin(x*1.7+z*.87);
-  if(seed>0)lateTerrain.disc(x+2*seed,-2.96,z+2,.05+.1*seed,[.54,.58,.74],4);
+  if(seed>0)lateBackdrop.disc(x+2*seed,-2.96,z+2,.05+.1*seed,[.54,.58,.74],4);
  }
  const deckPoint=(angle,t,y)=>{
   const dx=Math.cos(angle),dz=Math.sin(angle);
@@ -444,7 +445,7 @@ if(isSnow){
   for(let k=0;k<3;k++)lateArchitecture.ring(relay.x,.105,relay.z,2.9,[.88,.72,.49],10,.13,k*2.094,k*2.094+1.15);
  }
 }
-const lateTerrainMesh=lateRenderer.upload(lateTerrain),lateArchitectureMesh=lateRenderer.upload(lateArchitecture);
+const lateBackdropMesh=isSnow?null:lateRenderer.upload(lateBackdrop),lateTerrainMesh=lateRenderer.upload(lateTerrain),lateArchitectureMesh=lateRenderer.upload(lateArchitecture);
 const lateFallback=lateRenderer.texture('late-fallback-actor',c=>{
  c.fillStyle='#20304066';c.beginPath();c.ellipse(64,119,27,6,0,0,Math.PI*2);c.fill();c.fillStyle=isSnow?'#536c89':'#76608e';c.beginPath();c.moveTo(43,45);c.lineTo(85,45);c.lineTo(96,111);c.lineTo(32,111);c.fill();c.fillStyle='#e0cfb5';c.beginPath();c.ellipse(64,29,18,23,0,0,Math.PI*2);c.fill();c.fillStyle='#25354a';c.fillRect(43,5,42,16);
 });
@@ -518,7 +519,7 @@ function lateArenaDraw(){
 function lateDraw(alpha=1,dt=1/60){
  const pose=lateMotion.sample(latePlayer,alpha,dt,{frozen:!lateStarted||latePaused||!!lateDialogue||lateOverlay,dashing:(lateArena?.dashing||latePlayer.dashing)>0});
  motionTelemetry(lateEl('lateWorld'),latePlayer,pose,lateSimulationClock);
- lateRenderer.begin(lateCamera.x,lateCamera.z,.011);lateRenderer.mesh(lateTerrainMesh);
+ lateRenderer.begin(lateCamera.x,lateCamera.z,.011);if(lateBackdropMesh)lateRenderer.mesh(lateBackdropMesh);lateRenderer.mesh(lateTerrainMesh);
  if(lateArena)lateArenaDraw();else{lateRenderer.mesh(lateArchitectureMesh);lateGroundDetails();}
  const combatPose=combatSpritePose(lateEffects,alpha,pose.dashBlend,lateArena?.inv||latePlayer.inv,lateClock);
  lateRenderer.sprite(lateArt.hero(pose,lateFallback),pose.x,pose.bob,pose.z,1.9*pose.width*combatPose.width,2.65*pose.height*combatPose.height,combatPose.opacity);

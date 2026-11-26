@@ -17,7 +17,7 @@ function bundle(entry,modules,css,output){
    return typeof value==='function'?value.bind(store):value;
   }});
   const standaloneRun=standaloneQa(document,location,standaloneStorage);
-  const localStorage=standaloneRun.storage;\n`+source;
+  if(standaloneRun){\nconst localStorage=standaloneRun.storage;\n`+source+'\n}';
  new vm.Script(source);
  html=html.replace('<script src="boot.js"></script>',()=>'<script>'+read('dist/boot.js')+'</script>');
  const pageCss=read('dist/'+css).replace(/^@import url\("ui-font\.css"\);\r?\n/,'');
