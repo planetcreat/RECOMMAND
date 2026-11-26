@@ -31,7 +31,7 @@ export function loadTide(read){
 }
 export function writeTide(store,state){
  const next=JSON.stringify(decodeTide(state)),old=store.getItem(TIDE_SAVE_KEY);
- if(old===next)return true;
+ if(old===next)return next;
  if(old!=null){
   let valid=true;
   try{decodeTide(old);}catch{valid=false;}
@@ -43,7 +43,7 @@ export function writeTide(store,state){
   }
  }
  store.setItem(TIDE_SAVE_KEY,next);
- return true;
+ return next;
 }
 export const SWAEHAE_SCENES={
  arrival:['발밑의 관문은 모래가 아니라, 바닷물이 말라붙은 계단 위에 열렸다.\n멀리 배들이 묶여 있다. 돛은 모두 육지 쪽을 향한다.','[제방 안전 확인. 외부 항로 봉쇄 유지.]\n사람을 반기는 말보다, 오래된 안내 방송이 먼저 들렸다.','루미: “유온에서는 숲이 말을 못 했어요. 여기는 사람들이 말하고 있는데…… 문은 듣지 않네요.”'],

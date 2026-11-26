@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import {LATE_KEYS,newLateState,decodeLate,writeLate,revealTravelerName,acceptTravelerName,travelerName} from '../dist/late-state.js';
 import {LATE_PLANETS,NAME_RECORD,NAME_ACCEPTANCE} from '../dist/late-story.js';
+import {chapterSaveGuard,CHAPTER_SAVE_CONFLICT} from '../dist/backup-bridge.js';
 
 // Run the real dialogue/start/travel/save handlers; replace only DOM and graphics.
 const source=fs.readFileSync(new URL('../dist/late-game.js',import.meta.url),'utf8');
@@ -20,7 +21,7 @@ function sceneHarness(saved=legacyEnding()){
  const box={JSON,Math,NAME_RECORD,NAME_ACCEPTANCE,LATE_KEYS,writeLate,revealTravelerName,acceptTravelerName,newLateState,
   isSnow:true,latePlanet:'mumyeong',lateConfig:LATE_PLANETS.mumyeong,lateLoad:{state,source:'primary'},lateState:state,
   lateStarted:false,latePaused:false,lateDialogue:null,lateKeys:new Set(),lateCamera:{},latePlayer:{...state.player},lateArena:null,lateSaveError:false,backupCanSave:()=>true,
-  localStorage:store,parent,window:{parent},document:{createElement:()=>({})},lateEl:el,lateSet:(id,value)=>{el(id).textContent=value;},lateToast(){},
+  localStorage:store,lateSaveGuard:chapterSaveGuard(store.getItem,key),CHAPTER_SAVE_CONFLICT,parent,window:{parent},document:{createElement:()=>({})},lateEl:el,lateSet:(id,value)=>{el(id).textContent=value;},lateToast(){},
   lateUpdateHUD(){shownName=travelerName(box.lateState);}};
  vm.createContext(box);
  vm.runInContext(section('function lateSave(','function lateTalk(')+section('function lateTalk(','function lateNearest(')+section('function lateNameReveal(','function lateSnowEnding('),box);

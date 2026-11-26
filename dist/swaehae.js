@@ -1,12 +1,12 @@
 import {readTravelerName} from './late-state.js';
-import {installBackupBridge} from './backup-bridge.js';
+import {installBackupBridge,chapterSaveGuard,CHAPTER_SAVE_CONFLICT} from './backup-bridge.js';
 import {Renderer,Geometry} from './engine.js';
 import {WorldArt,visualTerrain,UI_CANVAS_FONT,whenUiFontReady} from './art.js';
 import {makeBossModel} from './boss-models.js';
 import {SoftwareRenderer} from './software.js';
 import {CombatVFX,combatSpritePose} from './vfx.js';
 import {clamp,normalize,resolveMove,seeded,distance,MotionPresenter,CharacterMotor,FixedStepClock,motionTelemetry} from './math.js';
-import {TIDE_INITIAL,tideState,tideDescription,observeTide,tideIntel,loadTide,writeTide,SWAEHAE_SCENES,boatAction,tickBoat,boatPosition,boatHint} from './tide.js';
+import {TIDE_SAVE_KEY,TIDE_INITIAL,tideState,tideDescription,observeTide,tideIntel,loadTide,writeTide,SWAEHAE_SCENES,boatAction,tickBoat,boatPosition,boatHint} from './tide.js';
 import {BELROK,createBelrok,startBelrok,tickBelrok,hitBelrok,dashBelrok,divertBelrok,belrokPhaseText,BELROK_CLUE,BELROK_ENDING} from './belrok.js';
 const el=id=>document.getElementById(id);
 let seaRenderer;
@@ -17,8 +17,9 @@ if(!seaRenderer){const c=document.createElement('canvas');c.id='chapterWorld';c.
 const seaArt=new WorldArt(seaRenderer);
 const seaSoft=seaRenderer.backend==='software';if(seaSoft)Geometry.lowDetail=true;
 const seaHeight=()=>0,seaVFX=new CombatVFX(seaRenderer,seaHeight),seaKeys=new Set(),seaEffects=[],seaObstacles=[],seaRandom=seeded(56241);
+const seaSaveGuard=chapterSaveGuard(key=>localStorage.getItem(key),TIDE_SAVE_KEY);
 const seaLoad=loadTide(key=>localStorage.getItem(key));
-let seaState=seaLoad.state??structuredClone(TIDE_INITIAL),seaPaused=false,seaDialog=null,seaClock=0,seaCooldown=0,seaSaveFailed=false,backupCanSave=()=>true;
+let seaState=seaLoad.state??structuredClone(TIDE_INITIAL),seaPaused=false,seaDialog=null,seaClock=0,seaCooldown=0,seaSaveFailed=false,seaSaveConflict=false,backupCanSave=()=>true;
 const seaPlayer={x:0,z:10,face:{x:0,z:-1},walk:0};
 const seaMotion=new MotionPresenter(seaPlayer),seaMotor=new CharacterMotor();let seaVisual=seaMotion.sample(seaPlayer);
 const seaBoss=createBelrok();let seaArena=false;
@@ -26,13 +27,14 @@ const seaSaveBlocked=seaLoad.unreadable&&!seaLoad.state;
 function saveSea(){
  if(!backupCanSave())return true;
  if(seaSaveBlocked)return false;
- try{writeTide(localStorage,seaState);seaSaveFailed=false;return true;}
- catch{seaSaveFailed=true;return false;}
+ try{seaSaveGuard.write(()=>writeTide(localStorage,seaState));seaSaveFailed=seaSaveConflict=false;return true;}
+ catch(error){seaSaveFailed=true;seaSaveConflict=error.code==='RECOMMAND_SAVE_CONFLICT';return false;}
 }
 function seaSaveNotice(){
  if(seaSaveBlocked)return window.parent===window
   ?'쇄해 기록을 읽을 수 없어 이 세션은 저장하지 않습니다.'
   :'쇄해 기록을 읽을 수 없어 이 세션은 저장하지 않습니다. 진행 보관에서 기존 기록을 확인하세요.';
+ if(seaSaveConflict)return CHAPTER_SAVE_CONFLICT;
  if(seaSaveFailed)return '쇄해 진행을 저장하지 못했습니다.';
  return seaLoad.source==='backup'?'이전 자동 저장에서 쇄해 기록을 불러왔습니다.':'';
 }

@@ -1,6 +1,6 @@
 import {NAME_RECORD,NAME_ACCEPTANCE} from './late-story.js';
 import {revealTravelerName,acceptTravelerName,travelerName,readTravelerName} from './late-state.js';
-import {installBackupBridge} from './backup-bridge.js';
+import {installBackupBridge,chapterSaveGuard,CHAPTER_SAVE_CONFLICT} from './backup-bridge.js';
 import {Renderer,Geometry} from './engine.js';
 import {SoftwareRenderer} from './software.js';
 import {WorldArt,UI_CANVAS_FONT,whenUiFontReady} from './art.js';
@@ -21,6 +21,7 @@ if(document.documentElement.dataset.qaRenderer!=='software'){
 if(!lateRenderer){const c=document.createElement('canvas');c.id='lateWorld';c.tabIndex=0;c.setAttribute('aria-label',lateConfig.name+'의 휘어진 세계');lateEl('lateWorld').replaceWith(c);lateRenderer=new SoftwareRenderer(c);}
 const lateSoft=lateRenderer.backend==='software';if(lateSoft)Geometry.lowDetail=true;
 const lateArt=new WorldArt(lateRenderer),lateVFX=new CombatVFX(lateRenderer,()=>0),lateKeys=new Set(),lateEffects=[],lateObstacles=[];
+const lateSaveGuard=chapterSaveGuard(key=>localStorage.getItem(key),LATE_KEYS[latePlanet]);
 const lateLoad=loadLate(localStorage,latePlanet);
 let lateState=lateLoad.state||newLateState(latePlanet),lateStarted=false,latePaused=false,lateDialogue=null,lateOverlay=false,lateArena=null,lateClock=0,lateAutosave=0,lateToastClock=0,lateHUDClock=0,lateSaveError=false,backupCanSave=()=>true;
 let latePracticeMode=false,lateTrialReturn=null,lateImportPending=null;
@@ -34,7 +35,7 @@ function lateSave(){
  if(!backupCanSave())return true;
  if(!lateStarted)return false;
  if(!lateArena)lateState.player={x:latePlayer.x,z:latePlayer.z,hp:Math.max(1,latePlayer.hp)};
- try{writeLate(localStorage,lateState);lateSaveError=false;return true;}catch(e){if(!lateSaveError)lateToast('자동 저장을 사용할 수 없습니다. 진행 보관에서 파일로 남겨 주세요.');lateSaveError=true;return false;}
+ try{lateSaveGuard.write(()=>writeLate(localStorage,lateState));lateSaveError=false;return true;}catch(e){if(!lateSaveError)lateToast(e.code==='RECOMMAND_SAVE_CONFLICT'?CHAPTER_SAVE_CONFLICT:'자동 저장을 사용할 수 없습니다. 진행 보관에서 파일로 남겨 주세요.');lateSaveError=true;return false;}
 }
 function lateTalk(title,lines,after=null,choices=null,tag=null){
  lateKeys.clear();lateDialogue={title,lines,index:0,after,choices};lateEl('lateDialogue').hidden=false;lateSet('dialogTag',tag||lateConfig.roman.toUpperCase()+' · FIELD RECORD');lateRenderDialogue();
@@ -579,7 +580,7 @@ lateEl('lateSaveFile').onchange=async e=>{
   else lateImportPending=decodeLate(data,latePlanet);
   lateSet('lateFileStatus','이 파일의 진행으로 현재 행성을 교체할까요? 기존의 읽을 수 있는 진행은 자동 백업됩니다.');const choices=lateEl('lateImportChoices');choices.replaceChildren();
   lateButton(choices,'교체하여 가져오기',()=>{
-   const previous=lateState;try{writeLate(localStorage,lateImportPending);lateState=lateImportPending;lateImportPending=null;lateStarted=true;Object.assign(latePlayer,lateState.player);lateCamera.x=latePlayer.x;lateCamera.z=latePlayer.z;lateEl('lateStart').hidden=true;lateEl('lateImportChoices').replaceChildren();lateSet('lateFileStatus','가져왔습니다. 돌아가기를 누르면 이어집니다.');lateUpdateHUD();}catch(err){lateState=previous;lateSet('lateFileStatus','저장 실패: '+err.message+' · 기존 화면의 진행을 유지합니다.');}
+   const previous=lateState;try{lateSaveGuard.write(()=>writeLate(localStorage,lateImportPending));lateState=lateImportPending;lateImportPending=null;lateStarted=true;Object.assign(latePlayer,lateState.player);lateCamera.x=latePlayer.x;lateCamera.z=latePlayer.z;lateEl('lateStart').hidden=true;lateEl('lateImportChoices').replaceChildren();lateSet('lateFileStatus','가져왔습니다. 돌아가기를 누르면 이어집니다.');lateUpdateHUD();}catch(err){lateState=previous;lateSet('lateFileStatus','저장 실패: '+err.message+' · 기존 화면의 진행을 유지합니다.');}
   },true);lateButton(choices,'취소',()=>{lateImportPending=null;choices.replaceChildren();lateSet('lateFileStatus','취소했습니다. 기존 진행을 유지합니다.');});
  }catch(err){lateImportPending=null;lateEl('lateImportChoices').replaceChildren();lateSet('lateFileStatus','가져오기 실패: '+err.message);}
  e.target.value='';

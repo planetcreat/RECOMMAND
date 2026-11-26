@@ -47,5 +47,5 @@ export function loadLate(store,planet){
 export function writeLate(store,state){
  const next=JSON.stringify(decodeLate(state,state.planet)),key=LATE_KEYS[state.planet],old=store.getItem(key);
  if(old&&old!==next){let valid=true;try{decodeLate(old,state.planet);}catch{valid=false;}if(valid)store.setItem(key+'.backup',old);else store.setItem(key+'.unreadable',old);}
- store.setItem(key,next);return true;
+ store.setItem(key,next);return next;
 }

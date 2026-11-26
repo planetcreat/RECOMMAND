@@ -1,5 +1,5 @@
 import {readTravelerName} from './late-state.js';
-import {installBackupBridge} from './backup-bridge.js';
+import {installBackupBridge,chapterSaveGuard,CHAPTER_SAVE_CONFLICT} from './backup-bridge.js';
 import {Renderer,Geometry} from './engine.js';
 import {SoftwareRenderer} from './software.js';
 import {snapshot,decode} from './save.js';
@@ -11,6 +11,7 @@ import {decorateGarden,buildGardenRoad} from './environment.js';
 import {WorldArt,visualTerrain,UI_CANVAS_FONT,whenUiFontReady} from './art.js';
 import {makeBossModel} from './boss-models.js';
 const $=id=>document.getElementById(id),TAU=Math.PI*2,SAVE='recommand-save-v1';
+const gardenSaveGuard=chapterSaveGuard(key=>localStorage.getItem(key),SAVE);
 let R;
 if(document.documentElement?.dataset?.qaRenderer!=='software'){
  try{R=new Renderer($('world'));R.backend='webgl';}catch{}
@@ -30,10 +31,10 @@ function toast(t){$('toast').textContent=t;toastTime=4;$('toast').style.opacity=
 function save(){
  if(!backupCanSave())return true;
  if(!started)return false;
- try{const next=JSON.stringify(snapshot(state,player,enemies,journal)),previous=localStorage.getItem(SAVE);
+ try{gardenSaveGuard.write(()=>{const next=JSON.stringify(snapshot(state,player,enemies,journal)),previous=localStorage.getItem(SAVE);
  if(previous&&previous!==next){try{decode(previous,enemies);localStorage.setItem(SAVE+'.backup',previous);}catch{}}
- localStorage.setItem(SAVE,next);storageWarning=false;return true;
- }catch{if(!storageWarning)toast('자동 저장을 사용할 수 없습니다. 진행 내보내기로 보관해 주세요.');storageWarning=true;return false;}
+ localStorage.setItem(SAVE,next);return next;});storageWarning=false;return true;
+ }catch(error){if(!storageWarning)toast(error.code==='RECOMMAND_SAVE_CONFLICT'?CHAPTER_SAVE_CONFLICT:'자동 저장을 사용할 수 없습니다. 진행 내보내기로 보관해 주세요.');storageWarning=true;return false;}
 }
 function applySave(data){
  state=data.state;Object.assign(player,data.player);player.inv=1;player.attack=player.dash=player.skill=player.dashTime=0;keys.clear();effects.length=particles.length=0;journal=data.journal;
@@ -231,7 +232,7 @@ $('saveFile').onchange=async e=>{
  const f=e.target.files?.[0];if(!f)return;
  try{
  if(f.size>500000)throw Error('파일이 너무 큽니다.');const data=decode(await f.text(),enemies);
- const accept=()=>{applySave(data);started=true;paused=true;$('overlay').classList.add('hidden');$('pause').textContent='계속하기';save();updateHUD();$('saveStatus').textContent='가져왔습니다. 원리 보기를 닫고 계속하기를 누르세요.';$('importDecision')?.remove();};
+ const accept=()=>{try{gardenSaveGuard.check();}catch(error){document.getElementById('saveStatus').textContent=error.message;return;}applySave(data);started=true;paused=true;$('overlay').classList.add('hidden');$('pause').textContent='계속하기';save();updateHUD();$('saveStatus').textContent='가져왔습니다. 원리 보기를 닫고 계속하기를 누르세요.';$('importDecision')?.remove();};
  $('importDecision')?.remove();
  if(started){const box=document.createElement('div');box.id='importDecision';const text=document.createElement('p');text.textContent='가져온 진행으로 교체할까요? 현재 자동 저장은 백업됩니다.';const yes=document.createElement('button');yes.textContent='교체하여 가져오기';yes.onclick=accept;const no=document.createElement('button');no.textContent='취소';no.onclick=()=>box.remove();box.append(text,yes,no);$('saveStatus').after(box);}
  else accept();
@@ -240,7 +241,7 @@ $('saveFile').onchange=async e=>{
 };
 
 function download(name,data,type){const url=URL.createObjectURL(new Blob([data],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
-$('reset').onclick=()=>{if(confirm('저장된 탐험 진행을 초기화할까요?')){try{localStorage.removeItem(SAVE+'.backup');localStorage.removeItem(SAVE);}catch{}location.reload();}};
+$('reset').onclick=()=>{if(confirm('저장된 탐험 진행을 초기화할까요?')){try{gardenSaveGuard.check();localStorage.removeItem(SAVE+'.backup');localStorage.removeItem(SAVE);location.reload();}catch(error){document.getElementById('saveStatus').textContent=error.message;}}};
 for(const b of document.querySelectorAll('[data-action]'))b.addEventListener('click',()=>{action(b.dataset.action);if(started&&!dialog&&!study)$('world').focus();});
 for(const b of document.querySelectorAll('[data-key]')){b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(b.dataset.key);};b.onpointerup=b.onpointercancel=b.onlostpointercapture=()=>keys.delete(b.dataset.key);}
 addEventListener('keydown',e=>{
