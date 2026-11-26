@@ -201,6 +201,23 @@ const standaloneStorage=new Proxy({}, {get(_,key){
    :{storage:recommandScopedStorage};
   if(standaloneRun){
 const localStorage=standaloneRun.storage;
+const CHAPTER_SAVE_CONFLICT='다른 탭에서 이 행성의 저장이 변경됐습니다. 이 탭의 자동 저장을 중단했습니다. 최신 탭에서 이어가거나 게임을 다시 열어 주세요.';
+
+// Compare against the last primary record seen by this session before rotating backups.
+function chapterSaveGuard(read,key){
+ let expected;
+ try{expected=read(key)??null;}catch{}
+ function check(){
+  if(expected===undefined)throw Error('게임을 열 때 기존 저장을 확인할 수 없었습니다.');
+  if((read(key)??null)!==expected){
+   const error=Error(CHAPTER_SAVE_CONFLICT);
+   error.code='RECOMMAND_SAVE_CONFLICT';
+   throw error;
+  }
+ }
+ return {check,write(commit){check();expected=commit();}};
+}
+
 // Parent launcher asks for a save checkpoint while its modal is open.
 function installBackupBridge({window,parent,chapter,flush,pause,resume}){
  if(!parent||parent===window)return()=>true;
@@ -602,7 +619,7 @@ function loadTide(read){
 }
 function writeTide(store,state){
  const next=JSON.stringify(decodeTide(state)),old=store.getItem(TIDE_SAVE_KEY);
- if(old===next)return true;
+ if(old===next)return next;
  if(old!=null){
   let valid=true;
   try{decodeTide(old);}catch{valid=false;}
@@ -614,7 +631,7 @@ function writeTide(store,state){
   }
  }
  store.setItem(TIDE_SAVE_KEY,next);
- return true;
+ return next;
 }
 const SWAEHAE_SCENES={
  arrival:['발밑의 관문은 모래가 아니라, 바닷물이 말라붙은 계단 위에 열렸다.\n멀리 배들이 묶여 있다. 돛은 모두 육지 쪽을 향한다.','[제방 안전 확인. 외부 항로 봉쇄 유지.]\n사람을 반기는 말보다, 오래된 안내 방송이 먼저 들렸다.','루미: “유온에서는 숲이 말을 못 했어요. 여기는 사람들이 말하고 있는데…… 문은 듣지 않네요.”'],
@@ -671,7 +688,7 @@ function loadLate(store,planet){
 function writeLate(store,state){
  const next=JSON.stringify(decodeLate(state,state.planet)),key=LATE_KEYS[state.planet],old=store.getItem(key);
  if(old&&old!==next){let valid=true;try{decodeLate(old,state.planet);}catch{valid=false;}if(valid)store.setItem(key+'.backup',old);else store.setItem(key+'.unreadable',old);}
- store.setItem(key,next);return true;
+ store.setItem(key,next);return next;
 }
 
 // Deterministic combat model. Visuals consume these same circular hazard coordinates.
@@ -739,8 +756,9 @@ if(!seaRenderer){const c=document.createElement('canvas');c.id='chapterWorld';c.
 const seaArt=new WorldArt(seaRenderer);
 const seaSoft=seaRenderer.backend==='software';if(seaSoft)Geometry.lowDetail=true;
 const seaHeight=()=>0,seaVFX=new CombatVFX(seaRenderer,seaHeight),seaKeys=new Set(),seaEffects=[],seaObstacles=[],seaRandom=seeded(56241);
+const seaSaveGuard=chapterSaveGuard(key=>localStorage.getItem(key),TIDE_SAVE_KEY);
 const seaLoad=loadTide(key=>localStorage.getItem(key));
-let seaState=seaLoad.state??structuredClone(TIDE_INITIAL),seaPaused=false,seaDialog=null,seaClock=0,seaCooldown=0,seaSaveFailed=false,backupCanSave=()=>true;
+let seaState=seaLoad.state??structuredClone(TIDE_INITIAL),seaPaused=false,seaDialog=null,seaClock=0,seaCooldown=0,seaSaveFailed=false,seaSaveConflict=false,backupCanSave=()=>true;
 const seaPlayer={x:0,z:10,face:{x:0,z:-1},walk:0};
 const seaMotion=new MotionPresenter(seaPlayer),seaMotor=new CharacterMotor();let seaVisual=seaMotion.sample(seaPlayer);
 const seaBoss=createBelrok();let seaArena=false;
@@ -748,13 +766,14 @@ const seaSaveBlocked=seaLoad.unreadable&&!seaLoad.state;
 function saveSea(){
  if(!backupCanSave())return true;
  if(seaSaveBlocked)return false;
- try{writeTide(localStorage,seaState);seaSaveFailed=false;return true;}
- catch{seaSaveFailed=true;return false;}
+ try{seaSaveGuard.write(()=>writeTide(localStorage,seaState));seaSaveFailed=seaSaveConflict=false;return true;}
+ catch(error){seaSaveFailed=true;seaSaveConflict=error.code==='RECOMMAND_SAVE_CONFLICT';return false;}
 }
 function seaSaveNotice(){
  if(seaSaveBlocked)return window.parent===window
   ?'쇄해 기록을 읽을 수 없어 이 세션은 저장하지 않습니다.'
   :'쇄해 기록을 읽을 수 없어 이 세션은 저장하지 않습니다. 진행 보관에서 기존 기록을 확인하세요.';
+ if(seaSaveConflict)return CHAPTER_SAVE_CONFLICT;
  if(seaSaveFailed)return '쇄해 진행을 저장하지 못했습니다.';
  return seaLoad.source==='backup'?'이전 자동 저장에서 쇄해 기록을 불러왔습니다.':'';
 }
