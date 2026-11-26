@@ -37,12 +37,25 @@ function chapterBoot(saved){
  const read=p=>fs.readFileSync(new URL('../dist/'+p,import.meta.url),'utf8'),els=new Map(),storage=new Map(saved?[['recommand-swaehae-v1',JSON.stringify(saved)]]:[]),events={};
  for(const m of read('swaehae.html').matchAll(/id="([^"]+)"/g)){const classes=new Set();els.set(m[1],{textContent:'',style:{},classList:{add:s=>classes.add(s),remove:s=>classes.delete(s),toggle:(s,v)=>v?classes.add(s):classes.delete(s)},focus(){},classes});}
  const doc={getElementById:id=>els.get(id),querySelectorAll:()=>[],addEventListener:(k,f)=>events[k]=f};
- const box={console,structuredClone,Math,JSON,Number,Array,Object,Map,Set,document:doc,localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},performance:{now:()=>0},requestAnimationFrame(){},addEventListener:(k,f)=>events[k]=f};box.window=box;vm.createContext(box);
+ let hostFocused=false;const timers=[];
+ const box={console,structuredClone,Math,JSON,Number,Array,Object,Map,Set,document:doc,localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},performance:{now:()=>0},requestAnimationFrame(){},addEventListener:(k,f)=>events[k]=f,setTimeout:f=>timers.push(f),top:{document:{hasFocus:()=>hostFocused}}};box.window=box;vm.createContext(box);
  const graphics='class Geometry{constructor(){this.data=[];}quad(){}tri(){}cone(){}ring(){}disc(){}}class Renderer{texture(k){return k;}upload(g){return g;}begin(){}mesh(){}drawDynamic(){}sprite(){}finish(){}}';
  const source=[read('math.js'),graphics,read('vfx.js'),read('art.js'),read('boss-models.js'),read('tide.js'),read('late-state.js'),read('belrok.js'),read('swaehae.js'),'this.qa={state:seaState,player:seaPlayer,boss:seaBoss,arena:()=>seaArena,attack:seaAttack,interact:seaInteract,advance:seaAdvance,tick:seaTick,draw:seaDraw,nearest:seaNearest,dialog:()=>seaDialog,pause:pauseSea};'].join('\n').replace(/^import .*;\r?\n/gm,'').replace(/\bexport /g,'');vm.runInContext(source,box);
  const close=()=>{let n=0;while(box.qa.dialog()&&n++<30)box.qa.advance();};
- return {a:box.qa,els,storage,close,key:key=>events.keydown({key,preventDefault(){}}),blur:()=>events.blur(),visit:(x,z)=>{box.qa.player.x=x;box.qa.player.z=z;box.qa.interact();}};
+ return {a:box.qa,els,storage,close,key:key=>events.keydown({key,preventDefault(){}}),
+  blur:(focused=false)=>{events.blur();hostFocused=focused;for(const run of timers.splice(0))run();},
+  hide:()=>{doc.hidden=true;events.visibilitychange();},paused:()=>box.recommandSea.snapshot().paused,
+  visit:(x,z)=>{box.qa.player.x=x;box.qa.player.z=z;box.qa.interact();}};
 }
+
+test('Swaehae launcher focus and arrival dialogue do not pause play; manual pause and hidden tabs do',()=>{
+ const game=chapterBoot();
+ game.blur(false);game.close();assert.equal(game.paused(),false);
+ game.key('w');game.blur(true);game.a.tick(.1);assert.equal(game.a.player.z,10);
+ assert.equal(game.paused(),false);
+ game.a.pause();game.blur(true);assert.equal(game.paused(),true);
+ game.a.pause();game.hide();assert.equal(game.paused(),true);
+});
 
 test('boss strategy stays behind the completed hidden quest in both arrival and NPC dialogue',()=>{
  const s={...ready(),arrival:true,gates:[true,true]};

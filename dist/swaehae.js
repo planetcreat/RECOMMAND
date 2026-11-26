@@ -276,6 +276,18 @@ function seaArenaTick(dt){
  for(let i=seaEffects.length-1;i>=0;i--)if((seaEffects[i].life-=dt)<=0)seaEffects.splice(i,1);
 }
 function pauseSea(){seaPaused=!seaPaused;seaKeys.clear();el('chapterPause').textContent=seaPaused?'계속하기':'일시정지';}
+function seaPauseInBackground(){
+ if(!seaPaused&&!seaDialog)pauseSea();
+}
+function seaBlur(){
+ seaKeys.clear();saveSea();
+ // A click in the launcher moves focus out of this frame without leaving the game.
+ setTimeout(()=>{
+  if(document.hidden){seaPauseInBackground();return;}
+  try{if(window.top.document.hasFocus())return;}catch{/* A cross-origin host cannot report focus. */}
+  seaPauseInBackground();
+ },0);
+}
 el('chapterJournal').onclick=()=>{if(seaDialog||seaPaused||seaArena)return;const s=seaState,b=s.boat;seaTalk('쇄해 · 발견 기록',[
  '수압 관측 '+s.observations.filter(Boolean).length+' / 3\n'+s.observations.map((v,i)=>(v?'● ':'○ ')+['저류: 들어오는 물의 압력','배수: 되돌림 표식','순환: 물이 돌아오는 경로'][i]).join('\n'),
  b.met?(b.stage==='unknown'?'도하의 작은 부탁':'돌아오는 배')+'\n'+boatHint(s):'아직 주민들의 작은 부탁을 기록하지 않았다.',
@@ -285,7 +297,7 @@ el('seaSlash').onpointerdown=e=>{e.preventDefault();seaAttack('slash');};el('sea
 el('seaPractice').onclick=()=>{if(!seaState.boss.defeated||seaArena||seaDialog||seaPaused)return;seaArena=true;seaEffects.length=0;seaKeys.clear();startBelrok(seaBoss,seaPlayer);seaPlayer.face={x:0,z:-1};};
 el('chapterPause').onclick=pauseSea;el('chapterNext').onclick=seaAdvance;el('chapterInteract').onclick=seaInteract;
 for(const b of document.querySelectorAll('[data-sea-key]')){b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);seaKeys.add(b.dataset.seaKey);};b.onpointerup=b.onpointercancel=b.onlostpointercapture=()=>seaKeys.delete(b.dataset.seaKey);}
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(seaDialog&&e.repeat&&(k==='enter'||k===' ')){e.preventDefault();return;}if(['BUTTON','A'].includes(e.target?.tagName)&&['enter',' '].includes(k))return;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();if(e.repeat)return;if(k==='escape'){pauseSea();return;}if(seaPaused)return;if(k==='e'||k==='enter'&&seaDialog){seaInteract();return;}if(seaDialog)return;seaKeys.add(k);if(seaArena&&(k==='k'||k===' '))dashBelrok(seaBoss);if(k==='j')seaAttack('slash');if(k==='l')seaAttack('wave');});addEventListener('keyup',e=>seaKeys.delete(e.key.toLowerCase()));addEventListener('blur',()=>{seaKeys.clear();if(!seaPaused)pauseSea();saveSea();});document.addEventListener('visibilitychange',()=>{if(document.hidden){seaKeys.clear();if(!seaPaused)pauseSea();saveSea();}});addEventListener('pagehide',saveSea);
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(seaDialog&&e.repeat&&(k==='enter'||k===' ')){e.preventDefault();return;}if(['BUTTON','A'].includes(e.target?.tagName)&&['enter',' '].includes(k))return;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();if(e.repeat)return;if(k==='escape'){pauseSea();return;}if(seaPaused)return;if(k==='e'||k==='enter'&&seaDialog){seaInteract();return;}if(seaDialog)return;seaKeys.add(k);if(seaArena&&(k==='k'||k===' '))dashBelrok(seaBoss);if(k==='j')seaAttack('slash');if(k==='l')seaAttack('wave');});addEventListener('keyup',e=>seaKeys.delete(e.key.toLowerCase()));addEventListener('blur',seaBlur);document.addEventListener('visibilitychange',()=>{if(document.hidden){seaKeys.clear();seaPauseInBackground();saveSea();}});addEventListener('pagehide',saveSea);
 const seaSimulationClock=new FixedStepClock();let seaPrevious=performance.now();function seaLoop(now){const step=seaSimulationClock.advance((now-seaPrevious)/1000,seaTick);seaPrevious=now;seaDraw(step.alpha,step.dt);requestAnimationFrame(seaLoop);}requestAnimationFrame(seaLoop);
 if(!seaState.arrival)seaTalk('쇄해 · 닫힌 길의 바다',SWAEHAE_SCENES.arrival,()=>{seaState.arrival=true;saveSea();});
 window.recommandSea={snapshot:()=>JSON.parse(JSON.stringify({state:seaState,player:seaPlayer,paused:seaPaused,tide:tideState(seaState.gates),vfxReady:seaVFX.ready,backend:seaRenderer.backend}))};
