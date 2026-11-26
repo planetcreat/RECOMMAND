@@ -65,3 +65,25 @@ test('launcher previous-link bridge routes plain links and respects chapter-owne
   assert.equal(messages.length,0,'chapter dialogue/travel handlers retain control after preventDefault');
  }
 });
+
+test('shipped story transitions save and route inside the launcher or keep the standalone QA address',()=>{
+ const html=fs.readFileSync(new URL('../release/PLAY-RECOMMAND.html',import.meta.url),'utf8');
+ const script=html.match(/<script>([\s\S]*?)<\/script>/)[1];
+ const chapters=JSON.parse(script.slice('const chapters='.length,script.indexOf(',assets=')));
+ for(const [chapter,file,saveName,next,destination]of [
+  ['yuon','RECOMMAND.html','save','swaehae','SWAEHAE.html'],
+  ['swaehae','SWAEHAE.html','saveSea','mumyeong','MUMYEONG.html']
+ ]){
+  for(const embedded of [true,false]){
+   const page=embedded?chapters[chapter]:fs.readFileSync(new URL('../release/'+file,import.meta.url),'utf8');
+   const transition=page.match(new RegExp('(?:=>\\{)('+saveName+'\\(\\);[^\\r\\n]*?'+destination.replace('.','\\.')+"'\\);)"));
+   assert(transition,chapter+' story callback missing from built artifact');
+   const events=[],location={set href(value){events.push(value);}};
+   const parent={postMessage(message){events.push(message.type+':'+message.chapter);}};
+   const window={};window.parent=embedded?parent:window;
+   const standaloneRun={href:target=>target+'?qa=journey&renderer=software'};
+   vm.runInNewContext(transition[1],{window,parent,location,standaloneRun,[saveName]:()=>events.push('save')});
+   assert.deepEqual(events,['save',embedded?'recommand-switch:'+next:destination+'?qa=journey&renderer=software']);
+  }
+ }
+});

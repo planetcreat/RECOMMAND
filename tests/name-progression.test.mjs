@@ -14,6 +14,7 @@ function legacyEnding(){
 function sceneHarness(saved=legacyEnding()){
  const key=LATE_KEYS.mumyeong,storage=new Map([[key,JSON.stringify(saved)]]),elements=new Map(),messages=[];
  const el=id=>{if(!elements.has(id))elements.set(id,{hidden:false,textContent:'',children:[],focus(){},replaceChildren(){this.children=[];},append(b){this.children.push(b);}});return elements.get(id);};
+ el('lateDialogue').firstElementChild={scrollTop:0};
  const store={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};
  const state=decodeLate(saved,'mumyeong'),parent={postMessage:m=>messages.push(m)};let shownName='이름 없는 여행자';
  const box={JSON,Math,NAME_RECORD,NAME_ACCEPTANCE,LATE_KEYS,writeLate,revealTravelerName,acceptTravelerName,newLateState,

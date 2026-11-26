@@ -42,9 +42,9 @@ function lateTalk(title,lines,after=null,choices=null,tag=null){
 function lateButton(parent,label,handler,primary=false){const b=document.createElement('button');b.textContent=label;if(primary)b.className='primary';b.onclick=handler;parent.append(b);return b;}
 function lateRenderDialogue(){
  const d=lateDialogue;if(!d)return;lateSet('lateSpeaker',d.title);lateSet('lateText',d.lines[d.index]);lateSet('latePage',(d.index+1)+' / '+d.lines.length);
- lateEl('lateChoices').replaceChildren();const choices=d.choices&&d.index===d.lines.length-1;lateEl('lateNext').hidden=!!choices;
- if(choices){for(const c of d.choices)lateButton(lateEl('lateChoices'),c.label,()=>{lateCloseTalk();c.action();},c.primary);lateEl('lateChoices').firstElementChild?.focus();}
- else lateEl('lateNext').focus();
+ lateEl('lateDialogue').firstElementChild.scrollTop=0;lateEl('lateChoices').replaceChildren();const choices=d.choices&&d.index===d.lines.length-1;lateEl('lateNext').hidden=!!choices;
+ if(choices){for(const c of d.choices)lateButton(lateEl('lateChoices'),c.label,()=>{lateCloseTalk();c.action();},c.primary);lateEl('lateChoices').firstElementChild?.focus({preventScroll:true});}
+ else lateEl('lateNext').focus({preventScroll:true});
 }
 function lateCloseTalk(){lateDialogue=null;lateEl('lateDialogue').hidden=true;lateKeys.clear();lateEl('lateWorld').focus();}
 function lateAdvance(){if(!lateDialogue||lateDialogue.choices&&lateDialogue.index===lateDialogue.lines.length-1)return;const d=lateDialogue;if(++d.index<d.lines.length)lateRenderDialogue();else{lateCloseTalk();d.after?.();lateSave();lateUpdateHUD();}}
@@ -590,7 +590,7 @@ for(const b of document.querySelectorAll('[data-late-key]')){
 }
 document.querySelector('[data-previous]').onclick=e=>{e.preventDefault();lateTravel(lateConfig.previous);};
 addEventListener('keydown',e=>{
- const k=e.key.toLowerCase();if(e.target?.tagName==='INPUT')return;
+ const k=e.key.toLowerCase();if(e.target?.tagName==='INPUT')return;if(lateDialogue&&e.repeat&&(k==='enter'||k===' ')){e.preventDefault();return;}
  if(['BUTTON','A'].includes(e.target?.tagName)&&['enter',' '].includes(k))return;
  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();if(e.repeat)return;
  if(k==='escape'){

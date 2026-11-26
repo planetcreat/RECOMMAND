@@ -6,8 +6,6 @@ const chapters={},assets=[];
 for(const [name,file]of entries){
  let html=fs.readFileSync('release/'+file,'utf8');
  html=html.replace(/<style id="uiFont">[\s\S]*?<\/style>/,'<style id="uiFont">__RECOMMAND_UI_FONT_CSS__</style>');
- html=html.replaceAll("location.href='SWAEHAE.html'","parent.postMessage({type:'recommand-switch',chapter:'swaehae'},'*')");
- html=html.replaceAll("location.href='MUMYEONG.html'","parent.postMessage({type:'recommand-switch',chapter:'mumyeong'},'*')");
  for(const [chapter,output]of entries)html=html.replaceAll(`href="${output}"`,`href="#" data-return-chapter="${chapter}"`);
  html=html.replace(/data:image\/png;base64,[A-Za-z0-9+/=]+/g,uri=>{let i=assets.indexOf(uri);if(i<0){i=assets.length;assets.push(uri);}return '__RECOMMAND_ASSET_'+i+'__';});
  const bridge=`<script>window.addEventListener('recommand-ready',()=>parent.postMessage({type:'recommand-child-ready',chapter:${JSON.stringify(name)}},'*'));window.addEventListener('error',e=>parent.postMessage({type:'recommand-child-error',chapter:${JSON.stringify(name)},message:e.message||'게임 구성 파일을 읽을 수 없습니다.'},'*'));document.addEventListener('click',e=>{if(e.defaultPrevented)return;const link=e.target.closest('[data-return-chapter]');if(link){e.preventDefault();parent.postMessage({type:'recommand-switch',chapter:link.dataset.returnChapter},'*');}});<\/script>`;

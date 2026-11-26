@@ -4,7 +4,8 @@ test('isolated QA launcher and chapter share a namespace and leave real saves an
  const h=launcherHarness({seenAll:true,qaScope:'motion-review'});h.buttons[0].onclick();
  assert.equal(h.elements.briefing.open,true);h.elements.briefSkip.onclick();
  assert.match(h.elements.gameFrame.srcdoc,/data-qa-scope="motion-review"/);
- assert.match(h.elements.gameFrame.srcdoc,/const localStorage=\(function createScopedStorage/);
+ assert.match(h.elements.gameFrame.srcdoc,/const recommandScopedStorage=\(function createScopedStorage/);
+ assert.match(h.elements.gameFrame.srcdoc,/:\{storage:recommandScopedStorage\}/);
  assert.equal(h.storage.get('recommand-save-v1'),'existing-user-save');
  assert(h.storage.has('recommand-qa:motion-review:recommand-briefing-v1'));
  assert.match(h.elements.qaNotice.textContent,/기존 플레이 기록과 분리/);

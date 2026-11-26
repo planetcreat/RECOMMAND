@@ -9,7 +9,7 @@ test('QA reads, writes, removals and clear cannot reach production or another QA
  assert.throws(()=>createScopedStorage(raw,'../../invalid'));
 });
 test('child frame uses exactly the parent QA namespace; ordinary launch is untouched',()=>{
- const html='<script type="module">localStorage.setItem("recommand-save-v1","qa-play");</script>',raw=rawStore();
+ const html='<script type="module">const localStorage=typeof recommandScopedStorage==="undefined"?window.localStorage:recommandScopedStorage;localStorage.setItem("recommand-save-v1","qa-play");</script>',raw=rawStore();
  assert.equal(chapterDocument(html,[]),html);
  const child=chapterDocument(html,[],'motion');vm.runInNewContext(child.match(/<script type="module">([\s\S]*?)<\/script>/)[1],{window:{localStorage:raw}});
  assert.equal(raw.getItem('recommand-save-v1'),'real-user-progress');assert.equal(createScopedStorage(raw,'motion').getItem('recommand-save-v1'),'qa-play');
