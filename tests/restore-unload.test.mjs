@@ -34,6 +34,22 @@ test('Yuon refuses an old tab after a different tab changes the primary',()=>{
  assert.equal(h.get('toast').textContent,CHAPTER_SAVE_CONFLICT);
 });
 
+test('Yuon import keeps the current session when the storage write fails and succeeds on retry',async()=>{
+ const key=JOURNEY_KEYS.yuon, source=boot(), target=boot();
+ source.a.start();source.a.player.z=5;source.a.save();
+ const raw=source.storage.get(key), event={target:{files:[{size:raw.length,text:async()=>raw}]}};
+ target.failStorage(true);
+ await target.get('saveFile').onchange(event);
+ assert.match(target.get('saveStatus').textContent,/가져오기 실패/);
+ assert.equal(target.a.player.z,7);
+ assert.equal(target.storage.has(key),false);
+ target.failStorage(false);
+ await target.get('saveFile').onchange(event);
+ assert.match(target.get('saveStatus').textContent,/가져왔습니다/);
+ assert.equal(target.a.player.z,5);
+ assert.equal(JSON.parse(target.storage.get(key)).player.z,5);
+});
+
 for(const planet of ['swaehae','mumyeong','hwanseong'])test(planet+' real save handler preserves restore and undo while the old child is locked',()=>{
  const storage=new Map(),key=JOURNEY_KEYS[planet],events={},parent={postMessage(){}};
  const store={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};

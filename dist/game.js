@@ -28,12 +28,28 @@ let state={quest:0,seals:[false,false,false],memories:[false,false],bond:false,f
 let journal=[],storageWarning=false,contextLost=false,backupCanSave=()=>true;
 let audio;function sound(freq=500,dur=.08,type='sine',gain=.035){try{audio??=new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(40,freq*.6),audio.currentTime+dur);g.gain.setValueAtTime(gain,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+dur);}catch{}}
 function toast(t){$('toast').textContent=t;toastTime=4;$('toast').style.opacity=1;}
+function writeGardenSave(next){
+ gardenSaveGuard.write(()=>{
+  const previous=localStorage.getItem(SAVE);
+  if(previous===next)return next;
+  if(previous!=null){
+   let valid=true;
+   try{decode(previous,enemies);}catch{valid=false;}
+   if(valid)localStorage.setItem(SAVE+'.backup',previous);
+   else{
+    const key=SAVE+'.unreadable',archived=localStorage.getItem(key);
+    if(archived!=null&&archived!==previous)throw Error('읽을 수 없는 유온 기록이 여러 개 있습니다.');
+    if(archived!==previous)localStorage.setItem(key,previous);
+   }
+  }
+  localStorage.setItem(SAVE,next);
+  return next;
+ });
+}
 function save(){
  if(!backupCanSave())return true;
  if(!started)return false;
- try{gardenSaveGuard.write(()=>{const next=JSON.stringify(snapshot(state,player,enemies,journal)),previous=localStorage.getItem(SAVE);
- if(previous&&previous!==next){try{decode(previous,enemies);localStorage.setItem(SAVE+'.backup',previous);}catch{}}
- localStorage.setItem(SAVE,next);return next;});storageWarning=false;return true;
+ try{writeGardenSave(JSON.stringify(snapshot(state,player,enemies,journal)));storageWarning=false;return true;
  }catch(error){if(!storageWarning)toast(error.code==='RECOMMAND_SAVE_CONFLICT'?CHAPTER_SAVE_CONFLICT:'자동 저장을 사용할 수 없습니다. 진행 내보내기로 보관해 주세요.');storageWarning=true;return false;}
 }
 function applySave(data){
@@ -210,7 +226,7 @@ function interact(){
  if(!state.boss){toast('수호자의 공격 신호를 보고 회피하세요.');return;}
  showDialog('수호자의 마지막 기록',['[보존 명령 제0001호. 발령자: 당신.]\n[외부 간섭을 차단한다. 거주민의 이탈을 허용하지 않는다.]','수호자는 숲을 지키고 있었다. 당신이 명령한 방식으로.\n과거의 이유는 아직 알 수 없다. 하지만 지금의 선택은 당신에게 있다.'],finalChoice);
  }
- if(o.kind==='portal'){player.hp=100;if(!state.complete)showDialog('별의 관문',['관문이 희미한 온기를 전한다. 생명력이 회복되었다.\n멀리 세 별의 신호가 들린다. 지금은 유온의 목소리에 귀를 기울이자.']);else showDialog('쇄해로 이어지는 신호',['바람 사이로 물이 차오르는 소리가 들린다.\n“제방은 안전합니다. 출항은 허가되지 않았습니다.”','루미는 기록장을 덮는다.\n“이번에는, 문이 닫힌 이유부터 물어봐요.”\n다음 장: 쇄해 · 닫힌 길의 바다'],()=>{save();if(window.parent!==window)parent.postMessage({type:'recommand-switch',chapter:'swaehae'},'*');else location.href='swaehae.html';});}
+ if(o.kind==='portal'){player.hp=100;if(!state.complete)showDialog('별의 관문',['관문이 희미한 온기를 전한다. 생명력이 회복되었다.\n멀리 세 별의 신호가 들린다. 지금은 유온의 목소리에 귀를 기울이자.']);else showDialog('쇄해로 이어지는 신호',['바람 사이로 물이 차오르는 소리가 들린다.\n“제방은 안전합니다. 출항은 허가되지 않았습니다.”','루미는 기록장을 덮는다.\n“이번에는, 문이 닫힌 이유부터 물어봐요.”\n다음 장: 쇄해 · 닫힌 길의 바다'], ()=>{if(!save()){toast('저장하지 못해 유온에 머뭅니다. 진행을 파일로 남길 수 있습니다.');return;}if(window.parent!==window)parent.postMessage({type:'recommand-switch',chapter:'swaehae'},'*');else location.href='swaehae.html';});}
 }
 function setStudy(v){study=v;keys.clear();$('study').classList.toggle('hidden',!v);}
 function togglePause(){if(!started||dialog||study)return;paused=!paused;keys.clear();$('pause').textContent=paused?'계속하기':'일시정지';if(paused)toast('일시정지 · 버튼 또는 Esc로 계속');}
@@ -232,7 +248,15 @@ $('saveFile').onchange=async e=>{
  const f=e.target.files?.[0];if(!f)return;
  try{
  if(f.size>500000)throw Error('파일이 너무 큽니다.');const data=decode(await f.text(),enemies);
- const accept=()=>{try{gardenSaveGuard.check();}catch(error){document.getElementById('saveStatus').textContent=error.message;return;}applySave(data);started=true;paused=true;$('overlay').classList.add('hidden');$('pause').textContent='계속하기';save();updateHUD();$('saveStatus').textContent='가져왔습니다. 원리 보기를 닫고 계속하기를 누르세요.';$('importDecision')?.remove();};
+ const accept=()=>{
+  try{
+   if(!backupCanSave())throw Error('진행 보관이 끝난 뒤 다시 시도해 주세요.');
+   writeGardenSave(JSON.stringify(snapshot(data.state,data.player,data.enemies,data.journal)));
+  }catch(error){$('saveStatus').textContent='가져오기 실패: '+error.message;return;}
+  applySave(data);started=true;paused=true;storageWarning=false;
+  $('overlay').classList.add('hidden');$('pause').textContent='계속하기';updateHUD();
+  $('saveStatus').textContent='가져왔습니다. 원리 보기를 닫고 계속하기를 누르세요.';$('importDecision')?.remove();
+ };
  $('importDecision')?.remove();
  if(started){const box=document.createElement('div');box.id='importDecision';const text=document.createElement('p');text.textContent='가져온 진행으로 교체할까요? 현재 자동 저장은 백업됩니다.';const yes=document.createElement('button');yes.textContent='교체하여 가져오기';yes.onclick=accept;const no=document.createElement('button');no.textContent='취소';no.onclick=()=>box.remove();box.append(text,yes,no);$('saveStatus').after(box);}
  else accept();

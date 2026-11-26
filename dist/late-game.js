@@ -62,7 +62,7 @@ function lateStart(load){
  lateSave();lateUpdateHUD();
  if(isSnow&&lateState.boss&&!lateState.nameAccepted)lateNameAcceptance(()=>{});
 }
-function lateTravel(chapter){if(isSnow&&lateState.boss&&!lateState.nameAccepted){lateNameAcceptance(()=>lateTravel(chapter));return;}lateSave();if(window.parent!==window)parent.postMessage({type:'recommand-switch',chapter},'*');else location.href=(chapter==='yuon'?'index':chapter)+'.html';}
+function lateTravel(chapter){if(isSnow&&lateState.boss&&!lateState.nameAccepted){lateNameAcceptance(()=>lateTravel(chapter));return;}if(lateStarted&&!lateSave()){lateToast('저장하지 못해 이 행성에 머뭅니다. 진행 보관에서 파일로 남길 수 있습니다.');return;}if(window.parent!==window)parent.postMessage({type:'recommand-switch',chapter},'*');else location.href=(chapter==='yuon'?'index':chapter)+'.html';}
 function lateNearest(){return lateConfig.objects.filter(o=>o.kind!=='secret'&&distance(o,latePlayer)<3.5&&(o.kind!=='portal'||lateState.ending)).sort((a,b)=>distance(a,latePlayer)-distance(b,latePlayer))[0];}
 function lateSecret(){return lateConfig.objects.find(o=>o.kind==='secret'&&distance(o,latePlayer)<1.7);}
 function lateInteract(){

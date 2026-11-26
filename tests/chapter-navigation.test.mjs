@@ -76,14 +76,20 @@ test('shipped story transitions save and route inside the launcher or keep the s
  ]){
   for(const embedded of [true,false]){
    const page=embedded?chapters[chapter]:fs.readFileSync(new URL('../release/'+file,import.meta.url),'utf8');
-   const transition=page.match(new RegExp('(?:=>\\{)('+saveName+'\\(\\);[^\\r\\n]*?'+destination.replace('.','\\.')+"'\\);)"));
+   const transition=page.match(new RegExp('(?:=>\\{)(if\\(!'+saveName+'\\(\\)\\)[^\\r\\n]*?'+destination.replace('.','\\.')+"'\\);)"));
    assert(transition,chapter+' story callback missing from built artifact');
    const events=[],location={set href(value){events.push(value);}};
    const parent={postMessage(message){events.push(message.type+':'+message.chapter);}};
    const window={};window.parent=embedded?parent:window;
    const standaloneRun={href:target=>target+'?qa=journey&renderer=software'};
-   vm.runInNewContext(transition[1],{window,parent,location,standaloneRun,[saveName]:()=>events.push('save')});
-   assert.deepEqual(events,['save',embedded?'recommand-switch:'+next:destination+'?qa=journey&renderer=software']);
+   for(const canSave of [false,true]){
+    events.length=0;
+    vm.runInNewContext('(()=>{'+transition[1]+'})()',{
+     window,parent,location,standaloneRun,toast(){},[saveName]:()=>{events.push('save');return canSave;}
+    });
+    const route=embedded?'recommand-switch:'+next:destination+'?qa=journey&renderer=software';
+    assert.deepEqual(events,canSave?['save',route]:['save']);
+   }
   }
  }
 });

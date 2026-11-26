@@ -13,10 +13,10 @@ function legacyEnding(){
  const s=newLateState('mumyeong');Object.assign(s,{arrived:true,heard:['keeper','walker','bell','footprints','archive'],compared:[true,true,true],boss:true,ending:'restore'});return s;
 }
 function sceneHarness(saved=legacyEnding()){
- const key=LATE_KEYS.mumyeong,storage=new Map([[key,JSON.stringify(saved)]]),elements=new Map(),messages=[];
+ const key=LATE_KEYS.mumyeong,storage=new Map([[key,JSON.stringify(saved)]]),elements=new Map(),messages=[];let storageFails=false;
  const el=id=>{if(!elements.has(id))elements.set(id,{hidden:false,textContent:'',children:[],focus(){},replaceChildren(){this.children=[];},append(b){this.children.push(b);}});return elements.get(id);};
  el('lateDialogue').firstElementChild={scrollTop:0};
- const store={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};
+ const store={getItem:k=>storage.get(k)??null,setItem:(k,v)=>{if(storageFails)throw Error('quota');storage.set(k,v);},removeItem:k=>storage.delete(k)};
  const state=decodeLate(saved,'mumyeong'),parent={postMessage:m=>messages.push(m)};let shownName='이름 없는 여행자';
  const box={JSON,Math,NAME_RECORD,NAME_ACCEPTANCE,LATE_KEYS,writeLate,revealTravelerName,acceptTravelerName,newLateState,
   isSnow:true,latePlanet:'mumyeong',lateConfig:LATE_PLANETS.mumyeong,lateLoad:{state,source:'primary'},lateState:state,
@@ -25,7 +25,7 @@ function sceneHarness(saved=legacyEnding()){
   lateUpdateHUD(){shownName=travelerName(box.lateState);}};
  vm.createContext(box);
  vm.runInContext(section('function lateSave(','function lateTalk(')+section('function lateTalk(','function lateNearest(')+section('function lateNameReveal(','function lateSnowEnding('),box);
- return{box,messages,storage,el,name:()=>shownName,saved:()=>decodeLate(store.getItem(key),'mumyeong')};
+ return{box,messages,storage,el,failStorage:value=>{storageFails=value;},name:()=>shownName,saved:()=>decodeLate(store.getItem(key),'mumyeong')};
 }
 
 test('legacy travel waits for every name page, saves acceptance, then changes planet once',()=>{
@@ -40,6 +40,13 @@ test('legacy travel waits for every name page, saves acceptance, then changes pl
  }
  assert.equal(h.saved().nameAccepted,true);assert.equal(h.name(),'이든');assert.equal(h.messages.length,1);assert.equal(h.messages[0].chapter,'hwanseong');
  assert.equal(h.saved().ending,'restore');assert.equal(h.saved().chime,false);assert.equal(h.saved().asked,false);
+});
+
+test('late chapter travel waits for successful save and can be retried',()=>{
+ const h=sceneHarness({...legacyEnding(),nameRevealed:true,nameAccepted:true});
+ h.box.lateStart(true);
+ h.failStorage(true);h.box.lateTravel('hwanseong');assert.equal(h.messages.length,0);
+ h.failStorage(false);h.box.lateTravel('hwanseong');assert.equal(h.messages.length,1);
 });
 
 test('interrupted name discovery restarts on continue without granting acceptance or hidden rewards',()=>{

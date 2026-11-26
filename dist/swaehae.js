@@ -319,7 +319,7 @@ window.recommandSea={snapshot:()=>JSON.parse(JSON.stringify({state:seaState,play
 
 if(typeof window.dispatchEvent==='function')window.dispatchEvent(new Event('recommand-ready'));
 
-el('seaNextPlanet').onclick=()=>{saveSea();if(window.parent!==window)parent.postMessage({type:'recommand-switch',chapter:'mumyeong'},'*');else location.href='mumyeong.html';};
+el('seaNextPlanet').onclick=()=>{if(!saveSea())return;if(window.parent!==window)parent.postMessage({type:'recommand-switch',chapter:'mumyeong'},'*');else location.href='mumyeong.html';};
 
 if(window.parent&&window.parent!==window)backupCanSave=installBackupBridge({window,parent:window.parent,chapter:'swaehae',flush:()=>seaSaveBlocked||saveSea(),pause:()=>{const previous=seaPaused;seaPaused=true;seaKeys.clear();return previous;},resume:previous=>{seaPaused=previous;seaKeys.clear();}});
 
