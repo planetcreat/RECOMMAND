@@ -1,0 +1,20 @@
+@font-face {
+  font-family: "Jua";
+  src: url("./assets/Jua-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  --ui-font: "Jua", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+}
+
+p {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}

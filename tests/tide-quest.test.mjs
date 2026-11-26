@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {TIDE_INITIAL,decodeTide,boatAction,tickBoat,boatPosition,BOAT_SECONDS} from '../dist/tide.js';
+import {TIDE_SAVE_KEY,TIDE_INITIAL,decodeTide,boatAction,tickBoat,boatPosition,BOAT_SECONDS} from '../dist/tide.js';
+import {journeySummary} from '../dist/late-state.js';
 import {BELROK_CLUE} from '../dist/belrok.js';
 const initial=()=>structuredClone(TIDE_INITIAL);
 const ready=()=>({...initial(),introduced:true,observations:[true,true,true]});
@@ -33,16 +34,50 @@ test('invalid or fabricated boat rewards and timers are rejected',()=>{
 });
 
 // Execute the real chapter event handlers and render loop with only graphics/DOM stubbed.
-function chapterBoot(saved){
- const read=p=>fs.readFileSync(new URL('../dist/'+p,import.meta.url),'utf8'),els=new Map(),storage=new Map(saved?[['recommand-swaehae-v1',JSON.stringify(saved)]]:[]),events={};
+function chapterBoot(saved,records={}){
+ const read=p=>fs.readFileSync(new URL('../dist/'+p,import.meta.url),'utf8'),els=new Map(),storage=new Map(Object.entries(records)),events={};
+ if(saved)storage.set(TIDE_SAVE_KEY,JSON.stringify(saved));
  for(const m of read('swaehae.html').matchAll(/id="([^"]+)"/g)){const classes=new Set();els.set(m[1],{textContent:'',style:{},classList:{add:s=>classes.add(s),remove:s=>classes.delete(s),toggle:(s,v)=>v?classes.add(s):classes.delete(s)},focus(){},classes});}
  const doc={getElementById:id=>els.get(id),querySelectorAll:()=>[],addEventListener:(k,f)=>events[k]=f};
- const box={console,structuredClone,Math,JSON,Number,Array,Object,Map,Set,document:doc,localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},performance:{now:()=>0},requestAnimationFrame(){},addEventListener:(k,f)=>events[k]=f};box.window=box;vm.createContext(box);
+ let hostFocused=false;const timers=[];
+ const box={console,structuredClone,Math,JSON,Number,Array,Object,Map,Set,document:doc,localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},performance:{now:()=>0},requestAnimationFrame(){},addEventListener:(k,f)=>events[k]=f,setTimeout:f=>timers.push(f),top:{document:{hasFocus:()=>hostFocused}}};box.window=box;vm.createContext(box);
  const graphics='class Geometry{constructor(){this.data=[];}quad(){}tri(){}cone(){}ring(){}disc(){}}class Renderer{texture(k){return k;}upload(g){return g;}begin(){}mesh(){}drawDynamic(){}sprite(){}finish(){}}';
- const source=[read('math.js'),graphics,read('vfx.js'),read('art.js'),read('boss-models.js'),read('tide.js'),read('belrok.js'),read('swaehae.js'),'this.qa={state:seaState,player:seaPlayer,boss:seaBoss,arena:()=>seaArena,attack:seaAttack,interact:seaInteract,advance:seaAdvance,tick:seaTick,draw:seaDraw,nearest:seaNearest,dialog:()=>seaDialog,pause:pauseSea};'].join('\n').replace(/^import .*;\r?\n/gm,'').replace(/\bexport /g,'');vm.runInContext(source,box);
+ const source=[read('backup-bridge.js'),read('math.js'),graphics,read('vfx.js'),read('art.js'),read('boss-models.js'),read('tide.js'),read('late-state.js'),read('belrok.js'),read('swaehae.js'),'this.qa={state:seaState,player:seaPlayer,boss:seaBoss,arena:()=>seaArena,attack:seaAttack,interact:seaInteract,advance:seaAdvance,tick:seaTick,draw:seaDraw,nearest:seaNearest,dialog:()=>seaDialog,pause:pauseSea};'].join('\n').replace(/^import .*;\r?\n/gm,'').replace(/\bexport /g,'');vm.runInContext(source,box);
  const close=()=>{let n=0;while(box.qa.dialog()&&n++<30)box.qa.advance();};
- return {a:box.qa,els,storage,close,blur:()=>events.blur(),visit:(x,z)=>{box.qa.player.x=x;box.qa.player.z=z;box.qa.interact();}};
+ return {a:box.qa,els,storage,close,key:key=>events.keydown({key,preventDefault(){}}),
+  blur:(focused=false)=>{events.blur();hostFocused=focused;for(const run of timers.splice(0))run();},
+  hide:()=>{doc.hidden=true;events.visibilitychange();},paused:()=>box.recommandSea.snapshot().paused,
+  visit:(x,z)=>{box.qa.player.x=x;box.qa.player.z=z;box.qa.interact();}};
 }
+
+test('Swaehae launcher focus and arrival dialogue do not pause play; manual pause and hidden tabs do',()=>{
+ const game=chapterBoot();
+ game.blur(false);game.close();assert.equal(game.paused(),false);
+ game.key('w');game.blur(true);game.a.tick(.1);assert.equal(game.a.player.z,10);
+ assert.equal(game.paused(),false);
+ game.a.pause();game.blur(true);assert.equal(game.paused(),true);
+ game.a.pause();game.hide();assert.equal(game.paused(),true);
+});
+
+test('Swaehae resumes the last valid save and keeps the damaged primary for recovery',()=>{
+ const raw=JSON.stringify({...ready(),arrival:true,foregate:true,boss:{defeated:true,rewritten:true}});
+ const game=chapterBoot(null,{[TIDE_SAVE_KEY]:'damaged primary',[TIDE_SAVE_KEY+'.backup']:raw});
+ assert.equal(game.a.state.boss.rewritten,true);
+ assert.equal(journeySummary(key=>game.storage.get(key)).sea,true);
+ game.blur(true);game.a.draw();
+ assert.equal(game.storage.get(TIDE_SAVE_KEY+'.unreadable'),'damaged primary');
+ assert.equal(game.storage.get(TIDE_SAVE_KEY+'.backup'),raw);
+ assert.equal(game.storage.get(TIDE_SAVE_KEY),raw);
+ assert.match(game.els.get('chapterSaveNotice').textContent,/이전 자동 저장/);
+});
+
+test('Swaehae never replaces unreadable saves after a new arrival dialogue',()=>{
+ const game=chapterBoot(null,{[TIDE_SAVE_KEY]:'damaged primary',[TIDE_SAVE_KEY+'.backup']:'damaged backup'});
+ const before=[...game.storage];
+ game.close();game.blur(true);game.a.draw();
+ assert.deepEqual([...game.storage],before);
+ assert.match(game.els.get('chapterSaveNotice').textContent,/저장하지 않습니다/);
+});
 
 test('boss strategy stays behind the completed hidden quest in both arrival and NPC dialogue',()=>{
  const s={...ready(),arrival:true,gates:[true,true]};
@@ -71,7 +106,7 @@ test('real chapter: discover, repair, launch, pause, reload, return and claim on
 });
 test('chapter fight pauses, death keeps hidden progress and victory resumes into the ending',()=>{
  const saved={...ready(),arrival:true,foregate:true,gates:[true,true],boat:{met:true,stage:'complete',elapsed:14}};
- const h=chapterBoot(saved);h.visit(0,-32);h.close();assert.equal(h.a.arena(),true);h.a.draw();h.a.tick(.1);const t=h.a.boss.time;h.a.pause();h.a.tick(.1);assert.equal(h.a.boss.time,t);h.a.pause();
+ const h=chapterBoot(saved);h.visit(0,-32);h.close();assert.equal(h.a.arena(),true);h.a.draw();h.a.tick(.1);const t=h.a.boss.time;h.a.pause();const beforeDash=h.a.boss.dash;h.key('k');assert.equal(h.a.boss.dash,beforeDash);h.a.tick(.1);assert.equal(h.a.boss.time,t);h.key('Escape');h.key('k');assert(h.a.boss.dashing>0);
  h.a.boss.hero=0;h.a.tick(.1);assert.equal(h.a.arena(),false);h.close();assert.equal(h.a.state.boat.stage,'complete');
  h.visit(0,-32);h.close();assert.equal(h.a.boss.hero,100);h.a.boss.phase='open';h.a.boss.hp=18;h.a.player.x=0;h.a.player.z=-51;h.a.player.face={x:0,z:-1};h.a.attack('slash');h.a.tick(.02);assert.equal(h.a.state.boss.defeated,true);h.a.draw();
  const resumed=chapterBoot(JSON.parse(h.storage.get('recommand-swaehae-v1')));resumed.visit(0,-32);resumed.close();assert.equal(resumed.a.boss.hp,0);resumed.visit(0,-51);assert(resumed.a.dialog().lines.some(x=>x.includes('돌아올 길을 지켜라')));resumed.close();assert.equal(resumed.a.state.boss.rewritten,true);assert.equal(resumed.a.arena(),false);resumed.a.draw();assert.match(resumed.els.get('chapterObjective').textContent,/쇄해 1막 완료/);assert.equal(JSON.parse(resumed.storage.get('recommand-swaehae-v1')).boss.rewritten,true);

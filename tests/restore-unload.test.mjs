@@ -1,0 +1,73 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {boot} from './harness.mjs';
+import {JOURNEY_KEYS,applyJourneyRestore,undoJourneyRestore} from '../dist/journey-backup.js';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {installBackupBridge,chapterSaveGuard,CHAPTER_SAVE_CONFLICT} from '../dist/backup-bridge.js';
+import {TIDE_INITIAL,writeTide} from '../dist/tide.js';
+import {newLateState,writeLate} from '../dist/late-state.js';
+
+test('old child pagehide cannot overwrite parent restore or its undo',()=>{
+ const h=boot({embedded:true}),key=JOURNEY_KEYS.yuon;
+ const store={getItem:k=>h.storage.get(k)??null,setItem:(k,v)=>h.storage.set(k,v),removeItem:k=>h.storage.delete(k)};
+ h.a.start();const initial=store.getItem(key);
+ h.a.player.z=5;h.a.save();const moved=store.getItem(key);
+ h.parentMessage({type:'recommand-backup-lock',request:1});assert.equal(h.parentMessages.at(-1).ok,true);
+ applyJourneyRestore(store,{entries:[{planet:'yuon',key,raw:initial}]});
+ h.pagehide();assert.equal(store.getItem(key),initial,'unloading the old iframe must preserve restored data');
+ undoJourneyRestore(store);h.pagehide();assert.equal(store.getItem(key),moved,'old unload must also preserve undo');
+ h.parentMessage({type:'recommand-backup-unlock'});h.a.player.z=4;h.a.save();
+ assert.equal(JSON.parse(store.getItem(key)).player.z,4,'ordinary saves resume when backup is cancelled');
+});
+
+test('Yuon refuses an old tab after a different tab changes the primary',()=>{
+ const h=boot(),key=JOURNEY_KEYS.yuon;
+ h.a.start();
+ const latest=JSON.parse(h.storage.get(key));latest.player.z=5;
+ h.storage.set(key,JSON.stringify(latest));
+ const before=[...h.storage];
+ h.a.player.z=4;
+ assert.equal(h.a.save(),false);
+ h.pagehide();
+ assert.deepEqual([...h.storage],before);
+ assert.equal(h.get('toast').textContent,CHAPTER_SAVE_CONFLICT);
+});
+
+test('Yuon import keeps the current session when the storage write fails and succeeds on retry',async()=>{
+ const key=JOURNEY_KEYS.yuon, source=boot(), target=boot();
+ source.a.start();source.a.player.z=5;source.a.save();
+ const raw=source.storage.get(key), event={target:{files:[{size:raw.length,text:async()=>raw}]}};
+ target.failStorage(true);
+ await target.get('saveFile').onchange(event);
+ assert.match(target.get('saveStatus').textContent,/가져오기 실패/);
+ assert.equal(target.a.player.z,7);
+ assert.equal(target.storage.has(key),false);
+ target.failStorage(false);
+ await target.get('saveFile').onchange(event);
+ assert.match(target.get('saveStatus').textContent,/가져왔습니다/);
+ assert.equal(target.a.player.z,5);
+ assert.equal(JSON.parse(target.storage.get(key)).player.z,5);
+});
+
+for(const planet of ['swaehae','mumyeong','hwanseong'])test(planet+' real save handler preserves restore and undo while the old child is locked',()=>{
+ const storage=new Map(),key=JOURNEY_KEYS[planet],events={},parent={postMessage(){}};
+ const store={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};
+ const sea=planet==='swaehae',source=fs.readFileSync(new URL('../dist/'+(sea?'swaehae':'late-game')+'.js',import.meta.url),'utf8');
+ const start=source.indexOf('function '+(sea?'saveSea':'lateSave')+'('),end=source.indexOf('function '+(sea?'seaTalk':'lateTalk')+'(',start);
+ const guard=chapterSaveGuard(store.getItem,key);
+ const box={JSON,Math,localStorage:store,backupCanSave:()=>true,seaState:structuredClone(TIDE_INITIAL),seaSaveBlocked:false,seaSaveFailed:false,seaSaveConflict:false,seaSaveGuard:guard,lateSaveGuard:guard,CHAPTER_SAVE_CONFLICT,writeTide,lateStarted:true,lateArena:null,lateState:newLateState(sea?'mumyeong':planet),latePlayer:{x:0,z:10,hp:100},lateSaveError:false,writeLate,lateToast(){}};
+ vm.createContext(box);vm.runInContext(source.slice(start,end),box);
+ const save=sea?()=>box.saveSea():()=>box.lateSave();
+ const change=()=>{if(sea)box.seaState.introduced=true;else box.latePlayer.x=1;};
+ save();const initial=store.getItem(key);change();save();const changed=store.getItem(key);assert.notEqual(changed,initial);
+ box.backupCanSave=installBackupBridge({window:{addEventListener:(k,f)=>events[k]=f},parent,chapter:planet,flush:save,pause(){},resume(){}});
+ const send=type=>events.message({source:parent,data:{type,request:1}});
+ send('recommand-backup-lock');applyJourneyRestore(store,{entries:[{planet,key,raw:initial}]});
+ save();assert.equal(store.getItem(key),initial,'old chapter save must not overwrite restored record');
+ undoJourneyRestore(store);save();assert.equal(store.getItem(key),changed);
+ send('recommand-backup-unlock');save();assert.equal(store.getItem(key),changed);
+ store.setItem(key,initial);const before=[...storage];
+ assert.equal(save(),false,'stale page must reject a newer primary');
+ assert.deepEqual([...storage],before,'stale writes must leave primary and recovery copies untouched');
+});

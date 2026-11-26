@@ -1,4 +1,6 @@
 import fs from 'node:fs';import vm from 'node:vm';
+import {inlineUiFont} from './build-font.mjs';
+import {createScopedStorage,standaloneQa} from './dist/storage-scope.js';
 const read=p=>fs.readFileSync(p,'utf8');
 const atlas='data:image/png;base64,'+fs.readFileSync('dist/assets/combat-atlas.png').toString('base64');
 function bundle(entry,modules,css,output){
@@ -6,19 +8,30 @@ function bundle(entry,modules,css,output){
  let source=modules.map(f=>read('dist/'+f).replace(/^import .*;\r?\n/gm,'').replace(/\bexport /g,'')).join('\n');
  source=source.replace("img.src='./assets/combat-atlas.png';",()=>"img.src="+JSON.stringify(atlas)+';');
  for(const name of ['actors-atlas','environment-atlas']){const data='data:image/png;base64,'+fs.readFileSync('dist/assets/'+name+'.png').toString('base64');source=source.replace('./assets/'+name+'.png',()=>data);}
- if(entry==='index.html')source=source.replace("location.href='swaehae.html'","location.href='SWAEHAE.html'");
- source=source.replace("location.href='mumyeong.html'","location.href='MUMYEONG.html'");
- source=source.replace("else location.href=(chapter==='yuon'?'index':chapter)+'.html';","else location.href=({yuon:'RECOMMAND',swaehae:'SWAEHAE',mumyeong:'MUMYEONG',hwanseong:'HWANSEONG'})[chapter]+'.html';");
+ if(entry==='index.html')source=source.replace("location.href='swaehae.html'","location.href=standaloneRun.href('SWAEHAE.html')");
+ source=source.replace("location.href='mumyeong.html'","location.href=standaloneRun.href('MUMYEONG.html')");
+ source=source.replace("else location.href=(chapter==='yuon'?'index':chapter)+'.html';","else location.href=standaloneRun.href(({yuon:'RECOMMAND',swaehae:'SWAEHAE',mumyeong:'MUMYEONG',hwanseong:'HWANSEONG'})[chapter]+'.html');");
+ source=createScopedStorage.toString()+'\n'+standaloneQa.toString()+'\n'+
+  `const standaloneStorage=new Proxy({}, {get(_,key){
+   const store=window.localStorage,value=store[key];
+   return typeof value==='function'?value.bind(store):value;
+  }});
+  const standaloneRun=typeof recommandScopedStorage==='undefined'
+   ?standaloneQa(document,location,standaloneStorage)
+   :{storage:recommandScopedStorage};
+  if(standaloneRun){\nconst localStorage=standaloneRun.storage;\n`+source+'\n}';
  new vm.Script(source);
  html=html.replace('<script src="boot.js"></script>',()=>'<script>'+read('dist/boot.js')+'</script>');
- html=html.replace('<link rel="stylesheet" href="'+css+'">',()=>'<style>'+read('dist/'+css)+'</style>');
+ const pageCss=read('dist/'+css).replace(/^@import url\("ui-font\.css"\);\r?\n/,'');
+ html=html.replace('<link rel="stylesheet" href="'+css+'">',()=>inlineUiFont+'<style>'+pageCss+'</style>');
  html=html.replace(/<script type="module" src="[^"]+"><\/script>/,()=>'<script type="module">'+source.replace(/<\/script/gi,'<\\/script')+'</script>');
- html=html.replace('href="index.html"','href="RECOMMAND.html"');
+ const chapterFiles={index:'RECOMMAND',swaehae:'SWAEHAE',mumyeong:'MUMYEONG',hwanseong:'HWANSEONG'};
+ html=html.replace(/href="(index|swaehae|mumyeong|hwanseong)\.html"/g,(_,chapter)=>`href="${chapterFiles[chapter]}.html"`);
  html=html.replace('href="LEARNING.md" download',()=> 'href="data:text/plain;charset=utf-8,'+encodeURIComponent(read('dist/LEARNING.md'))+'" download="RECOMMAND-LEARNING.md"');
  if(/<script[^>]+src=|<link[^>]+href=/i.test(html))throw Error('External code remains in '+output);
  fs.mkdirSync('release',{recursive:true});fs.writeFileSync('release/'+output,html);console.log(output+': '+Buffer.byteLength(html)+' bytes');
 }
-bundle('index.html',['math.js','story.js','content.js','save.js','engine.js','software.js','environment.js','vfx.js','art.js','boss-models.js','game.js'],'style.css','RECOMMAND.html');
-bundle('swaehae.html',['math.js','engine.js','software.js','vfx.js','art.js','boss-models.js','tide.js','belrok.js','swaehae.js'],'chapter.css','SWAEHAE.html');
-for(const chapter of ['mumyeong','hwanseong'])bundle(chapter+'.html',['math.js','engine.js','software.js','vfx.js','art.js','tide.js','late-story.js','late-state.js','late-combat.js','late-models.js','late-game.js'],'late.css',chapter.toUpperCase()+'.html');
+bundle('index.html',['backup-bridge.js','math.js','story.js','content.js','save.js','tide.js','late-state.js','engine.js','software.js','environment.js','vfx.js','art.js','boss-models.js','game.js'],'style.css','RECOMMAND.html');
+bundle('swaehae.html',['backup-bridge.js','math.js','engine.js','software.js','vfx.js','art.js','boss-models.js','tide.js','late-state.js','belrok.js','swaehae.js'],'chapter.css','SWAEHAE.html');
+for(const chapter of ['mumyeong','hwanseong'])bundle(chapter+'.html',['backup-bridge.js','math.js','engine.js','software.js','vfx.js','art.js','tide.js','late-story.js','late-state.js','late-combat.js','late-models.js','late-game.js'],'late.css',chapter.toUpperCase()+'.html');
 

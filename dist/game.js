@@ -1,33 +1,56 @@
+import {readTravelerName} from './late-state.js';
+import {installBackupBridge,chapterSaveGuard,CHAPTER_SAVE_CONFLICT} from './backup-bridge.js';
 import {Renderer,Geometry} from './engine.js';
 import {SoftwareRenderer} from './software.js';
 import {snapshot,decode} from './save.js';
 import {PLANETS,BOSS,SCOUT,OLD_SURVEY,ECHO_SITES,canOfferSurvey,beginPulseSequence,advancePulseSequence} from './content.js';
-import {clamp,distance,normalize,inSector,resolveMove,seeded,MotionPresenter} from './math.js';
+import {clamp,distance,normalize,inSector,resolveMove,seeded,MotionPresenter,CharacterMotor,FixedStepClock,motionTelemetry} from './math.js';
 import {canRewrite,discoveredTriggers} from './story.js';
-import {CombatVFX} from './vfx.js';
-import {decorateGarden} from './environment.js';
-import {WorldArt,visualTerrain} from './art.js';
+import {CombatVFX,combatSpritePose} from './vfx.js';
+import {decorateGarden,buildGardenRoad} from './environment.js';
+import {WorldArt,visualTerrain,UI_CANVAS_FONT,whenUiFontReady} from './art.js';
 import {makeBossModel} from './boss-models.js';
 const $=id=>document.getElementById(id),TAU=Math.PI*2,SAVE='recommand-save-v1';
-let R;let hardwareWarning='';
-try{R=new Renderer($('world'));R.backend='webgl';}catch(e){hardwareWarning=e.message;const canvas=document.createElement('canvas');canvas.id='world';canvas.tabIndex=0;canvas.setAttribute('aria-label','행성 탐험 게임');$('world').replaceWith(canvas);R=new SoftwareRenderer(canvas);}
+const gardenSaveGuard=chapterSaveGuard(key=>localStorage.getItem(key),SAVE);
+let R;
+if(document.documentElement?.dataset?.qaRenderer!=='software'){
+ try{R=new Renderer($('world'));R.backend='webgl';}catch{}
+}
+if(!R){const canvas=document.createElement('canvas');canvas.id='world';canvas.tabIndex=0;canvas.setAttribute('aria-label','행성 탐험 게임');$('world').replaceWith(canvas);R=new SoftwareRenderer(canvas);}
 const terrainRand=seeded(2872),SOFT=R.backend==='software';if(SOFT)Geometry.lowDetail=true;
 const rand=seeded(2871), keys=new Set(), obstacles=[], particles=[], effects=[];
 const player={x:0,z:7,hp:100,xp:0,face:{x:0,z:-1},attack:0,dash:0,skill:0,inv:0,walk:0,dashTime:0};
-const playerMotion=new MotionPresenter(player);
+const playerMotion=new MotionPresenter(player),playerMotor=new CharacterMotor();
 const npc={x:3,z:0},portal={x:0,z:11},fracture={x:9,z:-5};
 const seals=[{x:-19,z:-20,name:'뿌리의 제단'},{x:22,z:-33,name:'바람의 제단'},{x:-14,z:-55,name:'기억의 제단'}];
 const memories=[{x:22,z:-9,name:'쓰러진 기록석',text:'[이전 명령: 생태계 보존을 위해 거주민 접근을 차단한다.]\n차가운 문장 아래, 누군가 같은 필체로 덧붙였다.\n“보호와 감금은 무엇이 다른가?”'},{x:-32,z:-41,name:'낡은 관측기',text:'장치가 당신의 손에 반응한다.\n[명령권자 생체 서명 일치. 재명령 대기.]\n당신은 손을 뗀다. 처음 보는 장치인데, 사용법을 알고 있었다.'}];
 let state={quest:0,seals:[false,false,false],memories:[false,false],bond:false,fracture:false,boss:false,complete:false,ending:null,sidequest:0,echoes:[false,false],intel:false,surveyRecord:false,anomaly:false},started=false,paused=false,study=false,dialog=null,curve=.012,debug=false,grid=false,mapBig=false,time=0,toastTime=0,lastSave=0;
-let journal=[],storageWarning=false,contextLost=false;
+let journal=[],storageWarning=false,contextLost=false,backupCanSave=()=>true;
 let audio;function sound(freq=500,dur=.08,type='sine',gain=.035){try{audio??=new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(40,freq*.6),audio.currentTime+dur);g.gain.setValueAtTime(gain,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+dur);}catch{}}
 function toast(t){$('toast').textContent=t;toastTime=4;$('toast').style.opacity=1;}
+function writeGardenSave(next){
+ gardenSaveGuard.write(()=>{
+  const previous=localStorage.getItem(SAVE);
+  if(previous===next)return next;
+  if(previous!=null){
+   let valid=true;
+   try{decode(previous,enemies);}catch{valid=false;}
+   if(valid)localStorage.setItem(SAVE+'.backup',previous);
+   else{
+    const key=SAVE+'.unreadable',archived=localStorage.getItem(key);
+    if(archived!=null&&archived!==previous)throw Error('읽을 수 없는 유온 기록이 여러 개 있습니다.');
+    if(archived!==previous)localStorage.setItem(key,previous);
+   }
+  }
+  localStorage.setItem(SAVE,next);
+  return next;
+ });
+}
 function save(){
+ if(!backupCanSave())return true;
  if(!started)return false;
- try{const next=JSON.stringify(snapshot(state,player,enemies,journal)),previous=localStorage.getItem(SAVE);
- if(previous&&previous!==next){try{decode(previous,enemies);localStorage.setItem(SAVE+'.backup',previous);}catch{}}
- localStorage.setItem(SAVE,next);storageWarning=false;return true;
- }catch{if(!storageWarning)toast('자동 저장을 사용할 수 없습니다. 진행 내보내기로 보관해 주세요.');storageWarning=true;return false;}
+ try{writeGardenSave(JSON.stringify(snapshot(state,player,enemies,journal)));storageWarning=false;return true;
+ }catch(error){if(!storageWarning)toast(error.code==='RECOMMAND_SAVE_CONFLICT'?CHAPTER_SAVE_CONFLICT:'자동 저장을 사용할 수 없습니다. 진행 내보내기로 보관해 주세요.');storageWarning=true;return false;}
 }
 function applySave(data){
  state=data.state;Object.assign(player,data.player);player.inv=1;player.attack=player.dash=player.skill=player.dashTime=0;keys.clear();effects.length=particles.length=0;journal=data.journal;
@@ -43,9 +66,9 @@ function restore(){
 function showDialog(name,lines,after,{record=true}={}){
  keys.clear();$('choices')?.remove();$('dialogNext').classList.remove('hidden');dialog={name,lines,index:0,after};$('speaker').textContent=name;$('dialogText').textContent=lines[0];$('dialog').classList.remove('hidden');
  if(record&&!journal.some(e=>e.name===name&&e.lines[0]===lines[0])){journal.push({name,lines:[...lines]});if(journal.length>100)journal.shift();save();}
- $('dialogNext').focus({preventScroll:true});
+ $('dialog').scrollTop=0;$('dialogNext').focus({preventScroll:true});
 }
-function advance(){if(!dialog||dialog.choice)return;if(++dialog.index<dialog.lines.length){$('dialogText').textContent=dialog.lines[dialog.index];sound(450,.035);}else{const cb=dialog.after;dialog=null;$('dialog').classList.add('hidden');cb?.();if(!dialog)$('world').focus({preventScroll:true});save();}}
+function advance(){if(!dialog||dialog.choice)return;if(++dialog.index<dialog.lines.length){$('dialogText').textContent=dialog.lines[dialog.index];$('dialog').scrollTop=0;sound(450,.035);}else{const cb=dialog.after;dialog=null;$('dialog').classList.add('hidden');cb?.();if(!dialog)$('world').focus({preventScroll:true});save();}}
 function offerSurvey(){
  $('dialog').classList.remove('hidden');
  dialog={choice:true,name:'기록에 없던 울림',index:0};keys.clear();$('speaker').textContent='기록에 없던 울림';$('dialogText').textContent='오래된 기록에 없던 현상을 조사한다.';$('dialogNext').classList.add('hidden');
@@ -108,7 +131,7 @@ for(const s of [...seals,...memories,...ECHO_SITES]){
 props.disc(0,.08,11,3,[.35,.43,.36]);props.ring(0,.1,11,2.7,[.74,.73,.48],64,.12);
 for(const x of[-2.6,2.6]){portalGeo.cone(x,.15,11,.5,3.5,[.38,.47,.4],6,.35);portalGeo.cone(x,3.65,11,.48,.8,[.66,.75,.51],6);obstacles.push({x,z:11,r:.5});}
 props.cone(OLD_SURVEY.x,groundY(OLD_SURVEY.x,OLD_SURVEY.z),OLD_SURVEY.z,.9,.4,[.4,.47,.39],6,.8);obstacles.push({...OLD_SURVEY,r:.7});
-const roadGeo=new Geometry();for(const[a,b]of roads){const dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz),nx=-dz/len*1.45,nz=dx/len*1.45;for(let t=0;t<len;t+=2){const t2=Math.min(len,t+2),point=(t,side)=>{const x=a[0]+dx*t/len+nx*side,z=a[1]+dz*t/len+nz*side;return[x,groundY(x,z)+.08,z];};roadGeo.quad(point(t,-1),point(t,1),point(t2,1),point(t2,-1),[.43,.48,.32]);}}const roadMesh=R.upload(roadGeo);
+const roadGeo=buildGardenRoad(new Geometry(),roads,{height:groundY,terrain:visualTerrain,soft:SOFT});const roadMesh=R.upload(roadGeo);
 const gardenLamps=decorateGarden(props,{height:groundY,pathDistance:pathDist,routes:roads,landmarks:[npc,portal,fracture,SCOUT,OLD_SURVEY,...ECHO_SITES,...memories,...seals.map(p=>({...p,clearance:8})),{x:13,z:-69,clearance:9}],obstacles,soft:SOFT});
 const worldMesh=R.upload(ground),propMesh=R.upload(props),gridMesh=R.upload(gridGeo),treeMesh=R.upload(treeGeo),portalMesh=R.upload(portalGeo);
 // A quiet environmental clue: no marker, no label, no objective counter.
@@ -147,8 +170,12 @@ function sprite(kind,variant=0,frame=0,back=false){
 }
 const heroSprites=[sprite('hero',0,0,false),sprite('hero',0,1,false),sprite('hero',0,0,true),sprite('hero',0,1,true)],npcTex=sprite('npc'),scoutTex=sprite('npc',1),bossTex=sprite('boss'),glowTex=sprite('glow');
 const slimeTextures=Array.from({length:3},(_,i)=>[sprite('slime',i,0),sprite('slime',i,1)]);
-function label(text,color='#e8e5bd'){return R.texture('label'+text,(c,w,h)=>{c.font='500 22px "Malgun Gothic",sans-serif';c.textAlign='center';c.shadowColor='#0b2529';c.shadowBlur=5;c.fillStyle=color;c.fillText(text,w/2,34);},512,64);}
-const labels={remains:label('수호자의 기억'),scout:label(SCOUT.name),survey:label(OLD_SURVEY.name),echoes:ECHO_SITES.map(e=>label(e.name)),npc:label('루미 · 기록자'),portal:label('별의 관문'),boss:label(BOSS.name,'#f0d39b'),seals:seals.map(s=>label(s.name)),memories:memories.map(s=>label(s.name))};
+function label(text,color='#e8e5bd'){return R.texture('label'+text,(c,w,h)=>{c.font='27px '+UI_CANVAS_FONT;c.textAlign='center';c.shadowColor='#0b2529';c.shadowBlur=5;c.fillStyle=color;c.fillText(text,w/2,37,480);},512,64);}
+let labels={echoes:[],seals:[],memories:[]};
+whenUiFontReady(()=>{
+ labels={remains:label('수호자의 기억'),scout:label(SCOUT.name),survey:label(OLD_SURVEY.name),echoes:ECHO_SITES.map(e=>label(e.name)),npc:label('루미 · 기록자'),portal:label('별의 관문'),boss:label(BOSS.name,'#f0d39b'),seals:seals.map(s=>label(s.name)),memories:memories.map(s=>label(s.name))};
+});
+function drawLabel(texture,x,y,z,width,height){if(texture)R.sprite(texture,x,y,z,width,height);}
 const enemies=[];
 for(let i=0;i<3;i++)for(let j=0;j<3;j++){const a=j/3*TAU;enemies.push({id:i*3+j,x:seals[i].x+Math.cos(a)*4,z:seals[i].z+Math.sin(a)*4,home:{x:seals[i].x+Math.cos(a)*4,z:seals[i].z+Math.sin(a)*4},hp:48,max:48,type:i,wind:0,cd:.5,jitter:j,hit:0});}
 const boss={id:99,x:13,z:-69,home:{x:13,z:-69},hp:300,max:300,type:3,wind:0,cd:2,hit:0};enemies.push(boss);
@@ -199,7 +226,7 @@ function interact(){
  if(!state.boss){toast('수호자의 공격 신호를 보고 회피하세요.');return;}
  showDialog('수호자의 마지막 기록',['[보존 명령 제0001호. 발령자: 당신.]\n[외부 간섭을 차단한다. 거주민의 이탈을 허용하지 않는다.]','수호자는 숲을 지키고 있었다. 당신이 명령한 방식으로.\n과거의 이유는 아직 알 수 없다. 하지만 지금의 선택은 당신에게 있다.'],finalChoice);
  }
- if(o.kind==='portal'){player.hp=100;if(!state.complete)showDialog('별의 관문',['관문이 희미한 온기를 전한다. 생명력이 회복되었다.\n멀리 세 별의 신호가 들린다. 지금은 유온의 목소리에 귀를 기울이자.']);else showDialog('쇄해로 이어지는 신호',['바람 사이로 물이 차오르는 소리가 들린다.\n“제방은 안전합니다. 출항은 허가되지 않았습니다.”','루미는 기록장을 덮는다.\n“이번에는, 문이 닫힌 이유부터 물어봐요.”\n다음 장: 쇄해 · 닫힌 길의 바다'],()=>{save();location.href='swaehae.html';});}
+ if(o.kind==='portal'){player.hp=100;if(!state.complete)showDialog('별의 관문',['관문이 희미한 온기를 전한다. 생명력이 회복되었다.\n멀리 세 별의 신호가 들린다. 지금은 유온의 목소리에 귀를 기울이자.']);else showDialog('쇄해로 이어지는 신호',['바람 사이로 물이 차오르는 소리가 들린다.\n“제방은 안전합니다. 출항은 허가되지 않았습니다.”','루미는 기록장을 덮는다.\n“이번에는, 문이 닫힌 이유부터 물어봐요.”\n다음 장: 쇄해 · 닫힌 길의 바다'], ()=>{if(!save()){toast('저장하지 못해 유온에 머뭅니다. 진행을 파일로 남길 수 있습니다.');return;}if(window.parent!==window)parent.postMessage({type:'recommand-switch',chapter:'swaehae'},'*');else location.href='swaehae.html';});}
 }
 function setStudy(v){study=v;keys.clear();$('study').classList.toggle('hidden',!v);}
 function togglePause(){if(!started||dialog||study)return;paused=!paused;keys.clear();$('pause').textContent=paused?'계속하기':'일시정지';if(paused)toast('일시정지 · 버튼 또는 Esc로 계속');}
@@ -221,7 +248,15 @@ $('saveFile').onchange=async e=>{
  const f=e.target.files?.[0];if(!f)return;
  try{
  if(f.size>500000)throw Error('파일이 너무 큽니다.');const data=decode(await f.text(),enemies);
- const accept=()=>{applySave(data);started=true;paused=true;$('overlay').classList.add('hidden');$('pause').textContent='계속하기';save();updateHUD();$('saveStatus').textContent='가져왔습니다. 원리 보기를 닫고 계속하기를 누르세요.';$('importDecision')?.remove();};
+ const accept=()=>{
+  try{
+   if(!backupCanSave())throw Error('진행 보관이 끝난 뒤 다시 시도해 주세요.');
+   writeGardenSave(JSON.stringify(snapshot(data.state,data.player,data.enemies,data.journal)));
+  }catch(error){$('saveStatus').textContent='가져오기 실패: '+error.message;return;}
+  applySave(data);started=true;paused=true;storageWarning=false;
+  $('overlay').classList.add('hidden');$('pause').textContent='계속하기';updateHUD();
+  $('saveStatus').textContent='가져왔습니다. 원리 보기를 닫고 계속하기를 누르세요.';$('importDecision')?.remove();
+ };
  $('importDecision')?.remove();
  if(started){const box=document.createElement('div');box.id='importDecision';const text=document.createElement('p');text.textContent='가져온 진행으로 교체할까요? 현재 자동 저장은 백업됩니다.';const yes=document.createElement('button');yes.textContent='교체하여 가져오기';yes.onclick=accept;const no=document.createElement('button');no.textContent='취소';no.onclick=()=>box.remove();box.append(text,yes,no);$('saveStatus').after(box);}
  else accept();
@@ -230,14 +265,14 @@ $('saveFile').onchange=async e=>{
 };
 
 function download(name,data,type){const url=URL.createObjectURL(new Blob([data],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
-$('reset').onclick=()=>{if(confirm('저장된 탐험 진행을 초기화할까요?')){try{localStorage.removeItem(SAVE+'.backup');localStorage.removeItem(SAVE);}catch{}location.reload();}};
+$('reset').onclick=()=>{if(confirm('저장된 탐험 진행을 초기화할까요?')){try{gardenSaveGuard.check();localStorage.removeItem(SAVE+'.backup');localStorage.removeItem(SAVE);location.reload();}catch(error){document.getElementById('saveStatus').textContent=error.message;}}};
 for(const b of document.querySelectorAll('[data-action]'))b.addEventListener('click',()=>{action(b.dataset.action);if(started&&!dialog&&!study)$('world').focus();});
 for(const b of document.querySelectorAll('[data-key]')){b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(b.dataset.key);};b.onpointerup=b.onpointercancel=b.onlostpointercapture=()=>keys.delete(b.dataset.key);}
 addEventListener('keydown',e=>{
  const k=e.key.toLowerCase();if(k==='f1'){e.preventDefault();setStudy(!study);return;}
  if(e.target instanceof HTMLInputElement||e.target?.isContentEditable)return;
- if(k==='escape'){e.preventDefault();if(study)setStudy(false);else if(dialog&&!dialog.choice)advance();else if(!dialog)togglePause();return;}
- if(e.repeat)return;
+ if(k==='escape'){e.preventDefault();if(e.repeat)return;if(study)setStudy(false);else if(dialog&&!dialog.choice)advance();else if(!dialog)togglePause();return;}
+ if(e.repeat){if(dialog&&(k==='enter'||k===' '||k==='escape'))e.preventDefault();return;}
  if(dialog&&k==='tab'){e.preventDefault();const buttons=dialog.choice?[...$('choices').children]:[$('dialogNext')],i=buttons.indexOf(document.activeElement);buttons[(i+(e.shiftKey?-1:1)+buttons.length)%buttons.length].focus();return;}
  if(['BUTTON','A'].includes(e.target?.tagName)&&['enter',' '].includes(k))return;
  if(dialog){if(['e','enter'].includes(k)){e.preventDefault();advance();}return;}if(study||!started)return;
@@ -252,12 +287,12 @@ addEventListener('pagehide',save);
 function tick(dt){
  playerMotion.capture(player);
  time+=dt;if(toastTime>0){toastTime-=dt;if(toastTime<=0)$('toast').style.opacity=0;}
- if(!started||paused||study||dialog||contextLost)return;
+ if(!started||paused||study||dialog||contextLost){playerMotor.stop(player);return;}
  for(const k of['attack','dash','skill','inv','dashTime'])player[k]=Math.max(0,player[k]-dt);
  let dx=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0),dz=(keys.has('s')||keys.has('arrowdown')?1:0)-(keys.has('w')||keys.has('arrowup')?1:0),dir=normalize(dx,dz);
  if(dx||dz){player.face=dir;player.walk+=dt*9;}
  if(player.dashTime>0){dir=player.face;burst(player.x,player.z,[.55,.76,.73],1);}
- const speed=player.dashTime>0?22:6.2,m=resolveMove(player,dir.x*speed*dt,dir.z*speed*dt,obstacles);player.x=m.x;player.z=m.z;
+ const speed=player.dashTime>0?22:6.2,m=playerMotor.move(player,dir,dt,{speed,dashing:player.dashTime>0,obstacles});player.x=m.x;player.z=m.z;
  if(keys.has('j'))action('attack');
  for(const e of enemies){
  if(e.hp<=0)continue;e.hit=Math.max(0,e.hit-dt);if(e===boss&&!state.seals.every(Boolean))continue;
@@ -294,6 +329,7 @@ function updateHUD(){
 }
 function draw(alpha=1,dt=1/60){
  const pose=playerMotion.sample(player,alpha,dt,{frozen:!started||paused||study||!!dialog,dashing:player.dashTime>0});
+ motionTelemetry($('world'),player,pose,simulationClock);
  const camX=started?pose.cameraX:0,camZ=started?pose.cameraZ:-1;R.begin(camX,camZ,curve);R.mesh(worldMesh);R.mesh(roadMesh);if(grid)R.mesh(gridMesh);R.mesh(propMesh);if(!worldArt.propReady){R.mesh(treeMesh);R.mesh(portalMesh);}R.mesh(brokenMesh);
  const g=new Geometry(),visible=e=>Math.abs(e.x-camX)<48&&Math.abs(e.z-camZ)<58;
  if(state.boss&&visible(boss))g.ring(boss.x,groundY(boss.x,boss.z)+.12,boss.z,1.35,[.85,.82,.46],48,.08);
@@ -312,18 +348,19 @@ function draw(alpha=1,dt=1/60){
  for(const lamp of gardenLamps)if(visible(lamp))R.sprite(glowTex,lamp.x,lamp.y-.5,lamp.z,1.1,1.1,.35+Math.sin(time*2+lamp.x)*.05);
  if(state.memories.every(Boolean)&&Math.sin(time*.8)>.98)R.sprite(glowTex,fracture.x,.87,fracture.z,.15,.15,.35);
  const draws=[];
- draws.push(()=>R.sprite(worldArt.actor('scout',scoutTex),SCOUT.x,groundY(SCOUT.x,SCOUT.z),SCOUT.z,1.9,2.5));draws.push(()=>R.sprite(labels.scout,SCOUT.x,3.1,SCOUT.z,5.5,.65));
- if(distance(player,OLD_SURVEY)<7)draws.push(()=>R.sprite(labels.survey,OLD_SURVEY.x,1.3,OLD_SURVEY.z,4.5,.55));
- if(state.sidequest===1)for(let i=0;i<2;i++){const s=ECHO_SITES[i];if(visible(s))draws.push(()=>R.sprite(labels.echoes[i],s.x,3,s.z,4.5,.6));}
+ draws.push(()=>R.sprite(worldArt.actor('scout',scoutTex),SCOUT.x,groundY(SCOUT.x,SCOUT.z),SCOUT.z,1.9,2.5));draws.push(()=>drawLabel(labels.scout,SCOUT.x,3.1,SCOUT.z,5.5,.65));
+ if(distance(player,OLD_SURVEY)<7)draws.push(()=>drawLabel(labels.survey,OLD_SURVEY.x,1.3,OLD_SURVEY.z,4.5,.55));
+ if(state.sidequest===1)for(let i=0;i<2;i++){const s=ECHO_SITES[i];if(visible(s))draws.push(()=>drawLabel(labels.echoes[i],s.x,3,s.z,4.5,.6));}
  draws.push(()=>R.sprite(worldArt.actor('lumi',npcTex),npc.x,groundY(npc.x,npc.z),npc.z,1.9,2.5));
- draws.push(()=>R.sprite(labels.npc,npc.x,3.1,npc.z,5,.62));
- draws.push(()=>R.sprite(labels.portal,0,4.4,11,5,.62));
- for(let i=0;i<3;i++){const s=seals[i];if(!visible(s))continue;draws.push(()=>{R.sprite(glowTex,s.x,1.5+Math.sin(time*2)*.15,s.z,3,3,state.seals[i]?.85:.32);R.sprite(labels.seals[i],s.x,3.3,s.z,5,.62);});}
- for(let i=0;i<2;i++){const s=memories[i];if(visible(s))draws.push(()=>{R.sprite(glowTex,s.x,1.5,s.z,1.6,1.6,.5);R.sprite(labels.memories[i],s.x,3,s.z,5,.62);});}
- for(const e of enemies){if(e.hp<=0||!visible(e))continue;const isBoss=e===boss,w=isBoss?4.8:2.2,h=isBoss?5.2:2;draws.push(()=>{if(isBoss)R.drawDynamic(makeBossModel('ormun',e.x,groundY(e.x,e.z),e.z,time,e,SOFT));else R.sprite(worldArt.actor('slime'+e.type+(Math.floor(time*2+(e.jitter||0))%2?'b':''),slimeTextures[e.type][Math.floor(time*4+(e.jitter||0))%2]),e.x,groundY(e.x,e.z)+Math.sin(time*4)*.06,e.z,w,h,e.hit>0?.45:1);if(isBoss)R.sprite(labels.boss,e.x,6.1,e.z,6,.75);if(e.hp<e.max||e.wind>0){const tex=R.texture('hp'+e.id+'-'+Math.ceil(e.hp/10),c=>{c.fillStyle='#143632';c.fillRect(10,45,108,12);c.fillStyle=isBoss?'#dfb271':'#bfd495';c.fillRect(12,47,104*e.hp/e.max,8);});R.sprite(tex,e.x,h+.4,e.z,isBoss?4:2.6,.65);}});}
- if(state.boss&&visible(boss))draws.push(()=>{R.sprite(glowTex,boss.x,groundY(boss.x,boss.z)+1.2+Math.sin(time*1.5)*.1,boss.z,2.3,2.3,.75);R.sprite(labels.remains,boss.x,groundY(boss.x,boss.z)+3,boss.z,5,.65);});
+ draws.push(()=>drawLabel(labels.npc,npc.x,3.1,npc.z,5,.62));
+ draws.push(()=>drawLabel(labels.portal,0,4.4,11,5,.62));
+ for(let i=0;i<3;i++){const s=seals[i];if(!visible(s))continue;draws.push(()=>{R.sprite(glowTex,s.x,1.5+Math.sin(time*2)*.15,s.z,3,3,state.seals[i]?.85:.32);drawLabel(labels.seals[i],s.x,3.3,s.z,5,.62);});}
+ for(let i=0;i<2;i++){const s=memories[i];if(visible(s))draws.push(()=>{R.sprite(glowTex,s.x,1.5,s.z,1.6,1.6,.5);drawLabel(labels.memories[i],s.x,3,s.z,5,.62);});}
+ for(const e of enemies){if(e.hp<=0||!visible(e))continue;const isBoss=e===boss,w=isBoss?4.8:2.2,h=isBoss?5.2:2;draws.push(()=>{if(isBoss)R.drawDynamic(makeBossModel('ormun',e.x,groundY(e.x,e.z),e.z,time,e,SOFT));else R.sprite(worldArt.actor('slime'+e.type+(Math.floor(time*2+(e.jitter||0))%2?'b':''),slimeTextures[e.type][Math.floor(time*4+(e.jitter||0))%2]),e.x,groundY(e.x,e.z)+Math.sin(time*4)*.06,e.z,w,h,e.hit>0?.45:1);if(isBoss)drawLabel(labels.boss,e.x,6.1,e.z,6,.75);if(e.hp<e.max||e.wind>0){const tex=R.texture('hp'+e.id+'-'+Math.ceil(e.hp/10),c=>{c.fillStyle='#143632';c.fillRect(10,45,108,12);c.fillStyle=isBoss?'#dfb271':'#bfd495';c.fillRect(12,47,104*e.hp/e.max,8);});R.sprite(tex,e.x,h+.4,e.z,isBoss?4:2.6,.65);}});}
+ if(state.boss&&visible(boss))draws.push(()=>{R.sprite(glowTex,boss.x,groundY(boss.x,boss.z)+1.2+Math.sin(time*1.5)*.1,boss.z,2.3,2.3,.75);drawLabel(labels.remains,boss.x,groundY(boss.x,boss.z)+3,boss.z,5,.65);});
  const frame=pose.frame;
- draws.push(()=>R.sprite(worldArt.actor(['hero0','hero1','heroBack0','heroBack1'][frame],heroSprites[frame]),pose.x,groundY(pose.x,pose.z)+pose.bob,pose.z,1.9*pose.width,2.6*pose.height,player.inv>0&&Math.floor(time*16)%2?.45:1));
+ const combatPose=combatSpritePose(effects,alpha,pose.dashBlend,player.inv,time);
+ draws.push(()=>R.sprite(worldArt.hero(pose,heroSprites[frame]),pose.x,groundY(pose.x,pose.z)+pose.bob,pose.z,1.9*pose.width*combatPose.width,2.6*pose.height*combatPose.height,combatPose.opacity));
  // Alpha cutoff writes depth, so opaque sprite pixels occlude correctly with 3D trees.
  for(const d of draws)d();
  for(let i=0;i<26;i++){const x=camX+Math.sin(i*19.7+time*.09)*25,z=camZ+Math.cos(i*13.1+time*.08)*28;R.sprite(glowTex,x,1.5+Math.sin(time*.5+i),z,.25,.25,.55);}
@@ -334,18 +371,22 @@ function drawMap(){
  const c=$('minimap').getContext('2d');c.clearRect(0,0,200,200);c.save();c.beginPath();c.arc(100,100,97,0,TAU);c.clip();c.fillStyle='#153a38';c.fillRect(0,0,200,200);
  const xy=(x,z)=>[100+x*.82,100+z*.82];
  c.strokeStyle='#79927466';c.lineWidth=3;for(const[a,b]of roads){c.beginPath();c.moveTo(...xy(...a));c.lineTo(...xy(...b));c.stroke();}
- c.font='9px sans-serif';c.textAlign='center';c.fillStyle='#c7cfa8';c.fillText('N',100,17);
+ c.font='12px '+UI_CANVAS_FONT;c.textAlign='center';c.fillStyle='#c7cfa8';c.fillText('N',100,17);
  for(let i=0;i<3;i++){const[x,y]=xy(seals[i].x,seals[i].z);c.fillStyle=state.seals[i]?'#d5e3a0':'#d8bd79';c.save();c.translate(x,y);c.rotate(Math.PI/4);c.fillRect(-3,-3,6,6);c.restore();}
  for(let i=0;i<2;i++){const[x,y]=xy(memories[i].x,memories[i].z);c.fillStyle=state.memories[i]?'#859f91':'#9cdbd5';c.fillRect(x-2,y-2,4,4);}
  for(const e of enemies)if(e.hp>0){const[x,y]=xy(e.x,e.z);c.fillStyle=e===boss?'#e0aa7a':'#bd8177';c.beginPath();c.arc(x,y,e===boss?4:1.7,0,TAU);c.fill();}
  let[x,y]=xy(npc.x,npc.z);c.fillStyle='#e6dfaf';c.beginPath();c.arc(x,y,3,0,TAU);c.fill();
  [x,y]=xy(player.x,player.z);c.save();c.translate(x,y);c.rotate(-Math.atan2(player.face.x,player.face.z));c.fillStyle='#f4e7b0';c.beginPath();c.moveTo(0,6);c.lineTo(-4,-4);c.lineTo(4,-4);c.fill();c.restore();c.restore();
 }
-let previous=performance.now(),accumulator=0,frames=0,lastFPS=performance.now(),fps=0,renderMs=0;
-function loop(now){const frameDt=clamp((now-previous)/1000,0,.15);accumulator+=frameDt;previous=now;let steps=0;while(accumulator>=1/60&&steps<8){tick(1/60);accumulator-=1/60;steps++;}if(steps===8)accumulator=0;if(!contextLost){const before=performance.now();draw(accumulator*60,frameDt);renderMs=performance.now()-before;}frames++;if(now-lastFPS>1000){fps=Math.round(frames*1000/(now-lastFPS));frames=0;lastFPS=now;}$('fps').textContent=fps+' FPS · '+renderMs.toFixed(1)+' ms/render';requestAnimationFrame(loop);}requestAnimationFrame(loop);
+const simulationClock=new FixedStepClock();let previous=performance.now(),frames=0,lastFPS=performance.now(),fps=0,renderMs=0;
+function loop(now){const step=simulationClock.advance((now-previous)/1000,tick),frameDt=step.dt;previous=now;if(!contextLost){const before=performance.now();draw(step.alpha,frameDt);renderMs=performance.now()-before;}frames++;if(now-lastFPS>1000){fps=Math.round(frames*1000/(now-lastFPS));frames=0;lastFPS=now;}$('fps').textContent=fps+' FPS · '+renderMs.toFixed(1)+' ms/render';requestAnimationFrame(loop);}requestAnimationFrame(loop);
 $('world').addEventListener('webglcontextlost',e=>{e.preventDefault();contextLost=true;paused=true;save();showDialog('그래픽 연결 끊김',['진행을 저장했습니다. 계속을 누르면 게임을 다시 엽니다. 시작 화면에서 기억 이어가기를 선택하세요.'],()=>location.reload(),{record:false});});
 // Read-only observability for QA. No gameplay cheats or mutable state exposed.
 window.recommand={snapshot:()=>JSON.parse(JSON.stringify({player,state,started,paused,study,dialog:dialog?{name:dialog.name,index:dialog.index}:null,enemies:enemies.map(({id,x,z,hp,wind})=>({id,x,z,hp,wind})),curve,drawCalls:R.calls,backend:R.backend,fps,vfxReady:combatVFX.ready,vfxFailed:!!combatVFX.failed,storageWarning,contextLost}))};
 
 
 if(typeof window.dispatchEvent==='function')window.dispatchEvent(new Event('recommand-ready'));
+
+if(window.parent&&window.parent!==window)backupCanSave=installBackupBridge({window,parent:window.parent,chapter:'yuon',flush:()=>!started||save(),pause:()=>{const previous=paused;paused=true;keys.clear();return previous;},resume:previous=>{paused=previous;keys.clear();}});
+
+$('travelerName').textContent=readTravelerName(k=>localStorage.getItem(k));

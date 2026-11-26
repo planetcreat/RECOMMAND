@@ -3,14 +3,21 @@ import {effectGrid} from './engine.js';
 // CPU projection fallback for devices without WebGL. Uses the same logical world and bend formula.
 export class SoftwareRenderer{
  constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false});if(!this.ctx)throw Error('화면을 만들 수 없습니다.');this.backend='software';this.gl={getError:()=>0};this.textures=new Map();this.calls=0;this.queue=[];}
- upload(g){const chunks=new Map(),a=g.data;for(let i=0;i<a.length;i+=18){const x=(a[i]+a[i+6]+a[i+12])/3,z=(a[i+2]+a[i+8]+a[i+14])/3,cx=Math.floor(x/10),cz=Math.floor(z/10),key=cx+','+cz;if(!chunks.has(key))chunks.set(key,{x:cx*10+5,z:cz*10+5,data:[]});const chunk=chunks.get(key);for(let j=0;j<18;j++)chunk.data.push(a[i+j]);}return{chunks:[...chunks.values()].map(c=>({...c,data:new Float32Array(c.data)}))};}
+ upload(g){const chunks=new Map(),a=g.data;for(let i=0;i<a.length;i+=18){const x=(a[i]+a[i+6]+a[i+12])/3,z=(a[i+2]+a[i+8]+a[i+14])/3,cx=Math.floor(x/10),cz=Math.floor(z/10),key=cx+','+cz;if(!chunks.has(key))chunks.set(key,{x:cx*10+5,z:cz*10+5,data:[]});const chunk=chunks.get(key);for(let j=0;j<18;j++)chunk.data.push(a[i+j]);}return{layer:g.softwareLayer,chunks:[...chunks.values()].map(c=>({...c,data:new Float32Array(c.data)}))};}
  texture(key,draw,w=128,h=128){if(this.textures.has(key))return this.textures.get(key);const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);this.textures.set(key,c);return c;}
  begin(x,z,k){const c=this.canvas;const dpr=Math.min(devicePixelRatio||1,1);const w=Math.max(1,Math.floor(innerWidth*dpr)),h=Math.max(1,Math.floor(innerHeight*dpr));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}this.width=w;this.height=h;this.center=[x,z];this.curve=k;this.view=lookAt([x,18,z+22],[x,0,z-1]);this.focal=h/(2*Math.tan(Math.PI/6));this.queue.length=0;this.calls=0;const sky=this.ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#233c50');sky.addColorStop(.5,'#577d82');sky.addColorStop(1,'#7d9890');this.ctx.fillStyle=sky;this.ctx.fillRect(0,0,w,h);}
  project(x,y,z){return this.projectBent(x,y-this.curve*((x-this.center[0])**2+(z-this.center[1])**2),z);}
  projectMesh(x,y,z){return this.projectBent(...surfaceMeshPoint(x,y,z,...this.center,this.curve));}
  projectBent(x,by,z){const v=this.view;const depth=-(v[2]*x+v[6]*by+v[10]*z+v[14]);if(depth<=.3)return null;return{x:this.width/2+(v[0]*x+v[4]*by+v[8]*z+v[12])*this.focal/depth,y:this.height/2-(v[1]*x+v[5]*by+v[9]*z+v[13])*this.focal/depth,depth};}
  mesh(mesh){
- if(mesh.chunks){this.ground??=mesh;for(const chunk of mesh.chunks){if(Math.abs(chunk.x-this.center[0])>42||chunk.z-this.center[1]>30||chunk.z-this.center[1]<-48)continue;this.renderChunk(chunk.data,mesh===this.ground?0:1);}this.calls++;return;}this.renderChunk(mesh.data,1,mesh.alpha??1,mesh.additive);this.calls++;}
+ if(mesh.chunks){
+  if(mesh.layer===undefined)this.ground??=mesh;
+  const layer=mesh.layer??(mesh===this.ground?0:1);
+  for(const chunk of mesh.chunks){if(Math.abs(chunk.x-this.center[0])>42||chunk.z-this.center[1]>30||chunk.z-this.center[1]<-48)continue;this.renderChunk(chunk.data,layer);}
+  this.calls++;return;
+ }
+ this.renderChunk(mesh.data,1,mesh.alpha??1,mesh.additive);this.calls++;
+ }
  renderChunk(a,layer,alpha=1,additive=false){
  for(let i=0;i<a.length;i+=18){
  const p=this.projectMesh(a[i],a[i+1],a[i+2]),q=this.projectMesh(a[i+6],a[i+7],a[i+8]),r=this.projectMesh(a[i+12],a[i+13],a[i+14]);
