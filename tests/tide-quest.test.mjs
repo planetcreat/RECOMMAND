@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {TIDE_INITIAL,decodeTide,boatAction,tickBoat,boatPosition,BOAT_SECONDS} from '../dist/tide.js';
+import {TIDE_SAVE_KEY,TIDE_INITIAL,decodeTide,boatAction,tickBoat,boatPosition,BOAT_SECONDS} from '../dist/tide.js';
+import {journeySummary} from '../dist/late-state.js';
 import {BELROK_CLUE} from '../dist/belrok.js';
 const initial=()=>structuredClone(TIDE_INITIAL);
 const ready=()=>({...initial(),introduced:true,observations:[true,true,true]});
@@ -33,8 +34,9 @@ test('invalid or fabricated boat rewards and timers are rejected',()=>{
 });
 
 // Execute the real chapter event handlers and render loop with only graphics/DOM stubbed.
-function chapterBoot(saved){
- const read=p=>fs.readFileSync(new URL('../dist/'+p,import.meta.url),'utf8'),els=new Map(),storage=new Map(saved?[['recommand-swaehae-v1',JSON.stringify(saved)]]:[]),events={};
+function chapterBoot(saved,records={}){
+ const read=p=>fs.readFileSync(new URL('../dist/'+p,import.meta.url),'utf8'),els=new Map(),storage=new Map(Object.entries(records)),events={};
+ if(saved)storage.set(TIDE_SAVE_KEY,JSON.stringify(saved));
  for(const m of read('swaehae.html').matchAll(/id="([^"]+)"/g)){const classes=new Set();els.set(m[1],{textContent:'',style:{},classList:{add:s=>classes.add(s),remove:s=>classes.delete(s),toggle:(s,v)=>v?classes.add(s):classes.delete(s)},focus(){},classes});}
  const doc={getElementById:id=>els.get(id),querySelectorAll:()=>[],addEventListener:(k,f)=>events[k]=f};
  let hostFocused=false;const timers=[];
@@ -55,6 +57,26 @@ test('Swaehae launcher focus and arrival dialogue do not pause play; manual paus
  assert.equal(game.paused(),false);
  game.a.pause();game.blur(true);assert.equal(game.paused(),true);
  game.a.pause();game.hide();assert.equal(game.paused(),true);
+});
+
+test('Swaehae resumes the last valid save and keeps the damaged primary for recovery',()=>{
+ const raw=JSON.stringify({...ready(),arrival:true,foregate:true,boss:{defeated:true,rewritten:true}});
+ const game=chapterBoot(null,{[TIDE_SAVE_KEY]:'damaged primary',[TIDE_SAVE_KEY+'.backup']:raw});
+ assert.equal(game.a.state.boss.rewritten,true);
+ assert.equal(journeySummary(key=>game.storage.get(key)).sea,true);
+ game.blur(true);game.a.draw();
+ assert.equal(game.storage.get(TIDE_SAVE_KEY+'.unreadable'),'damaged primary');
+ assert.equal(game.storage.get(TIDE_SAVE_KEY+'.backup'),raw);
+ assert.equal(game.storage.get(TIDE_SAVE_KEY),raw);
+ assert.match(game.els.get('chapterSaveNotice').textContent,/이전 자동 저장/);
+});
+
+test('Swaehae never replaces unreadable saves after a new arrival dialogue',()=>{
+ const game=chapterBoot(null,{[TIDE_SAVE_KEY]:'damaged primary',[TIDE_SAVE_KEY+'.backup']:'damaged backup'});
+ const before=[...game.storage];
+ game.close();game.blur(true);game.a.draw();
+ assert.deepEqual([...game.storage],before);
+ assert.match(game.els.get('chapterSaveNotice').textContent,/저장하지 않습니다/);
 });
 
 test('boss strategy stays behind the completed hidden quest in both arrival and NPC dialogue',()=>{

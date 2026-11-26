@@ -13,3 +13,6 @@ body:has(#chapterDialog:not(.hidden)) :is(#harborObjective, #boatQuest, #chapter
 .chapter-dialog {
   bottom: clamp(16px, 8vh, 85px);
 }
+
+#chapterSaveNotice { color: #edd39c; }
+#chapterSaveNotice:empty { display: none; }

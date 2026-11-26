@@ -5,7 +5,7 @@ import {JOURNEY_KEYS,applyJourneyRestore,undoJourneyRestore} from '../dist/journ
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {installBackupBridge} from '../dist/backup-bridge.js';
-import {TIDE_INITIAL} from '../dist/tide.js';
+import {TIDE_INITIAL,writeTide} from '../dist/tide.js';
 import {newLateState,writeLate} from '../dist/late-state.js';
 
 test('old child pagehide cannot overwrite parent restore or its undo',()=>{
@@ -26,9 +26,9 @@ for(const planet of ['swaehae','mumyeong','hwanseong'])test(planet+' real save h
  const store={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};
  const sea=planet==='swaehae',source=fs.readFileSync(new URL('../dist/'+(sea?'swaehae':'late-game')+'.js',import.meta.url),'utf8');
  const start=source.indexOf('function '+(sea?'saveSea':'lateSave')+'('),end=source.indexOf('function '+(sea?'seaTalk':'lateTalk')+'(',start);
- const box={JSON,Math,localStorage:store,SEA_SAVE:key,backupCanSave:()=>true,seaState:structuredClone(TIDE_INITIAL),seaSaveFailed:false,lateStarted:true,lateArena:null,lateState:newLateState(sea?'mumyeong':planet),latePlayer:{x:0,z:10,hp:100},lateSaveError:false,writeLate,lateToast(){}};
+ const box={JSON,Math,localStorage:store,backupCanSave:()=>true,seaState:structuredClone(TIDE_INITIAL),seaSaveBlocked:false,seaSaveFailed:false,writeTide,lateStarted:true,lateArena:null,lateState:newLateState(sea?'mumyeong':planet),latePlayer:{x:0,z:10,hp:100},lateSaveError:false,writeLate,lateToast(){}};
  vm.createContext(box);vm.runInContext(source.slice(start,end),box);
- const save=sea?()=>{box.saveSea();return!box.seaSaveFailed;}:()=>box.lateSave();
+ const save=sea?()=>box.saveSea():()=>box.lateSave();
  const change=()=>{if(sea)box.seaState.introduced=true;else box.latePlayer.x=1;};
  save();const initial=store.getItem(key);change();save();const changed=store.getItem(key);assert.notEqual(changed,initial);
  box.backupCanSave=installBackupBridge({window:{addEventListener:(k,f)=>events[k]=f},parent,chapter:planet,flush:save,pause(){},resume(){}});

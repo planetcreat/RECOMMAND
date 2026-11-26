@@ -1,4 +1,4 @@
-import {decodeTide} from './tide.js';
+import {loadTide} from './tide.js';
 export const LATE_KEYS={mumyeong:'recommand-mumyeong-v1',hwanseong:'recommand-hwanseong-v1'};
 const boolArray=(v,n)=>Array.isArray(v)&&v.length===n&&v.every(x=>typeof x==='boolean');
 export function newLateState(planet){if(!LATE_KEYS[planet])throw Error('알 수 없는 행성입니다.');return{format:'RECOMMAND-LATE',v:1,planet,arrived:false,nameRevealed:false,nameAccepted:false,heard:[],compared:[false,false,false],chime:false,asked:false,relays:[false,false,false],invited:[false,false,false],tomorrow:false,lumi:false,boss:false,ending:null,player:{x:0,z:10,hp:100}};}
@@ -33,8 +33,7 @@ export function canWitness(s){return s.planet==='mumyeong'&&s.boss&&s.chime&&s.a
 function parseObject(raw){try{const s=typeof raw==='string'?JSON.parse(raw):raw;return s&&typeof s==='object'?s:null;}catch{return null;}}
 // Read only. A missing/invalid earlier chapter never becomes somebody's consent.
 export function journeySummary(read){
- const u=parseObject(read('recommand-save-v1'));let sea=null,mum=null;
- try{const r=read('recommand-swaehae-v1');if(r)sea=decodeTide(r);}catch{}
+ const u=parseObject(read('recommand-save-v1')),sea=loadTide(read).state;let mum=null;
  try{const r=read(LATE_KEYS.mumyeong);if(r)mum=decodeLate(r,'mumyeong');}catch{}
  const st=u?.state,validYuon=[1,2].includes(u?.v)&&boolArray(st?.seals,3)&&boolArray(st?.memories,2)&&st.boss===true&&st.complete===true&&st.quest===2&&st.seals.every(Boolean)&&['preserve','rewrite'].includes(st.ending);
  const garden=!!(validYuon&&st.ending==='rewrite'&&st.bond===true&&st.fracture===true&&st.memories.every(Boolean));
