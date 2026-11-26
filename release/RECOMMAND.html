@@ -212,7 +212,9 @@ const standaloneStorage=new Proxy({}, {get(_,key){
    const store=window.localStorage,value=store[key];
    return typeof value==='function'?value.bind(store):value;
   }});
-  const standaloneRun=standaloneQa(document,location,standaloneStorage);
+  const standaloneRun=typeof recommandScopedStorage==='undefined'
+   ?standaloneQa(document,location,standaloneStorage)
+   :{storage:recommandScopedStorage};
   if(standaloneRun){
 const localStorage=standaloneRun.storage;
 // Parent launcher asks for a save checkpoint while its modal is open.
@@ -807,9 +809,9 @@ function restore(){
 function showDialog(name,lines,after,{record=true}={}){
  keys.clear();$('choices')?.remove();$('dialogNext').classList.remove('hidden');dialog={name,lines,index:0,after};$('speaker').textContent=name;$('dialogText').textContent=lines[0];$('dialog').classList.remove('hidden');
  if(record&&!journal.some(e=>e.name===name&&e.lines[0]===lines[0])){journal.push({name,lines:[...lines]});if(journal.length>100)journal.shift();save();}
- $('dialogNext').focus({preventScroll:true});
+ $('dialog').scrollTop=0;$('dialogNext').focus({preventScroll:true});
 }
-function advance(){if(!dialog||dialog.choice)return;if(++dialog.index<dialog.lines.length){$('dialogText').textContent=dialog.lines[dialog.index];sound(450,.035);}else{const cb=dialog.after;dialog=null;$('dialog').classList.add('hidden');cb?.();if(!dialog)$('world').focus({preventScroll:true});save();}}
+function advance(){if(!dialog||dialog.choice)return;if(++dialog.index<dialog.lines.length){$('dialogText').textContent=dialog.lines[dialog.index];$('dialog').scrollTop=0;sound(450,.035);}else{const cb=dialog.after;dialog=null;$('dialog').classList.add('hidden');cb?.();if(!dialog)$('world').focus({preventScroll:true});save();}}
 function offerSurvey(){
  $('dialog').classList.remove('hidden');
  dialog={choice:true,name:'기록에 없던 울림',index:0};keys.clear();$('speaker').textContent='기록에 없던 울림';$('dialogText').textContent='오래된 기록에 없던 현상을 조사한다.';$('dialogNext').classList.add('hidden');
@@ -967,7 +969,7 @@ function interact(){
  if(!state.boss){toast('수호자의 공격 신호를 보고 회피하세요.');return;}
  showDialog('수호자의 마지막 기록',['[보존 명령 제0001호. 발령자: 당신.]\n[외부 간섭을 차단한다. 거주민의 이탈을 허용하지 않는다.]','수호자는 숲을 지키고 있었다. 당신이 명령한 방식으로.\n과거의 이유는 아직 알 수 없다. 하지만 지금의 선택은 당신에게 있다.'],finalChoice);
  }
- if(o.kind==='portal'){player.hp=100;if(!state.complete)showDialog('별의 관문',['관문이 희미한 온기를 전한다. 생명력이 회복되었다.\n멀리 세 별의 신호가 들린다. 지금은 유온의 목소리에 귀를 기울이자.']);else showDialog('쇄해로 이어지는 신호',['바람 사이로 물이 차오르는 소리가 들린다.\n“제방은 안전합니다. 출항은 허가되지 않았습니다.”','루미는 기록장을 덮는다.\n“이번에는, 문이 닫힌 이유부터 물어봐요.”\n다음 장: 쇄해 · 닫힌 길의 바다'],()=>{save();location.href=standaloneRun.href('SWAEHAE.html');});}
+ if(o.kind==='portal'){player.hp=100;if(!state.complete)showDialog('별의 관문',['관문이 희미한 온기를 전한다. 생명력이 회복되었다.\n멀리 세 별의 신호가 들린다. 지금은 유온의 목소리에 귀를 기울이자.']);else showDialog('쇄해로 이어지는 신호',['바람 사이로 물이 차오르는 소리가 들린다.\n“제방은 안전합니다. 출항은 허가되지 않았습니다.”','루미는 기록장을 덮는다.\n“이번에는, 문이 닫힌 이유부터 물어봐요.”\n다음 장: 쇄해 · 닫힌 길의 바다'],()=>{save();if(window.parent!==window)parent.postMessage({type:'recommand-switch',chapter:'swaehae'},'*');else location.href=standaloneRun.href('SWAEHAE.html');});}
 }
 function setStudy(v){study=v;keys.clear();$('study').classList.toggle('hidden',!v);}
 function togglePause(){if(!started||dialog||study)return;paused=!paused;keys.clear();$('pause').textContent=paused?'계속하기':'일시정지';if(paused)toast('일시정지 · 버튼 또는 Esc로 계속');}
@@ -1004,8 +1006,8 @@ for(const b of document.querySelectorAll('[data-key]')){b.onpointerdown=e=>{e.pr
 addEventListener('keydown',e=>{
  const k=e.key.toLowerCase();if(k==='f1'){e.preventDefault();setStudy(!study);return;}
  if(e.target instanceof HTMLInputElement||e.target?.isContentEditable)return;
- if(k==='escape'){e.preventDefault();if(study)setStudy(false);else if(dialog&&!dialog.choice)advance();else if(!dialog)togglePause();return;}
- if(e.repeat)return;
+ if(k==='escape'){e.preventDefault();if(e.repeat)return;if(study)setStudy(false);else if(dialog&&!dialog.choice)advance();else if(!dialog)togglePause();return;}
+ if(e.repeat){if(dialog&&(k==='enter'||k===' '||k==='escape'))e.preventDefault();return;}
  if(dialog&&k==='tab'){e.preventDefault();const buttons=dialog.choice?[...$('choices').children]:[$('dialogNext')],i=buttons.indexOf(document.activeElement);buttons[(i+(e.shiftKey?-1:1)+buttons.length)%buttons.length].focus();return;}
  if(['BUTTON','A'].includes(e.target?.tagName)&&['enter',' '].includes(k))return;
  if(dialog){if(['e','enter'].includes(k)){e.preventDefault();advance();}return;}if(study||!started)return;
