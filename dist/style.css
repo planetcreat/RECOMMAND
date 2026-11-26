@@ -2,7 +2,7 @@
 
 /* Keep the world behind the intro while giving the start controls the foreground. */
 body:has(#overlay:not(.hidden)) :is(#hud > :not(#toast), #minimap, #touch),
-body:has(#dialog:not(.hidden)) :is(.bottom, #minimap, #touch) {
+body:has(#dialog:not(.hidden)) :is(.planet, .objective, .side-quest, #location, .bottom, #minimap, #touch) {
   display: none;
 }
 
@@ -25,4 +25,29 @@ body:has(#overlay:not(.hidden)) #toast {
 @media (max-width: 380px) {
   #overlay .intro { margin-inline: 20px; max-width: calc(100% - 40px); }
   #overlay .primary { min-width: 0; width: 100%; }
+}
+
+/* Body and action text in the compact HUD. */
+.brand, .header-actions button, #interact, .skills b { font-size: .9375rem; }
+.brand span, .version, .eyebrow, .planet p, #location, .keys, .player-label,
+.skills small, .skills kbd, #study pre, .intro-note { font-size: .8125rem; }
+.objective h2, .side-quest h2, #bossInfo h2 { font-size: 1.0625rem; }
+.objective p, .side-quest p, #study p, #study label, #study a { font-size: .9375rem; }
+#dialog p { font-size: 1.125rem; line-height: 1.72; }
+#dialog h2 { font-size: 1.25rem; }
+#dialogNext, #choices button, .save-tools button, #reset { font-size: .9375rem; }
+#dialogNext kbd { font-size: .8125rem; }
+.bar { height: 19px; }
+.bar span { font-size: .75rem; line-height: 17px; }
+#study pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  header { gap: 8px; }
+  .header-actions button { padding: 6px 7px; font-size: .875rem; }
+  .objective { width: clamp(155px, 46vw, 245px); }
+  .intro .eyebrow, #location { font-size: .8125rem; }
+}
+@media (max-width: 420px) {
+  .planet h1 span { display: none; }
+  .planet { max-width: 39vw; }
+  #continue { min-width: 0; width: 100%; }
 }

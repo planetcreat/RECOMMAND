@@ -33,3 +33,28 @@ body:has(#lateStart:not([hidden])) .late-header {
   #lateStart h3 { margin-bottom: 14px; }
   #lateStart .start-buttons { margin-top: 14px; }
 }
+
+/* Use the same body and control sizes in the snowfield and orbit. */
+.late-brand, .late-actions button, .late-prompt, .late-toast { font-size: .9375rem; }
+.late-brand small, .eyebrow, .late-controls, .dialog-footer small,
+#saveNotice, .late-boss small { font-size: .875rem; }
+.late-objective h2, .late-boss h2, .journal-entry h3 { font-size: 1.0625rem; }
+.late-objective p, .late-quest p, .late-title > p, .late-boss p,
+.journal-entry p { font-size: .9375rem; }
+.late-dialog p, #lateStart p { font-size: 1.125rem; line-height: 1.72; }
+#lateStart h3 { font-size: 1rem; }
+#lateStart #saveNotice { font-size: .875rem; }
+.late-dialog button, .late-touch button { font-size: .9375rem; }
+.late-prompt { width: max-content; max-width: 88vw; }
+@media (max-width: 800px) {
+  .late-objective { width: clamp(148px, 46vw, 245px); }
+  .late-actions button, .late-brand { font-size: .875rem; }
+  .start-buttons { flex-wrap: wrap; }
+}
+@media (max-width: 480px) {
+  .late-title { max-width: 43vw; }
+  .late-header { gap: 6px; }
+  .late-brand { letter-spacing: 1px; }
+  .late-touch { flex-wrap: wrap; }
+  .late-touch button { padding: 7px; }
+}

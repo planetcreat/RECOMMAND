@@ -3,3 +3,27 @@
 .audioSettings{position:relative;font-size:12px;background:#132638;border:1px solid #bfd2d544;border-radius:6px}.audioSettings summary{cursor:pointer;padding:8px 10px;color:#d3dfdd}.audioSettings>div{position:absolute;right:0;top:calc(100% + 6px);width:min(270px,calc(100vw - 24px));display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:12px;background:#132638;border:1px solid #bfd2d544;border-radius:8px;box-shadow:0 12px 32px #0006}.audioSettings button{padding:7px 10px;font-size:12px}.audioSettings input{width:100px;accent-color:#c5d2ac}.audioSettings small{width:100%;color:#b3c7c9;line-height:1.7}@media(max-width:620px){.audioSettings{position:static}.audioSettings>div{top:calc(100% + 4px);right:8px}}
 
 .backupPanel{padding:28px 32px}.backupPanel h2{font-weight:500}.backupPanel p{font-size:13px}.backupActions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.backupActions label{font-size:13px}.backupActions input{max-width:100%;font-size:13px}#backupPreview{white-space:pre-wrap;line-height:2;color:#e3d8ab}#backupStatus{min-height:50px}#backupUndoConfirm{border:1px solid #d1b68166;margin:18px 0;padding:14px}#journeyBackupOpen{font-size:12px;padding:8px}.backupPanel>button{margin-top:8px}@media(max-width:620px){.backupPanel{padding:20px}}
+
+/* Reading and action text in the launcher. */
+header strong, #briefTag { font-size: .8125rem; }
+header button, #journeyBackupOpen, .audioSettings, .audioSettings button { font-size: .9375rem; }
+.audioSettings small, .briefAudio small, #briefCount, .briefNote { font-size: .875rem; }
+.hint, #briefGoal, .backupPanel p, .backupActions label, .backupActions input { font-size: 1rem; }
+#briefBody { font-size: 1.125rem; line-height: 1.75; }
+.briefAudio button, .briefFooter button, #briefSkip { font-size: .9375rem; }
+.briefFooter { flex-wrap: wrap; }
+.briefFooter > div { margin-inline-start: auto; }
+@media (max-width: 620px) {
+  header { gap: 4px; }
+  header button, #journeyBackupOpen, .audioSettings summary { padding: 6px 8px; }
+  #journeyHelp { margin-left: 0; }
+  .briefText { padding-inline: 18px; }
+  .briefFooter { padding-inline: 12px; }
+  .briefFooter > div { gap: 2px; max-width: 100%; }
+  .briefFooter button { padding-inline: 8px; }
+  #briefNext { min-width: 0; }
+}
+@media (max-height: 550px) {
+  .briefVisual { height: 54px; }
+  #briefBody { min-height: 0; }
+}

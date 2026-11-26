@@ -452,7 +452,7 @@ const lateFallback=lateRenderer.texture('late-fallback-actor',c=>{
 });
 const lateLabelTextures=new Map();
 whenUiFontReady(()=>{
- for(const o of lateConfig.objects){if(o.kind==='secret')continue;lateLabelTextures.set(o.id,lateRenderer.texture('late-label-'+o.id,c=>{c.font='20px '+UI_CANVAS_FONT;c.textAlign='center';c.shadowColor='#132034';c.shadowBlur=7;c.fillStyle=isSnow?'#29485d':'#ece4cf';if(isSnow){c.shadowColor='#fff';c.shadowBlur=5;}c.fillText(o.name,256,36);},512,64));}
+ for(const o of lateConfig.objects){if(o.kind==='secret')continue;lateLabelTextures.set(o.id,lateRenderer.texture('late-label-'+o.id,c=>{c.font='26px '+UI_CANVAS_FONT;c.textAlign='center';c.shadowColor='#132034';c.shadowBlur=7;c.fillStyle=isSnow?'#29485d':'#ece4cf';if(isSnow){c.shadowColor='#fff';c.shadowBlur=5;}c.fillText(o.name,256,38,480);},512,64));}
 });
 function lateGroundDetails(){
  const g=new Geometry(),c=isSnow?[.59,.79,.88]:[.77,.64,.93];
@@ -530,7 +530,7 @@ function lateMapDraw(){
  const c=lateEl('lateMap').getContext('2d');if(!c)return;c.clearRect(0,0,180,180);c.fillStyle=isSnow?'#213a5077':'#161a3488';c.beginPath();c.arc(90,90,83,0,Math.PI*2);c.fill();
  const point=(x,z)=>[90+x*2.4,24+(z+46)*2.04];c.strokeStyle='#c2d9dd33';c.beginPath();c.moveTo(...point(0,16));c.lineTo(...point(0,-44));c.stroke();
  for(const o of lateConfig.objects){if(o.kind==='secret'||o.kind==='portal'&&!lateState.ending)continue;const[x,y]=point(o.x,o.z);c.fillStyle=o.kind==='npc'?'#e3d2a8':lateState.heard.includes(o.id)?'#9bcfc7':'#bedce6';c.beginPath();c.arc(x,y,o.kind==='gate'?4:2.6,0,Math.PI*2);c.fill();}
- const[x,y]=point(latePlayer.x,latePlayer.z);c.fillStyle='#fff3c5';c.beginPath();c.arc(x,y,3.3,0,Math.PI*2);c.fill();c.font='10px '+UI_CANVAS_FONT;c.textAlign='center';c.fillStyle='#c8d9dd';c.fillText('N',90,15);
+ const[x,y]=point(latePlayer.x,latePlayer.z);c.fillStyle='#fff3c5';c.beginPath();c.arc(x,y,3.3,0,Math.PI*2);c.fill();c.font='12px '+UI_CANVAS_FONT;c.textAlign='center';c.fillStyle='#c8d9dd';c.fillText('N',90,15);
 }
 function lateUpdateHUD(){
  lateSet('travelerName',isSnow?travelerName(lateState):latePriorName);
